@@ -1,0 +1,18 @@
+class RunnableSample implements Runnable {
+    public void run() {
+        Thread t = Thread.currentThread();
+
+        long id = t.getId();
+        String name = t.getName();
+
+        System.out.println("thread ID is " + id + ", name is " + name);
+
+        System.out.println("start sleep.");
+        try {
+            Thread.sleep(10000L); // 10000ms
+        } catch (InterruptedException e) {
+            //
+        }
+        System.out.println("finished sleep.");
+    }
+}

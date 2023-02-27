@@ -1,0 +1,125 @@
+Here is an example order:
+======================================
+Desktop styles (not in a media query)
+Tablet styles (max-width: 768px)
+Mobile styles (max-width: 414px)
+
+A) side-by-side
+B) stack on top of one another
+
+
+
+There are two probable approaches to follow:
+-------------------------------------
+A) Breakpoints based on device
+B) Breakpoints based on content
+
+
+
+Max-width
+-----------------------
+Here is an example of a max-width query.
+
+@media only screen and (max-width: 600px)  {...}
+What this query really means, is “If [device width] is less than or equal to 600px, then do {…}”
+
+
+
+Min-width
+-----------------------
+Here is an example of a min-width query.
+
+@media only screen and (min-width: 600px)  {...}
+What this query really means, is “If [device width] is greater than or equal to 600px, then do {…}”
+
+
+
+Combining media query expressions
+-------------------------------------------
+Max-width and min-width can be used together to target a specific range of screen sizes.
+
+@media only screen and (max-width: 600px) and (min-width: 400px)  {...}
+The query above will trigger only for screens that are 600-400px wide. This can be used to target specific devices with known widths.
+
+
+
+When to use min or max-width CSS breakpoints
+------------------------------------------------------
+1) if you are designing your layout with a mobile-first approach, then use min-width breakpoints and work your way up.
+2) if you are designing for larger devices first, then set your default CSS as you normally would and adjust for smaller devices with the max-width approach.
+
+
+Always try to create breakpoints based on your own content, not devices.
+Break them to a logical width rather than a random width and keep them to a manageable number, so modifying remains simple and clear.
+
+
+
+=======================START specificity================================
+
+What is specificity in CSS?
+------------------------------------
+Different selectors have different weights and the browser will decide which one is the most relevant to that element.
+
+If you specify multiple selectors to target the same HTML element, the browser picks the selector with the highest specificity value.
+
+
+A ) if you apply different color for a text several times in your CSS with the same specificity, 
+the selector which is further down in the source will apply.(If two rules apply to the same element, then the one that comes later takes effect.)
+B ) The more specific a selector is, higher the score will be. Only the selector with the highest score gets applied.
+C) The !important keyword beats everything
+D) The universal selector (*) has a specificity of (0,0,0,0).
+
+
+https://getflywheel.com/layout/choose-css-unit-create-better-site-layouts-how-to/
+
+
+How does it work?
+-------------------------
+The specificity of a selector can be categorized in the following four levels:
+
+1) Inline style
+2) IDs
+3) Classes, pseudo-classes, and attributes
+4) Elements or pseudo-elements
+
+
+No Specificity:
+The universal selector (*,+, -,>, ~) has no specificity value.
+The pseudo-class :not() adds no specificity. The negation ‘ pseudo-class: not’ is not considered a pseudo-class in the specificity calculation. It counts as normal selectors
+
+
+=======================END specificity================================
+
+
+
+
+
+=======================START CSS units================================
+CSS units can be separated in the following categories:
+-------------------------------------
+A) Absolute units : Some units depend on certain absolute values and are not affected by any screen size or fonts.
+    px (pixels)
+    in (inches)
+    cm (centimeter)
+    mm (millimeter)
+    pc (picas)
+    pt (points)
+ 
+ EX:
+        1in = 96px
+        1cm = 37.8px
+        1mm = 3.78px
+B) Font relative units : There are some units which depend on the font size or font family of the document or its parent level elements.
+    em = (it depends on the font size of the parent element or the document)
+         (Em inherits size from its immediate parent’s font size.)
+    rem = (Rem can be really helpful in these types of situations because they always refer to the root element font size, not the parent element.)
+    ex
+    ch
+C) Viewport relative units :  There are a few units that depend on the viewport height and width size, such as:
+    vh (viewport height) = (1vh equal to 1% of the viewport’s height.)
+                           (Vh reacts similarly to percentage, but doesn’t depend on the parent element height.)
+    vw (viewport width)
+    vmin (viewport minimum)
+    vmax (viewport maximum)
+
+=======================END CSS units================================

@@ -1,0 +1,205 @@
+git pull = git fetch + git merge
+
+
+
+1) Gives the information of a new change from a remote repository without merging into the current branch
+2) No possibility of merge conflicts.
+3) Git Fetch can be considered as a harmless option as our working branch is not altered and our uncommitted work is secure.
+4) Say for example that a developer is working on a project in a team and has unsaved changes or pending commits in the working directory but still wants to check the status of the remote repository. The developer can use the Git Fetch command to look at the new commits that were added to the remote repository. 
+   Git Fetch is often considered as the safe command as it does not alter our working directory.
+
+
+1) Brings the copy of all the changes from a remote repository and merges them into the current branch
+2) Merge conflicts are possible if the remote and the local repositories have done changes at the same place.
+3) Instead, if the developer has finished his/her part of the job and is ready to combine it with the work of other developers working on the same 
+   project then he/she may use the Git Fetch command.
+
+
+There are two locations where a settings.xml file may live:- (Maven global settings)
+============================================================
+The Maven install: ${maven.home}/conf/settings.xml
+A user’s install: ${user.home}/.m2/settings.xml
+in case of Jenkins /var/lib/Jenkins/.m2) for user-level configuration
+
+One-step deploy runs tests, installation, and deploy in a single command:
+$ mvn clean deploy
+
+Multi-steps deploy runs different commands in different steps. Firstly, run install command (which implies comile, test, and install). Once done sucessfully, deploy the results:
+$ mvn clean install
+$ mvn deploy -DskipTests -Dmaven.install.skip=true
+
+Here’s the comparison of these two solutions:
+Item	                    One-Step Deploy	         Multi-Steps Deploy
+Maven                      commands	1              commands	≥ 2 commands
+If no test failures, then…	All artifacts deployed	All artifacts deployed
+If test failures, then…	Some artifacts deployed 	No artifacts deployed
+
+
+
+
+   try {
+      //functional
+      }
+   catch (Exception e) {
+      // technical
+      }
+
+
+
+
+seller.    producer properties changes.(uat)
+KafkaProducerConfig
+consumerProps.put(ProducerConfig.ACKS_CONFIG, "all");
+        consumerProps.put(ProducerConfig.RETRIES_CONFIG, 3);
+        consumerProps.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 500);
+
+
+https://www.netlimiter.com/download
+vinod == how to produce network issue .
+
+ApiAuditLog.java  for audit log.
+
+
+
+
+      pressing CTRL + Shift + P   OR    Fn + F1   === and type “Reload Windows” and press Enter key
+
+Note that timeouts are re-tried, 
+but retry.backoff.ms (default to 100 ms) is used to wait after failure before retrying the request again.
+
+If you set retry > 0, then you should also set max.in.flight.requests.per.connection to 1, 
+or there is the possibility that a re-tried message could be delivered out of order. 
+You have to decide if out of order message delivery matters for your application.
+
+
+    private static void setupRetriesInFlightTimeout(Properties props) {
+        //Only one in-flight messages per Kafka broker connection
+        // - max.in.flight.requests.per.connection (default 5)
+        props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION,
+                1);
+        //Set the number of retries - retries
+        props.put(ProducerConfig.RETRIES_CONFIG, 3);
+
+        //Request timeout - request.timeout.ms
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 15_000);
+
+        //Only retry after one second.
+        props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 1_000);
+    }
+The above code sets the retires to 3, and the maximum in-flight requests to 1 to avoid out of order retries. 
+It sets the request timeout to 15 seconds and the retry back-off to 1 second.
+
+
+
+
+
+
+
+
+
+Spring AOP currently supports only method execution join points (advising the execution of methods on Spring beans).
+Spring AOP defaults to using standard J2SE dynamic proxies for AOP proxies. This enables any interface (or set of interfaces) to be proxied.
+Spring’s Proxy based AOP can only intercept public methods
+===============================================================
+Aspect = pointcut + advice
+Pointcut: where the aspect is applied. (for instance, apply the logging aspect inside the controller package, but not repository package)
+Advice: what code to be executed.
+Joinpoint:
+   1) Jointpoints is the point in the control flow of a program. (Executing method for an example is a joinpoint)
+   2) To determine which method was called, we use joinpoint.
+   3) Advices can be presented with information about the joinpoint. For example: method name, class name etc.
+
+
+Pointcut Expression:There are also other pointcut expressions such as within, args
+within
+This is used to match all the JoinPoint methods in a given class, package, or sub-package.
+args
+This is used to match arguments of JointPoint methods.
+Combining PointCut Expressions : && (and), || (or) and ! (not)
+==========================
+// expression for any method name which takes any parameter and any return type
+"execution(* *(..))"
+the execution of any method:
+"execution(* *(..))"
+
+the execution of any method with a name beginning with “set”:
+"execution(* set*(..))"
+
+the execution of any method defined by the AccountService interface:
+"execution(* com.xyz.service.AccountService.*(..))"
+
+the execution of any method defined in the service package:
+"execution(* com.xyz.service.*.*(..))"
+
+the execution of any method defined in the service package or sub-package:
+"execution(* com.xyz.service..*.*(..))"
+
+
+PointCut that matches all the methods in OrderService and that has a return type of String.
+@Pointcut("within(io.reflectoring.springboot.aop.OrderService) && execution(public String io.reflectoring.springboot.aop.OrderService.*(..))")
+
+@Around("execution(public * com.example.services.*.*(..))")
+ public Object myAdviceMethod(ProceedingJoinPoint pjp) throws Throwable {
+  String[] paramNames = ((MethodSignature)pjp.getSignature()).getParameterNames();
+  Object[] paramValues = pjp.getArgs();
+  Object output = pjp.proceed();
+  return output;
+ }
+
+
+A Generic Method Example
+===============================================
+Syntax: 
+<type-parameter-list> return-type method-name(parameter-list) { 
+   //code goes here
+}
+
+Ex:
+@Bean
+public <T> RedisTemplate<String, T> redisTemplate() {
+   RedisTemplate<String, T> redisTemplate = new RedisTemplate<String, T>();
+   redisTemplate.setConnectionFactory(redisConnectionFactory());
+   redisTemplate.afterPropertiesSet();
+   return redisTemplate;
+}
+
+@Bean("objectRedisTemplate")
+public <T> RedisTemplate<String, T> objectRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+    RedisTemplate<String, T> redisTemplate = new RedisTemplate<>();
+    redisTemplate.setConnectionFactory(redisConnectionFactory);
+    RedisSerializer<String> serializer = new StringRedisSerializer();
+    redisTemplate.setKeySerializer(serializer);
+    redisTemplate.setHashKeySerializer(serializer);
+    redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+    return redisTemplate;
+}
+
+it adds one element to the ArrayList object and at the same time returns that element from it
+//public <T, U> void displayData(T value1, U value2) {}
+static <T> T addAndReturn(T e, ArrayList<T> al) {
+   al.add(e);
+   return e;
+}
+
+Let's declare a simple generic method that accepts 3 parameters, appends them in a list, and return it:
+================================================================================
+public static <E> List<E> zipTogether(E element1, E element2, E element3) {
+    List<E> list = new ArrayList<>();
+    list.addAll(Arrays.asList(element1, element2, element3));
+    return list;
+}
+
+
+If a method uses more than one type parameter, you can provide a list of all of them inside the diamond operator and separate each parameter using commas:
+=================================================================================
+// Methods with void return types are also compatible with generic methods
+public static <T, K, V> void printValues(T val1, K val2, V val3) {
+	System.out.println(val1 + " " + val2 + " " + val3);
+}
+
+
+What if we want to limit the extent of abstraction that a type parameter has?
+==> parameter binding
+you'll want to define 
+In-variables with upper bounded wildcards, using the extends keyword 
+Out-variables with lower bounded wildcards, using the super keyword.

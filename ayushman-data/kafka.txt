@@ -1,0 +1,48 @@
+https://www.metricstream.com/blog/improve-platform-resilience-kafka-based-systems.html
+https://www.clairvoyant.ai/blog/unleash-kafka-producers-architecture-and-internal-workings
+
+
+
+
+
+
+transaction.setTitle("Paid towards"+" "+operatorName+" recharge - "+mobileNumber);
+
+transactionListView.setInfo1(operatorName+" Recharge of "+ mobileNumber);
+
+
+
+
+
+
+
+
+
+YPP-13968 and YPP-13967 ==  23-Jan 2023 worked on errorCode for KYC service and Raised PR, But not provoded audit log
+YPP-14051  == 24-Jan-2023
+YPP-13968 and YPP-13967  == 25-Jan 2023 and 26-Jan 2023 and added audit log as well.
+
+
+
+
+
+
+
+
+
+
+
+ERROR
+When the application is running in the ERROR log, the  WARN, INFO, DEBUG and TRACE type logs are not logged.
+
+WARN
+When the application log level is WARN, this will log both WARN as well as ERROR type logs into the logging system.
+
+INFO
+When the log level for the entire application is set to INFO, then both the WARN and ERROR logs are also logged into the logging system.
+
+DEBUG
+Enabling DEBUG level at the application level will cause INFO, WARN and ERROR logs to be also sent to the logging system.
+ 
+TRACE
+Enabling TRACE will enable all the subsequent log levels and is not at all recommended in the production environment.

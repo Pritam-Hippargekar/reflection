@@ -1,0 +1,1038 @@
+echo "export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64" >> ~/.bashrc
+export JAVA_HOME=/usr/lib/java
+echo "export PATH=${PATH}:${JAVA_HOME}/bin:${JAVA_HOME}/jre/bin" >> ~/.bashrc
+
+
+
+export PATH=$PATH:$JAVA_HOME
+
+
+
+
+
+We can say CyclicBarrier maintains a count of threads
+CountDownLatch maintains a count of tasks
+
+The CountDownLatch class is suitable for one-time iteration with a fixed number of parties.
+The CyclicBarrier class is suitable for one-time and cyclic iterations with a fixed number of parties.
+The Phaser class is suitable for one-time and cyclic iterations with a variable number of parties.
+
+
+
+Default Bridge Network
+================================================
+We can understand that containers running on the same bridge network are able to see each other using their IP addresses. 
+On the other hand, the default bridge network does not support automatic service discovery.
+(What if I want to use the containers' name instead of the IP)
+
+User-defined Bridge Networks
+===============================================
+We can conclude that only user-defined bridge networks support automatic service discovery. 
+If you need to use service discovery with containers, don't use the default bridge, create a new one.
+
+# Connection url for the database
+spring.datasource.url=jdbc:oracle:thin:@localhost:1521:XE
+spring.datasource.username=SYSTEM
+spring.datasource.password=oracle
+spring.datasource.driver-class-name=oracle.jdbc.driver.OracleDriver
+# Show or not log for each sql query
+spring.jpa.show-sql = true
+spring.jpa.properties.hibernate.format_sql=true 
+spring.jpa.hibernate.ddl-auto=create
+spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.Oracle10gDialect
+
+# REDIS
+spring.redis.host=127.0.0.1/localhost
+spring.redis.port=6379
+spring.redis.password=xxxxxxxx //https://betterprogramming.pub/a-comprehensive-guide-to-distributed-caching-471a0319ed35
+spring.redis.timeout=2000
+spring.cache.redis.cache-null-values=false
+spring.cache.cache-names=student
+spring.cache.redis.time-to-live=5000 //5 seconds //Time after that entry will get expired. By default the entries never expires.
+spring.cache.type=redis  //Using this properties we are specifying cache providers. By default, auto-detected according to the environment.
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+
+ @Bean
+    public <T> RedisTemplate<String, T> redisTemplate() {
+        RedisTemplate<String, T> redisTemplate = new RedisTemplate<String, T>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory());
+        redisTemplate.afterPropertiesSet();
+        return redisTemplate;
+    }
+
+https://medium.com/geekculture/overview-of-caching-distributed-cache-caching-patterns-techniques-6130a116820
+
+Caching Eviction (clean-up) Techniques/Algorithms
+Least Recently Used (LRU) : When the cache limit is full, we remove the least recently accessed items from the cache.
+Least Frequently Used (LFU) : We basically increment the value every time when the data gets accessed from the cache, in this case item with lowest count will be evicted (removed) first.
+First In First Out (FIFO) : As the name signifies, we evict first item accessed first without considering how often or how many times it was accessed in the past.
+Last In First Out (LIFO) : As it signifies, it evicts the item which was most recently used irrespective of number of times or how often it was accessed in the past.
+Most Recently Used (MRU) : It actually helps when older items are more likely to be used. We actually remove the most recently accessed items first.
+
+Request method	APIs/EndPoints
+POST	http://localhost:9091/student/create  @CachePut(value = "student", key = "#student.id")
+PUT	http://localhost:9091/student/update      @CachePut(value = "student", key = "#student.id")
+GET	http://localhost:9091/student/{id}        @Cacheable(value = "student", key = "#id")  @Cacheable(key = "#id", value = 'Employee', unless = "#result.age>30")
+DELETE	http://localhost:9091/student/delete  @CacheEvict(value = "student", key = "#student.id")
+
+
+
+
+
+@Override
+@Caching(evict = { @CacheEvict(value = "usersList", allEntries = true), },put = {@CachePut(value = "user", key = "#user.getUserId()") })
+public User saveUser(User user) {
+  try {
+     return userRepo.save(user);
+  } catch (Exception e) {
+     throw new CustomException("Error while saving user", 500);
+  }
+}
+
+We have added @CachePut annotation for updating or adding the particular entity in the cache.
+@CacheEvict is used because If we have created a cache for the users list then if the user is updated or deleted then we are going to evict or flush the cache.
+So, total time = CacheMiss + DatabaseQuery  + CacheWritten + Response Time
+
+
+https://plainenglish.io/blog/elasticache-with-spring-boot-eff7e634bbee
+# How to manage the application if the Redis server is down
+If the Redis server is down or somehow application can not access Redis server then all the cached api will start throwing errors. 
+Even if the application and database are fully functional. 
+
+
+If we want to disable the caching in any environment then use spring.cache.type property.
+spring.cache.type=none
+
+
+
+Spring uses the method parameters to form the cache keys as follows
+@Cacheable(value = "employees", key = "#id")
+public Optional<Employee> getEmployeeById(Long id) {...}
+
+@Cacheable(value = "employees", key = "#department.id")
+public List<Employee> getEmployeesByDepartmentId(Department department) {...}
+
+We can also do the caching only when a certain condition is satisfied
+@Cacheable(value = "employees", key = "#id", condition="#id > 0")
+public Optional<Employee> getEmployeeById(Long id) {...}
+
+
+ @CachePut is always executed irrespective of whether the cache key is present in the cache or not.
+ @CachePut(cacheNames = "employees", key = "#employee.id")
+ public Employee updateEmployee(Employee employee) {...}
+
+
+@CacheEvict This annotation is helpful in evicting (removing) the cache previously loaded.
+@CacheEvict(cacheNames="employees", key="#id") 
+public void deleteEmployee(Long id) {...}
+
+
+@CacheEvict(cacheNames="employees", allEntries=true)  //evicting the whole specified cache, rather than a key in the cache.
+public void deleteAllEmployees() {...}
+
+@Caching
+The @Caching annotation is needed to group multiple annotations when we need to use multiple cache annotations in a single method. In the following example, we are using the @CacheEvict annotation, twice.
+@Caching(evict = {
+    @CacheEvict(cacheNames = "departments", allEntries = true), 
+    @CacheEvict(cacheNames = "employees", key = "...")})
+public boolean importEmployees(List<Employee> data) { ... }
+
+@CacheConfig  us to specify some of the cache configurations at the class level, so we do not have to repeat them multiple times over each method.
+
+@Service
+@CacheConfig(cacheNames={"employees"})
+public class EmployeeService {
+
+@Autowired
+EmployeeRepository repository;
+
+@Cacheable(key = "#id")
+public Optional<Employee> getEmployeeById(Long id) { ... }
+
+@CachePut(key = "#employee.id")
+public Employee updateEmployee(Employee employee) { ... }
+
+
+@CacheEvict(value = CacheConstants.BOOKS_CACHE_ISBN, key = "#isbn")
+@CachePut(value = CacheConstants.BOOKS_CACHE_ISBN, key = "#book.isbn", unless = "#result == null")
+
+@Configuration
+@EnableCaching
+public class RedisConfig {
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Bean
+    public RedisTemplate redisTemplateInit() {
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        return redisTemplate;
+    }
+}
+
+package com.aphysia.springdemo.util;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
+import javax.annotation.Resource;
+
+@Component
+public class RedisUtil {
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
+
+    public void setRedisTemplate(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    /**
+     * 指定缓存失效时间
+     *
+     * @param key  键
+     * @param time 时间(秒)
+     */
+    public boolean expire(String key, long time) {
+        try {
+            if (time > 0) {
+                redisTemplate.expire(key, time, TimeUnit.SECONDS);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 根据key 获取过期时间
+     *
+     * @param key 键 不能为null
+     * @return 时间(秒) 返回0代表为永久有效
+     */
+    public long getExpire(String key) {
+        return redisTemplate.getExpire(key, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 判断key是否存在
+     *
+     * @param key 键
+     * @return true 存在 false不存在
+     */
+    public boolean hasKey(String key) {
+        try {
+            return redisTemplate.hasKey(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 删除缓存
+     *
+     * @param key 可以传一个值 或多个
+     */
+    @SuppressWarnings("unchecked")
+    public void del(String... key) {
+        if (key != null && key.length > 0) {
+            if (key.length == 1) {
+                redisTemplate.delete(key[0]);
+            } else {
+                redisTemplate.delete((Collection<String>) CollectionUtils.arrayToList(key));
+            }
+        }
+    }
+
+    //============================String=============================
+
+    /**
+     * 普通缓存获取
+     *
+     * @param key 键
+     * @return 值
+     */
+    public Object get(String key) {
+        return key == null ? null : redisTemplate.opsForValue().get(key);
+    }
+
+    /**
+     * 普通缓存放入
+     *
+     * @param key   键
+     * @param value 值
+     * @return true成功 false失败
+     */
+    public boolean set(String key, Object value) {
+        try {
+            redisTemplate.opsForValue().set(key, value);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
+    /**
+     * 普通缓存放入并设置时间
+     *
+     * @param key   键
+     * @param value 值
+     * @param time  时间(秒) time要大于0 如果time小于等于0 将设置无限期
+     * @return true成功 false 失败
+     */
+    public boolean set(String key, Object value, long time) {
+        try {
+            if (time > 0) {
+                redisTemplate.opsForValue().set(key, value, time, TimeUnit.SECONDS);
+            } else {
+                set(key, value);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 递增
+     *
+     * @param key   键
+     * @param delta 要增加几(大于0)
+     * @return
+     */
+    public long incr(String key, long delta) {
+        if (delta < 0) {
+            throw new RuntimeException("递增因子必须大于0");
+        }
+        return redisTemplate.opsForValue().increment(key, delta);
+    }
+
+    /**
+     * 递减
+     *
+     * @param key   键
+     * @param delta 要减少几(小于0)
+     * @return
+     */
+    public long decr(String key, long delta) {
+        if (delta < 0) {
+            throw new RuntimeException("递减因子必须大于0");
+        }
+        return redisTemplate.opsForValue().increment(key, -delta);
+    }
+
+    //================================Map=================================
+
+    /**
+     * HashGet
+     *
+     * @param key  键 不能为null
+     * @param item 项 不能为null
+     * @return 值
+     */
+    public Object hget(String key, String item) {
+        return redisTemplate.opsForHash().get(key, item);
+    }
+
+    /**
+     * 获取hashKey对应的所有键值
+     *
+     * @param key 键
+     * @return 对应的多个键值
+     */
+    public Map<Object, Object> hmget(String key) {
+        return redisTemplate.opsForHash().entries(key);
+    }
+
+    /**
+     * HashSet
+     *
+     * @param key 键
+     * @param map 对应多个键值
+     * @return true 成功 false 失败
+     */
+    public boolean hmset(String key, Map<String, Object> map) {
+        try {
+            redisTemplate.opsForHash().putAll(key, map);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * HashSet 并设置时间
+     *
+     * @param key  键
+     * @param map  对应多个键值
+     * @param time 时间(秒)
+     * @return true成功 false失败
+     */
+    public boolean hmset(String key, Map<String, Object> map, long time) {
+        try {
+            redisTemplate.opsForHash().putAll(key, map);
+            if (time > 0) {
+                expire(key, time);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 向一张hash表中放入数据,如果不存在将创建
+     *
+     * @param key   键
+     * @param item  项
+     * @param value 值
+     * @return true 成功 false失败
+     */
+    public boolean hset(String key, String item, Object value) {
+        try {
+            redisTemplate.opsForHash().put(key, item, value);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 向一张hash表中放入数据,如果不存在将创建
+     *
+     * @param key   键
+     * @param item  项
+     * @param value 值
+     * @param time  时间(秒)  注意:如果已存在的hash表有时间,这里将会替换原有的时间
+     * @return true 成功 false失败
+     */
+    public boolean hset(String key, String item, Object value, long time) {
+        try {
+            redisTemplate.opsForHash().put(key, item, value);
+            if (time > 0) {
+                expire(key, time);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 删除hash表中的值
+     *
+     * @param key  键 不能为null
+     * @param item 项 可以使多个 不能为null
+     */
+    public void hdel(String key, Object... item) {
+        redisTemplate.opsForHash().delete(key, item);
+    }
+
+    /**
+     * 判断hash表中是否有该项的值
+     *
+     * @param key  键 不能为null
+     * @param item 项 不能为null
+     * @return true 存在 false不存在
+     */
+    public boolean hHasKey(String key, String item) {
+        return redisTemplate.opsForHash().hasKey(key, item);
+    }
+
+    /**
+     * hash递增 如果不存在,就会创建一个 并把新增后的值返回
+     *
+     * @param key  键
+     * @param item 项
+     * @param by   要增加几(大于0)
+     * @return
+     */
+    public double hincr(String key, String item, double by) {
+        return redisTemplate.opsForHash().increment(key, item, by);
+    }
+
+    /**
+     * hash递减
+     *
+     * @param key  键
+     * @param item 项
+     * @param by   要减少记(小于0)
+     * @return
+     */
+    public double hdecr(String key, String item, double by) {
+        return redisTemplate.opsForHash().increment(key, item, -by);
+    }
+
+    //============================set=============================
+
+    /**
+     * 根据key获取Set中的所有值
+     *
+     * @param key 键
+     * @return
+     */
+    public Set<Object> sGet(String key) {
+        try {
+            return redisTemplate.opsForSet().members(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 根据value从一个set中查询,是否存在
+     *
+     * @param key   键
+     * @param value 值
+     * @return true 存在 false不存在
+     */
+    public boolean sHasKey(String key, Object value) {
+        try {
+            return redisTemplate.opsForSet().isMember(key, value);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 将数据放入set缓存
+     *
+     * @param key    键
+     * @param values 值 可以是多个
+     * @return 成功个数
+     */
+    public long sSet(String key, Object... values) {
+        try {
+            return redisTemplate.opsForSet().add(key, values);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    /**
+     * 将set数据放入缓存
+     *
+     * @param key    键
+     * @param time   时间(秒)
+     * @param values 值 可以是多个
+     * @return 成功个数
+     */
+    public long sSetAndTime(String key, long time, Object... values) {
+        try {
+            Long count = redisTemplate.opsForSet().add(key, values);
+            if (time > 0) expire(key, time);
+            return count;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    /**
+     * 获取set缓存的长度
+     *
+     * @param key 键
+     * @return
+     */
+    public long sGetSetSize(String key) {
+        try {
+            return redisTemplate.opsForSet().size(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    /**
+     * 移除值为value的
+     *
+     * @param key    键
+     * @param values 值 可以是多个
+     * @return 移除的个数
+     */
+    public long setRemove(String key, Object... values) {
+        try {
+            Long count = redisTemplate.opsForSet().remove(key, values);
+            return count;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+    //===============================list=================================
+
+    /**
+     * 获取list缓存的内容
+     *
+     * @param key   键
+     * @param start 开始
+     * @param end   结束  0 到 -1代表所有值
+     * @return
+     */
+    public List<Object> lGet(String key, long start, long end) {
+        try {
+            return redisTemplate.opsForList().range(key, start, end);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 获取list缓存的长度
+     *
+     * @param key 键
+     * @return
+     */
+    public long lGetListSize(String key) {
+        try {
+            return redisTemplate.opsForList().size(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    /**
+     * 通过索引 获取list中的值
+     *
+     * @param key   键
+     * @param index 索引  index>=0时， 0 表头，1 第二个元素，依次类推；index<0时，-1，表尾，-2倒数第二个元素，依次类推
+     * @return
+     */
+    public Object lGetIndex(String key, long index) {
+        try {
+            return redisTemplate.opsForList().index(key, index);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 将list放入缓存
+     *
+     * @param key   键
+     * @param value 值
+     * @return
+     */
+    public boolean lSet(String key, Object value) {
+        try {
+            redisTemplate.opsForList().rightPush(key, value);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 将list放入缓存
+     *
+     * @param key   键
+     * @param value 值
+     * @param time  时间(秒)
+     * @return
+     */
+    public boolean lSet(String key, Object value, long time) {
+        try {
+            redisTemplate.opsForList().rightPush(key, value);
+            if (time > 0) expire(key, time);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 将list放入缓存
+     *
+     * @param key   键
+     * @param value 值
+     * @return
+     */
+    public boolean lSet(String key, List<Object> value) {
+        try {
+            redisTemplate.opsForList().rightPushAll(key, value);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 将list放入缓存
+     *
+     * @param key   键
+     * @param value 值
+     * @param time  时间(秒)
+     * @return
+     */
+    public boolean lSet(String key, List<Object> value, long time) {
+        try {
+            redisTemplate.opsForList().rightPushAll(key, value);
+            if (time > 0) expire(key, time);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 根据索引修改list中的某条数据
+     *
+     * @param key   键
+     * @param index 索引
+     * @param value 值
+     * @return
+     */
+    public boolean lUpdateIndex(String key, long index, Object value) {
+        try {
+            redisTemplate.opsForList().set(key, index, value);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 移除N个值为value
+     *
+     * @param key   键
+     * @param count 移除多少个
+     * @param value 值
+     * @return 移除的个数
+     */
+    public long lRemove(String key, long count, Object value) {
+        try {
+            Long remove = redisTemplate.opsForList().remove(key, count, value);
+            return remove;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+}
+
+
+@Cacheable(cacheNames = "todos")
+@Override
+public List<Todo> getAllTodos() {
+    return todoRepository.findAll();
+}
+
+
+
+
+
+
+
+
+
+1.1 Install mysql
+Query the latest mirror of mysql
+$ docker search mysql                     
+
+Pull the latest version mysql
+$ docker pull mysql:latest
+
+Start mysql , user name root , password 123456
+$ docker run -itd --name mysql-test -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
+
+You can check whether the installation is successful docker ps
+$ docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED         STATUS      PORTS                                                  NAMES
+574d30f17868   mysql     "docker-entrypoint.s…"   14 months ago   Up 2 days   0.0.0.0:3306->3306/tcp, :::3306->3306/tcp, 33060/tcp mysql-test
+
+
+
+
+docker search redis
+docker pull redis:latest
+
+$ docker images 
+can check which mirrors we have installed, you can see that I have actually installed the mirrors of redis
+
+Let's start the container of redis
+$ docker run -itd --name redis-test -p 6379:6379 redis
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+https://www.nexsoftsys.com/articles/java-microservice-architecture-using-saga-pattern.html
+
+The transaction could be sequential or parallel that means it can be synchronous or asynchronous.
+How to Implement Saga in your Java Microservices application?
+choreography/Event-based Approach 
+Orchestration/command-based Approach  == orchestrating tool like Camunda or you can use a Finite-state machine in Java to build this Orchestrator.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@Configuration
+public class SpringCloudConfig
+{
+    @Bean
+    public RouteLocator gatewayRoutes(RouteLocatorBuilder routeLocatorBuilder)
+    {
+        return routeLocatorBuilder.routes()
+                .route("users", rt -> rt.path("/account/**")
+                        .filters(ft-> ft.rewritePath("account","account/v2"))
+                        .uri("lb://ACCOUNT-MICROSERVICE"))
+                .route("albums", rt -> rt.path("/users/**")
+                        .uri("lb://USERS-MICROSERVICE"))
+                .build();
+
+    }
+}
+
+
+
+
+
+spring:
+  application:
+    name: api-gateway
+  cloud.gateway:
+    discovery:
+      locator:
+        enabled: true
+        lowerCaseServiceId: true
+    routes:
+      - id: users
+        uri: lb://ACCOUNT-MICROSERVICE
+        predicates:
+          - Path=/account/**
+        filters: /account, /account/v2
+      - id: albums
+        uri: lb://USERS-MICROSERVICE
+        predicates:
+        - Path=/users/**
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 2
+            redis-rate-limiter.burstCapacity: 4
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8081/eureka
+      register-with-eureka: true
+    healthcheck:
+      enabled: true
+
+server:
+  port: ${GATEWAY_PORT:9090}
+
+
+https://tudip.com/blog-post/getting-started-with-spring-cloud/
+
+Predicates – match requests based on their feature (path, hostname, headers, cookies, query) 
+Filters – process and modify requests in a variety of ways. Can be divided depending on their purpose: 
+    gateway filter – modify the incoming http request or outgoing http response  
+    global filter – special filters applying to all routes so long as some conditions are fulfilled 
+
+
+
+
+
+
+
+
+  server:
+  port: ${CONFIG_PORT:8888}
+ 
+spring:
+  application:
+      name: config-server
+  cloud:
+      config:
+      server:
+      git:
+        uri: ${CONFIG_REPO_URI}
+        username: ${CONFIG_REPO_USERNAME}
+        password: ${CONFIG_REPO_PASSWORD}
+ 
+eureka:
+  client:
+    service-url:
+    defaultZone: ${EUREKA_URI:http://localhost:${EUREKA_PORT:8761}/eureka}
+    register-with-eureka: true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+server:
+  port: 8761
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    registerWithEureka: false
+    fetchRegistry: false
+    serviceUrl:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+
+https://oril.co/blog/spring-cloud-gateway-security-with-jwt/
+
+@Configuration
+public class GatewayConfig {
+ 
+    @Autowired
+    AuthenticationFilter filter;
+ 
+    @Bean
+    public RouteLocator routes(RouteLocatorBuilder builder) {
+        return builder.routes().route("user-auth-service", r -> r
+                .path("/api/users/**", "/api/auth/**", "/oauth2/authorization/**", "/login/oauth2/code/**")
+                .filters(f -> f.filter(filter).circuitBreaker(
+                        config -> config.setName("user-service-circuit-breaker").setFallbackUri("forward:/user-auth-fallback")))
+                .uri("lb://user-auth-service"))
+                .route("product-service",
+                        r -> r.path("/api/products/**").filters(f -> f.filter(filter)).uri("lb://product-service"))
+                .route("order-service",
+                        r -> r.path("/api/order/**").filters(f -> f.filter(filter)).uri("lb://order-service"))
+                .build();
+    }
+}
+
+
+
+
+
+
+
+@RestController
+public class FallbackController {
+
+    @RequestMapping(value = "/fallback")
+    @ResponseStatus
+    public Mono<Map<String, Object>> fallback(ServerWebExchange exchange, Throwable throwable) {
+        Map<String, Object> result = new HashMap<>(8);
+        ServerHttpRequest request = exchange.getRequest();
+        result.put("path", request.getPath().pathWithinApplication().value());
+        result.put("method", request.getMethodValue());
+        if (null != throwable.getCause()) {
+            result.put("message", throwable.getCause().getMessage());
+        } else {
+            result.put("message", throwable.getMessage());
+        }
+        return Mono.just(result);
+    }
+}
+
+
+
+
+   
+
+
+– Derived Query: 
+– JPQL: inspired by SQL:
+– Native Query:
+
+
+
+Mono<T> ==> CompletableFuture<T>
+Flux<T> ==> Stream<T>
+
+
+import java.io.*;
+import java.util.*;
+public class MyClass {
+    public static void main(String args[]) {
+        print("I-love-".split("-"));
+    }
+    static void print(String[] arr) {
+       System.out.println(arr.length);
+       if(arr.length != 3){
+            throw new RuntimeException("Error while set parameter");
+       }
+       System.out.println(Arrays.toString(arr));
+    }
+}
+
+
+1) You want to use Redis for testing, but don’t need high availability or data-reliability -> Use Standalone Redis
+2) If you need high availability, even if it is not scalable, and you have less data than RAM on a machine -> Use Redis Sentinel
+3) You need data sharding, scalability and automatic failover, it doesn’t have to be entirely highly available and you have more data than RAM on a server -> Use Redis Cluster
+
+
+

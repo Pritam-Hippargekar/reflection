@@ -1,0 +1,28 @@
+elastic-search
+================https://iridakos.com/programming/2019/05/02/add-update-delete-elasticsearch-nested-objects
+https://juejin.cn/post/7080726607043756045
+https://iridakos.com/programming/2019/05/02/add-update-delete-elasticsearch-nested-objects
+https://logz.io/blog/elasticsearch-mapping/
+https://iridakos.com/programming/2019/05/02/add-update-delete-elasticsearch-nested-objects
+
+
+https://blogs.perficient.com/2022/08/22/elasticsearch-java-api-client-springboot/
+
+
+@Document(indexName="sale", type="Sale")
+public class Sale {
+   @Id
+   public String orderNo;
+   public Date date;
+   public Double amount;
+   public String reference;
+   @Field(type = FieldType.Nested)
+   public List<LineItem> lineItems = new ArrayList();
+}
+
+public class LineItem {
+   public String itemCode;
+   public String itemName;
+   public Double qty;
+   public Double price;
+}

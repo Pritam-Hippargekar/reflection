@@ -1,0 +1,45 @@
+Docker RUN vs CMD vs ENTRYPOINT
+https://alirezadp10.medium.com/docker-run-vs-cmd-vs-entrypoint-b9a840ec881d
+https://alirezadp10.medium.com/docker-run-vs-cmd-vs-entrypoint-b9a840ec881d
+https://alirezadp10.medium.com/elasticsearch-text-vs-keyword-99ae63275ae7
+
+-e MYSQL_USER=sa -e MYSQL_PASSWORD=1234
+
+docker run -p 13306:3306 --name mysql-docker-local -e MYSQL_ROOT_PASSWORD=Password -e MYSQL_DATABASE=employeedb -d mysql:latest --network springmysql-net
+
+-p represents port and 13306:3306 represents mapping port 3306 from a docker container to 13306 on the localhost (or the host machine where the container is present).
+–name is the friendly name for the docker container that we are initializing.
+-e represents Environment variables. We are setting MYSQL_ROOT_PASSWORD to ‘Password’ which is nothing but the password for the root user.
+-d represents the name of the docker image. In this case, mysql:latest would be the image that would be used to create the container.
+
+
+To verify everything went fine, we can see the logs with the command below.
+-------------------------------------------
+docker logs -f <container_name>
+
+Connecting To MySQL Docker From Host Machine
+------------------Prerequisite – please ensure that localhost has MySQL Command-line tools installed as well------------------------------
+A) mysql --host=127.0.0.1 --port=13306 -u root -p
+
+
+B) We can do the following commands.
+- docker exec -it <container_id> bash
+- mysql -u<username> -p<password>
+- show databases;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

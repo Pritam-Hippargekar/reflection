@@ -1,0 +1,110 @@
+Why do merge conflicts happen?
+================================https://timmousk.com/blog/author/tim-mouskhelichvili/===
+Merge conflicts can happen when merging, but also when pulling from a branch.
+
+You will need to resolve those merge conflicts either by:
+==========================================================
+using git commands to resolve the conflicts.
+using an external visual merge tool.
+aborting the merge.
+
+Why might we want to abort a merge?
+=====================================
+You need this option because, sometimes, you want to go back to the old state before the merge happened.
+
+
+To abort a merge with conflicts in git you can either:
+==========================================================
+git merge --abort command.
+git reset --hard HEAD command.
+git reset --merge command.
+
+
+
+How to force git pull (and save local changes)?
+=================================================
+If you want to keep your local changes when fetching the latest changes from the remote, you need to save them in the stash before updating your branch.
+
+Here is the process to follow:
+1. Stash all your changes.
+git stash --include-untracked
+
+2. Use the git pull command to fetch and merge the changes from the remote.
+git pull
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Let’s configure the upstream, and add some rule, so you don’t try to push to upstream by mistake:
+
+git remote add upstream "git@github.com:UpstreamOrg/UpstreamRepo.git"
+git remote set-url --push upstream nope
+git remote -v
+
+You should have origin as the forked repository
+If you have cloned the wrong one you can always update the remote branches using:
+====================================================================================
+git remote set-url origin git@github.com:<your username>/UpstreamRepo.git (forked repository url)
+
+git fetch upstream === (fetch down the changes from original/upstream repository on your local.)
+we have fetched the branches on the upstream repo
+git pull upstream <branch>  === Fetch data from the upstream branch
+
+git checkout branch-name          or      git checkout -b branch-name <commit-hash>
+
+
+git push origin master (forked repo <branch>) then create PR and assign to <anyone>
+
+
+
+cornClass
+
+System 
+
+
+IMP  ====  https://www.neonscience.org/resources/learning-hub/tutorials/git-setup-remote  =====  IMP
+
+I have forked an open-source project(I am contributing to open-source project)
+======================================================
+Sync a Fork: Keep it Up-to-Date with the Upstream Repository
+1. Check out your fork's local master branch:
+   $ git checkout master
+2. Fetch the branches and their commits from the upstream repository.
+Commits to master will be stored in a local branch, upstream/master.
+   $ git fetch upstream
+3. Merge changes from upstream/master into your local master branch.
+This syncs your fork's master branch with the upstream repository.
+   $ git merge upstream/master
+4. To update your fork on GitHub, you must push your changes.
+Syncing your fork only updates your local copy of the repository.
+   $ git push origin master
+
+
+
+
+$ git log --pretty=oneline
+
+   revert a commit already pushed to a remote repository
+   1) Correct the mistake in a new commit
+   2) Revert the full commit
+
+
+   Undo Latest Local Commit(it hasn't been pushed to the remote repository yet)
+   By default, the reset command is --soft.
+   The --soft flag doesn't reset the changes done to the file, just removes the commit that was made.
+   --hard reset = change that was made to the file +  previous commit was also removed completely,==git reset --hard <commit-hash>
+   1) git reset HEAD~

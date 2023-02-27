@@ -1,0 +1,26 @@
+pritam.h@sodelsolutions.com
+
+
+
+
+array.filter(function(currentValue, index, currentArray), this)
+
+To export a function in React, you can:
+===========================================
+Use a named export
+Use a default export
+
+The most significant differences between a default and a named export are:
+================================================
+A file can only contain one default export.
+A file can contain multiple named exports.
+
+
+
+
+file name cuguser list 
+uploadedBy(bulkcugupload)
+
+
+
+account verification

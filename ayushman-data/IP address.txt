@@ -1,0 +1,45 @@
+https://www.learnhindituts.com/blogs/what-is-vpc-in-hindi-vpc-kya-hai
+
+Private IP addresses को communicate करने के लिए NAT (network address translation) की जरूरत होती है।
+Public IP addresses को communicate करने के लिए किसी network translation की जरूरत नहीं होती है।
+
+Private IP addressess होते हैं।
+==============================
+10.0.0.0 – 10.255.255.255
+172.16.0.0 – 172.31.255.255
+192.168.0.0 – 192.168.255.255
+
+
+
+Class A with a /8 subnet mask
+Class B with a /16 subnet mask
+Class C with a /24 subnet mask
+
+IP Addresses have 2 components: 
+=====================================
+A) Network Address 
+B) Host Address
+
+
+The subnet mask is made up of setting up all network bits to all ones and host bits to all zeros.
+Subnet Mask 192.168.0.0/24 will equate to IP Range 192.168.0.0 — 192.168.0.255.
+
+CIDR Block Notation: 
+xxx.xxx.xxx.xxx/N  (where N is the number of bits used for the subnet mask.)
+
+we made 24 bits to ones and the remaining 8 bits to zeros because the Subnet Mask end range is 24.
+
+    IP address  ------
+    Subnet Mask ------
+======================
+Logical AND 
+
+
+Bonus Point😎✌
+32 bits — Network bits
+= 32 – 28
+= 4
+Total host = 2⁴ – 2 
+           = 16–2 
+           = 14
+(reduce 2 from 2⁴ for Network address and Broadcast address)

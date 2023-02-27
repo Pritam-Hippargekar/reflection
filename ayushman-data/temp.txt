@@ -1,0 +1,336 @@
+  Optional<AccountVerificationRecord> accountVerificationRecordDetails = accountVerificationRecordRepository.findByAccountVerificationId(
+                            verificationResponseDto.getAccountVerificationRecord().getAccountVerificationId());
+            			if(!accountVerificationRecordDetails.isPresent()){
+
+                        }
+                        AccountVerificationRecord accountVerificationRecordObj = accountVerificationRecordDetails.get();
+
+
+
+status  
+userType not null remove
+download 
+
+    <changeSet id="202302170957-drop-column-add-column" author="jhipster-entity">
+<!--        <dropColumn tableName="bulk_cug_user_upload">-->
+<!--            <column  name="user_type"/>-->
+<!--        </dropColumn>-->
+        <addColumn tableName="bulk_cug_user_upload">
+            <column name="user_type" type="varchar(255)">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+
+1) approval request (update) 14114 === old value / new value   on DTo and entity.  done
+2) yes-pay-lite/next == invalid file upload
+3) 1 mb = max file upload size == done 
+4) file download s3 bucket. for upload (https://ypp.sodelsolutions.com/services/system/api/bulk-cug-user-uploads/3/download/Sample%20Bulk%20Cug%20User%20Upload%20file%20(5).csv&isCugUser=true)
+
+
+
+QA : 
+system@localhost
+admin
+===================================== VA-ACTIVATE-UPI-PAYOUT
+gaurav.p@sodelsolutions.com
+admin
+
+
+UAT :
+ronak.n@sodelsolutions.com
+Sodel@#123
+
+
+
+
+1. Upload   =  BulkMerchantDisbursementUpload - Bulk CUG User Upload
+2. Records  =  BulkMdFileUploadRecords - Bulk CUG File Records
+3. MainTable=  MerchantDisbursementRecord - CUG User List
+
+
+@All due to some medical reasons. I will leaving for the day after 5 o'clock and will work from home 13 and 14 February.
+
+
+BulkCugUserUpload   BulkCugUserUploadFileProcessJob  BulkCugUserUploadExecutor      
+---------------------
+fileName (String) required
+totalSuccess (Integer)
+totalFailed (Integer)
+totalCount (Integer)
+uploadedBy (String)
+errorMessage (String) 
+isSafeToDownload (Boolean)
+status (BulkCugUserRecordStatus) required    SUCCESS,PENDING,FAIL,IN_PROCESS
+appName (AppNameEnum) required
+
+
+BulkCugUserFileRecord      BulkCugUserUploadJob
+-------------------------
+status (BulkCugUserRecordStatus) required                        SUCCESS, PENDING, FAIL, IN_PROCESS
+errorCode (String)
+errorMessage (String)
+userIdentifierValue (String)
+BulkCugUserUpload BulkCugUserUpload(M20)
+
+
+status
+errorMessage
+bulkCugUserUploadId (M2O)
+userIdentifierValue
+
+CUGUserList
+--------------
+Id
+appName – YES_PAY_LITE,YES_PAY_NEXT,YES_PAY_BIZ
+userType – Only applicable for YES_PAY_BIZ app (SELLER,SELLER_USER)
+userIdentifierType – Dropdown MOBILE for now
+userIdentifierValue - mobileNumber(String)
+status – ACTIVE,INACTIVE
+BulkCugUserUploadId (M2O)
+BulkCugUserFileRecordId (M2O)
+
+
+
+CUGUserListStatusEnum
+
+
+appName (AppNameEnum) required
+userType (UserTypeEnum) required
+userIdentifierType (UserIdentifierTypeEnum) required
+userIdentifierValue (String) required unique
+
+
+
+
+
+CobAppRegistrationApiResource coBank
+YesPayBizAppRegistrationApiResource seller
+
+
+
+ "billAmountSection": {
+        "payableAmount": "480",  //amount
+
+        "beforeAmount": "460",   // Early Payment Amount
+        "beforeDate": "2023-01-25", //// Early Payment date
+
+        "afterAmount": "490",   //Late(due) Payment Amount 
+        "afterDate": "2023-02-06" //Late(due) Payment date 
+      },
+
+private String payableAmount;
+
+
+
+Unit	Equivalent
+1 kilobyte (KB)	1,024 bytes
+1 megabyte (MB)	(1024x1024) 1,048,576 bytes       1 MB is 1,024 kilobytes   
+1 gigabyte (GB)	1,073,741,824 bytes               
+1 terabyte (TB)	1,099,511,627,776 bytes           
+1 petabyte (PB)	1,125,899,906,842,624 bytes        
+
+
+
+
+entity = DTO = QueryService = Criteria = then .xml file changeset.
+
+
+
+
+
+
+blank file upload == not allowed.
+uploaded by === is coming null.
+invalid file not upload. (validate file not containd any special character)
+
+
+public class Base {
+    private String data = null;
+
+    public Base() {
+        data = "default";
+        System.out.println("Base()");
+    }
+
+    public Base(String arg1) {
+        data = arg1;
+        System.out.println("Base("+arg1+")");
+    }
+    public Base(String a, String b, String c){
+        //Constructor<?> ctr = myClass.getConstructor(String.class, String.class, String.class);
+        //Object object = ctr.newInstance(new Object[] { "Arg1", "Arg2", "Arg3" }); 
+    }   
+}
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
+public class Main {
+
+    public static void main(String args[]) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+
+        // Get class name as string.
+        String myClassName = Base.class.getName();  //fully class name.
+        // Create class of type Base.
+        Class<?> myClass = Class.forName(myClassName);
+        // Create constructor call with argument types.
+        Constructor<?> ctr = myClass.getConstructor(String.class);
+        // Finally create object of type Base and pass data to constructor.
+        String arg1 = "My User Data";
+        Object object = ctr.newInstance(new Object[] { arg1 });
+        // Type-cast and access the data from class Base.
+        Base base = (Base)object;
+        System.out.println(base.data);
+    }
+
+}
+
+
+Note :: public Constructor only.(getConstructors)
+======================================================
+    Class<?> clazz = Class.forName(FULLY_QUALIFIED_CLASS_NAME);
+    Constructor<?> myConstructor = clazz.getConstructors()[0];
+    Object classObject = myConstructor.newInstance(new Object[]{"contstractorArgs"});
+    Object result = clazz.getDeclaredMethods()[0].invoke(classObject, Object... methodArgs);
+
+Note :: private Constructor only.(getDeclaredConstructor)
+===========================================================
+    // Get Class instance
+    Class<?> clazz = Class.forName("com.pritam.MyClass");
+    // Get the private constructor.
+    Constructor<?> cons = clazz.getDeclaredConstructor();
+    // Since it is private, make it accessible.
+    cons.setAccessible(true);
+    // Create new object. 
+    Object obj = cons.newInstance();// invoke empty constructor
+
+
+Class<?> aClass = Class.forName(FULLY_QUALIFIED_CLASS_NAME);
+Method method = aClass.getMethod(methodName, YOUR_PARAM_1.class, YOUR_PARAM_2.class);
+method.invoke(OBJECT_TO_RUN_METHOD_ON, YOUR_PARAM_1, YOUR_PARAM_2);
+
+
+
+Field field = object.getClass().getDeclaredField(fieldName);    
+  field.setAccessible(true);
+  Object value = field.get(object);
+
+Class<?> thisClass = Class.forName(this.getClass().getName());
+//Field field = thisClass.getDeclaredFields(); 
+Field field = object.getClass().getDeclaredFields();    
+  field.setAccessible(true);
+  String fieldName = field.getName();
+  String fieldType = field.getType();
+  Object fieldValue = field.get(object);
+
+
+
+package com.mypackage.bean;
+public class Dog {
+    private String name;
+    private int age;
+
+    public Dog() {
+        // empty constructor
+    }
+
+    public Dog(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public void printDog(String name, int age) {
+        System.out.println(name + " is " + age + " year(s) old.");
+    }
+}
+
+package com.mypackage.demo;
+import java.lang.reflect.*;
+public class ReflectionDemo {
+
+    public static void main(String[] args) throws Exception {
+        String dogClassName = "com.mypackage.bean.Dog";
+        Class<?> dogClass = Class.forName(dogClassName); // convert string classname to class
+        Object dog = dogClass.newInstance(); // invoke empty constructor
+
+        String methodName = "";
+
+        // with single parameter, return void
+        methodName = "setName";
+        Method setNameMethod = dog.getClass().getMethod(methodName, String.class);
+        setNameMethod.invoke(dog, "Mishka"); // pass arg
+
+        // without parameters, return string
+        methodName = "getName";
+        Method getNameMethod = dog.getClass().getMethod(methodName);
+        String name = (String) getNameMethod.invoke(dog); // explicit cast
+
+        // with multiple parameters
+        methodName = "printDog";
+        Class<?>[] paramTypes = {String.class, int.class};
+        Method printDogMethod = dog.getClass().getMethod(methodName, paramTypes);
+        printDogMethod.invoke(dog, name, 3); // pass args
+    }
+}
+Output: Mishka is 3 year(s) old.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public static Object launchProcess(String className, String methodName, Class<?>[] argsTypes, Object[] methodArgs)
+        throws Exception {
+
+    Class<?> processClass = Class.forName(className); // convert string classname to class
+    Object process = processClass.newInstance(); // invoke empty constructor
+
+    Method aMethod = process.getClass().getMethod(methodName,argsTypes);
+    Object res = aMethod.invoke(process, methodArgs); // pass arg
+    return(res);
+}
+// Call above method.
+String className = "com.example.helloworld";
+String methodName = "print";
+Class<?>[] argsTypes = {String.class,  String.class};
+Object[] methArgs = { "hello", "world" };   
+launchProcess(className, methodName, argsTypes, methArgs);
+
+
+
+
+ 
+SELECT * FROM QRTZ_CRON_TRIGGERS WHERE TRIGGER_NAME='RTGSTransactionStatusUpdateTrigger' or TRIGGER_NAME='IMPSTransactionStatusUpdateTrigger'
+SELECT * FROM  QRTZ_TRIGGERS WHERE TRIGGER_NAME='RTGSTransactionStatusUpdateTrigger' or TRIGGER_NAME='IMPSTransactionStatusUpdateTrigger'
+
+DELETE FROM QRTZ_CRON_TRIGGERS WHERE SCHED_NAME='Disbursement' and TRIGGER_NAME='RTGSTransactionStatusUpdateTrigger' and TRIGGER_GROUP='DEFAULT';
+DELETE FROM QRTZ_TRIGGERS WHERE SCHED_NAME='Disbursement' and TRIGGER_NAME='IMPSTransactionStatusUpdateTrigger' and TRIGGER_GROUP='DEFAULT';

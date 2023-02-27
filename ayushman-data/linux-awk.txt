@@ -1,0 +1,59 @@
+Send the output to /dev/null:
+command 1> /dev/null
+
+Send the error to /dev/null:
+command 2> /dev/null
+
+Send both output and error to /dev/null:
+command 2>&1 /dev/null
+
+
+
+AWK Built-in Variables
+FS – stores the field separator that is used for dividing input line fields.(default separator is white space or tab characters.)
+OFS - The Output Field Separator Variable
+NF – stores a count of the total input fields that are part of the current input record.
+NR – stores the current count of the total input records.
+RS – stores the current record separator character that is used for each record in the input file. The default record separator is a new line character.
+ORS - The Output Record Separator Variable
+FILENAME - The Current Filename Variable
+
+
+Know Pre-defined and automatic variables in AWK
+RS –The record separator.(By default, this is the newline character)
+NR – The current input record number. 
+FS/OFS –The character(s) used as the field separator.(“white space” is the default value for both of them)
+NF – The number of fields in the current record.
+
+
+
+whitespaces, tabs, and newline characters.
+
+$0 represents the entire record.
+The last field is also represented by $NF. 
+
+Syntax:
+------------
+awk [options] 'condition  {action}' input-file > output-file
+
+Remove a file header
+---------------------------
+awk 'NR>1 { print }' file
+
+Print lines in a range
+------------------------
+awk 'NR>1 && NR < 4' file
+
+
+
+
+
+we are printing the last name (second field $2) of all the employees whose age is 47 (third field $3):(Relational Expressions)
+---------------------------------------------------
+awk ‘$3 ~ /47/ {print $2}’ emp_records.txt
+
+
+awk ‘BEGIN {print “First Record.”}; {print $1}; END {print “Last Record.”}’ emp_records.txt
+awk ‘BEGIN {sum=0} {sum=sum+$7} END {print sum}’ test.txt
+
+

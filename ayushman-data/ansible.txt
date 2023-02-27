@@ -1,0 +1,414 @@
+https://www.bogotobogo.com/DevOps/Ansible/Ansible-Tomcat9-Ubuntu18-Playbook.php
+https://www.techbeginner.in/2021/06/how-to-install-tomcat-using-ansible-playbook-on-ubuntu.html
+https://automateinfra.com/category/ansible/
+
+Configuration settings
+- ANSIBLE_CONFIG (if specified in environment variable)
+- ansible.cfg (current directory)
+- ~/.ansible.cfg (home directory)
+- /etc/ansible/ansible.cfg (default)
+
+
+$ cat ~/.ansible.cfg
+
+$ cat inventory.ini
+
+$ ansible-inventory -i inventory.ini --graph
+
+
+
+
+Here is the content for the the tomcat.service file.
+=======================================================
+[Unit]
+Description=Apache Tomcat Web Application Container
+After=network.target
+[Service]
+Type=forking
+Environment=JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+Environment=CATALINA_HOME=/opt/tomcat
+Environment=CATALINA_BASE=/opt/tomcat
+Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC'
+Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+ExecStart=/opt/tomcat/bin/startup.sh
+ExecStop=/opt/tomcat/bin/shutdown.sh
+User=tomcat
+Group=tomcat
+UMask=0007
+RestartSec=10
+Restart=always
+[Install]
+WantedBy=multi-user.target
+
+
+Here is a complete playbook saved as apache-tomcat-jdk-deploy.yml for later reference.
+===========================================================================https://medium.com/@chatila/automate-installation-and-configuration-of-apache-tomcat-8-5-9-10-with-ansible-e3bd623aad49=========
+---
+- name: Deploy Apache Tomcat on Ubuntu for your java web applications
+  hosts: medium
+  gather_facts: yes
+  become: true
+tasks:
+    - name: Installing OpenJDK 8 to the host(s)
+      apt:
+        name: openjdk-8-jdk
+        update_cache: yes
+        state: present
+- name: Deleting content & directory
+      file:
+        state: absent
+        path: /opt/tomcat
+- name: Creating /opt/tomcat directory
+      file:
+        path: /opt/tomcat
+        state: directory
+        mode: 0755
+- name: Downloading & unarchiving
+      unarchive:
+        src: "{{ tomcat_archive_url }}"
+        dest: /opt/tomcat
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+- name: Adding tomcat group
+      group:
+        name: tomcat
+- name: Adding tomcat user
+      user:
+        name: tomcat
+        group: tomcat
+        home: /user/share/tomcat
+        createhome: no
+- name: Changing ownership
+      file:
+        path: /opt/tomcat
+        owner: tomcat
+        group: tomcat
+        mode: "u+rwx,g+rx,o=rx"
+        recurse: yes
+        state: directory
+- name: Copying Tomcat service file from local to remote
+      copy:
+         src: files/tomcat.service
+         dest: /etc/systemd/system/
+         mode: 0755
+- name: Starting and enabling Tomcat service
+      systemd:
+        name: tomcat
+        state: restarted
+        enabled: true
+        daemon_reload: true
+
+Run your playbook with the below command while passing the tomcat archive URL for the version you want 8.5, 9 or 10.
+=======================================================================================================================
+ansible-playbook apache-tomcat-jdk-deploy.yml --ask-become-pass  -K --extra-vars tomcat_archive_url="https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.55/bin/apache-tomcat-9.0.55.tar.gz"
+
+Firstly all the tomcat files and tomcat directories are stored under <tomcat-installation-directory>/*.
+
+Your installation directory is represented by environmental variable  $CATALINA_HOME
+The tomcat directory and files should be owned by user tomcat
+The tomcat user should be member of tomcat group.
+
+<tomcat-installation-directory>/bin: 
+This directory consists of startup and shutdown scripts (startup.sh and shutdown.sh) to run or stop the tomcat directly without using the tomcat service configured.
+
+<tomcat-installation-directory>/conf: 
+This is very crucial directory where tomcat keeps all its configuration files.
+
+<tomcat-installation-directory>/logs: 
+In case you get any errors while running your tomcat then you can look at your safeguard ie. logs , tomcat creates its own logs under this directory.
+ 
+<tomcat-installation-directory>/webapps: 
+This is the directory where you place your code such as .war and run your applications. It is highly recommended to stop tomcat and then deploy your application inside this directory and then start tomcat.
+ 
+    - name: Create a Tomcat Directory
+      file:
+        path: /opt/tomcat10
+        owner: tomcat
+        group: tomcat
+        mode: 755
+        recurse: yes
+
+=====================START===========================
+
+- hosts: tomcat
+  become: yes
+  tasks:
+
+    - name: update
+      apt: update_cache=yes   
+      ignore_errors: yes 
+   
+    - name: Installating JDK.
+      apt: name=default-jdk state=latest
+
+    - name: Adding Group and user for Tomcat.
+      shell: groupadd tomcat && useradd -s /bin/false -g tomcat -d /opt/tomcat tomcat
+      
+    - name: Installating curl.
+      apt: name=curl state=latest
+      
+    - name: Downloading Apache Tomcat tar.
+      shell: wget http://us.mirrors.quenda.co/apache/tomcat/tomcat-8/v8.5.56/bin/apache-tomcat-8.5.56.tar.gz      
+      args:
+        chdir: /tmp
+    - name: Creating Apache Tomcat home directory.
+      command: mkdir /opt/tomcat
+      
+    - name: Extracting Apache Tomcat.
+      shell: tar -xzvf /tmp/apache-tomcat-8*tar.gz -C /opt/tomcat --strip-components=1
+      
+    - name: Updating permission.
+      command: "{{ item }}"
+      with_items:
+        - chown -R tomcat:tomcat /opt/tomcat
+        - chmod -R g+r /opt/tomcat/conf
+        - chmod g+x /opt/tomcat/conf
+                   
+    - name: Creating service for Apache tomcat.
+      file:
+        path: /etc/systemd/system/tomcat.service
+        state: touch
+        mode: u+rwx,g-rwx,o-x
+
+    - name: download foo.conf
+      get_url:
+        url: https://raw.githubusercontent.com/aftab70/Apache_Tomcat/master/tomcat_services
+        dest: /etc/systemd/system/tomcat.service
+ 
+    - name: Deamon reload.
+      command: systemctl daemon-reload
+ 
+    - name: Starting Apache Tomcat service.
+      service: name=tomcat state=started
+
+=====================END===========================
+---
+- name: Download Tomcat8 from tomcat.apache.org
+  hosts: all
+  vars:
+    download_url: https://dlcdn.apache.org/tomcat/tomcat-8/v8.5.83/bin/apache-tomcat-8.5.83.tar.gz
+  become: yes
+  become_method: sudo
+  remote_user: ubuntu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Simple utility method:
+
+public static boolean isBetween(int value, int min, int max) {
+  return((value > min) && (value < max));             (value > 1) && (value < 10)
+}
+
+return testDate.after(startDate) && testDate.before(endDate);
+currentDate > dueDate
+=========================
+  LocalDate current = LocalDate.now();
+  LocalDate dueDate = LocalDate.of(2023, 02, 01);
+
+if (current.isAfter(dueDate))
+    System.out.println(String.format("current(%s) date comes after due date(%s)", current, dueDate));
+
+
+
+
+
+LocalDate date1 = LocalDate.now();
+LocalDate date2 = LocalDate.of(2023, 07, 29);
+
+if (date1.isAfter(date2))              //// check if `date1` is after `date2`
+    System.out.println(String.format("%s comes after %s", date1, date2));
+else if (date1.isBefore(date2))        //// check if `date1` is before `date2`
+    System.out.println(String.format("%s comes before %s", date1, date2));
+else if (date1.isEqual(date2))
+    System.out.println("Both dates are equal");
+
+
+
+
+https://javarevisited.blogspot.com/2015/03/20-examples-of-date-and-time-api-from-Java8.html#axzz7s3cVY66W
+LocalDate tomorrow = LocalDate.of(2014, 1, 15); 
+if(tommorow.isAfter(today)){ 
+  System.out.println("Tomorrow comes after today."); 
+} 
+LocalDate yesterday = today.minus(1, DAYS); 
+if(yesterday.isBefore(today)){ 
+  System.out.println("Yesterday is day before today.");
+} 
+
+Output: Tomorrow comes after today.
+        Yesterday is day before today.
+
+
+
+Let us know see Special variables
+=================================https://automateinfra.com/category/bash-scripting/====
+$0 is the filename of the current script.
+$n These variables correspond to the arguments with which a script was invoked.
+$# The number of arguments supplied to a script.
+$* All the arguments are double quoted. If a script receives two arguments, $* is equivalent to $1 $2.
+$@ All the arguments are individually double quoted. If a script receives two arguments, $@ is equivalent to $1 $2.
+$? The exit status of the last command executed.
+$$ The process number / process ID of the current shell.
+$! The process number of the last background command.
+
+
+
+public static String overlay(String str, String overlay, int start, int end)
+                                                                      12-4 = 8                                     0       12-4 = 8
+String maskedAadhaarNumber = StringUtils.overlay(aadhaarNumber, StringUtils.repeat("X", aadhaarNumber.length()-4), 0, aadhaarNumber.length()-4);
+                                                 4563 5566 5660  XXXX XXXX  0 , 8
+
+String maskedMobileNo = StringUtils.overlay(getMobileNo(), StringUtils.repeat("X", getMobileNo().length() - 4), 0, getMobileNo().length() - 4);
+                                            4563 5566 56    XXXX XX66 56  0, 6
+
+
+						String cardNumber = physicalCardApiResponse.getCardNumber().get(physicalCardApiResponse.getCardNumber().size()-1);
+						String maskedCardNumber = StringUtils.overlay(cardNumber, StringUtils.repeat("X", cardNumber.length() - 4), 0, cardNumber.length() - 4);
+            responseDto.setCardNumber(maskedCardNumber);
+
+
+            YesPayApiActionEnum.GETCARD.name().equals(yesPayApiRequest.getAction_name()) ? Boolean.TRUE : Boolean.FALSE);
+
+
+
+
+            many time services
+            ===============
+            DTO 
+            entiry
+
+            one time services
+            ===============
+            Criteria
+            QueryService
+            .xml file
+
+
+
+
+"Request ID","add","addinfo2","addinfo3","addinfo4","addinfo5","addinfo6","addinfo7","addinfo8","addinfo9","addinfo10","sms","email","extMID","extTID",
+"cntEmail","strEmailId","requestUrl1","requestUrl2"
+
+
+
+      requestId; add; addInfo2; addInfo3; addInfo4; addInfo5; addInfo6; addInfo7; addInfo8; addInfo9; addInfo10;
+     sms; email; extMID; extTID; cntEmail; strEmailId; requestUrl1; requestUrl2;
+
+
+
+---
+- name: Download Tomcat8 from tomcat.apache.org
+  hosts: testserver
+  vars:
+    download_url: https://dlcdn.apache.org/tomcat/tomcat-8/v8.5.83/bin/apache-tomcat-8.5.83.tar.gz
+  tasks:
+   - name: Download Open JDK
+     become: yes
+     apt:
+      name: openjdk-8-jre-headless
+      update_cache: yes
+      state: present
+  
+   - name: validate if Java is availble 
+     shell: 
+      java -version
+     
+   - name: Create the group
+     become: yes
+     group: 
+      name: tomcat
+      state: present
+   - name: Create the user
+     become: yes
+     user:
+        name: tomcat
+        state: present
+   - name: Create a Directory /opt/tomcat8
+     become: yes
+     file:
+       path: /opt/tomcat8
+       state: directory
+       mode: 0755
+       owner: tomcat
+       group: tomcat
+   - name: Download Tomcat using unarchive
+     become: yes
+     unarchive:
+       src: "{{download_url}}"
+       dest: /opt/tomcat8
+       mode: 0755
+       remote_src: yes
+       group: tomcat
+       owner: tomcat
+    
+   - name: Move files to the /opt/tomcat8 directory
+     become: yes
+     become_user: tomcat
+     shell: "mv /opt/tomcat8/apache*/* /opt/tomcat8"
+   - name: Creating a service file
+     become: yes
+     copy: 
+      content: |-
+        [Unit]
+        Description=Tomcat Service
+        Requires=network.target
+        After=network.target
+        [Service]
+        Type=forking
+        User=tomcat
+        Environment="CATALINA_PID=/opt/tomcat8/logs/tomcat.pid"
+        Environment="CATALINA_BASE=/opt/tomcat8"
+        Environment="CATALINA_HOME=/opt/tomcat8"
+        Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+        ExecStart=/opt/tomcat8/bin/startup.sh
+        ExecStop=/opt/tomcat8/bin/shutdown.sh
+        Restart=on-abnormal
+        [Install]
+        WantedBy=multi-user.target
+      dest: /etc/systemd/system/tomcat.service
+   - name: Reload the SystemD to re-read configurations
+     become: yes
+     systemd:
+        daemon-reload: yes
+   - name: Enable the tomcat service and start
+     become: yes
+     systemd:
+        name: tomcat
+        enabled: yes
+        state: started
+   - name: Connect to Tomcat server on port 8080 and check status 200 - Try 5 times
+     tags: test
+     uri:
+       url: http://localhost:8080
+     register: result
+     until: "result.status == 200"
+     retries: 5
+     delay: 10
+Moving files to the right directory – Once the untar is done. it would leave us with a big directory with a clumsy name containing the version etc. we are basically moving the content from apache-tomcat-**** to /opt/tomcat8 for simplicity using shell module, you can use copy module too
+Creating a Service file for tomcat – we are using the copy module to create a file in remote and the content of the service file is hard coded inside the playbook itself. another way to do it is to use template but this is convenient. we are using |- to maintain the line break while assigning the multiline data to the content variable.
+
+
+
+
+
+
+exemptions(rebate) and deductions सूट आणि कपात
+obligatory requirement अनिवार्य आवश्यकता
+old tax regime जुनी कर व्यवस्था
+preconceived पूर्वकल्पित
+
+
