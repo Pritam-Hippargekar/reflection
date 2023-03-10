@@ -4,7 +4,7 @@ https://juejin.cn/post/7080726607043756045
 https://iridakos.com/programming/2019/05/02/add-update-delete-elasticsearch-nested-objects
 https://logz.io/blog/elasticsearch-mapping/
 https://iridakos.com/programming/2019/05/02/add-update-delete-elasticsearch-nested-objects
-
+https://sergiiblog.com/spring-boot-elasticsearch-model-data-layer/
 
 https://blogs.perficient.com/2022/08/22/elasticsearch-java-api-client-springboot/
 
@@ -26,3 +26,250 @@ public class LineItem {
    public Double qty;
    public Double price;
 }
+
+public void removeFromAgenda(User user, String sessionId) throws IOException {
+    String script = """
+        if (ctx._source.agenda == null) { ctx.op = 'none' } else if (!ctx._source.agenda.removeIf(id -> id.equals(params.sessionId))) { ctx.op = 'none'; }
+    """;
+
+    client.update(b -> b.index(INDEX).id(user.username())
+        .script(s -> s
+            .inline(sb -> sb
+                .source(script)
+                .lang("painless")
+                .params(Map.of("sessionId", JsonData.of(sessionId)))
+            )
+        )
+        .retryOnConflict(3),
+        User.class);
+    }
+
+https://medium.com/devops-dudes/elasticsearch-8-x-deployment-ac990b9e4c56
+https://unixwise.xyz/wordpress/2022/07/install-elastic-elk832-onto-ubuntu20/
+Step 1: su to root user
+----------------
+sudo -i
+
+Step 2: update distro
+------------------------
+apt update -y && apt upgrade -y
+
+Step 3: Add elastic repository
+------------------------------------
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+or 
+curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+
+Step 4: update APT repo
+--------------------------
+echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list
+or 
+echo "deb https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-8.x.list
+
+Step 5: refresh APT repo
+-------------------------
+apt update -y
+
+Step 6: install elasticsearch
+------------------------------
+apt install elasticsearch
+
+Add path to environment
+----------------------------
+echo "export PATH=/usr/share/elasticsearch/bin/:$PATH" >> /root/.bashrc
+
+Step 7: Register Elasticsearch as daemon, and fire up
+--------------------------------------------------------
+systemctl daemon-reload
+systemctl enable elasticsearch
+systemctl start elasticsearch
+
+Step 8: Health check – service level
+----------------------------------------
+systemctl status elasticsearch
+or 
+service elasticsearch status
+
+Step 9: Health check – web output
+------------------------------------------
+curl --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic https://localhost:9200
+curl --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic:PASSWORD https://localhost:9200
+note: by default, Elasticsearch is opening 192.168.0.1:9200 for service
+
+
+
+
+https://www.skyer9.pe.kr/wordpress/?p=5655   imp https://www.instaclustr.com/support/documentation/elasticsearch/using-elasticsearch/connecting-to-elasticsearch-with-java/
+
+Setting up elasticsearch (8.5.2) ...
+--------------------------- Security autoconfiguration information ------------------------------
+
+Authentication and authorization are enabled.
+TLS for the transport and HTTP layers is enabled and configured.
+
+The generated password for the elastic built-in superuser is : DkHFDl=j=x2wbmhunCCT
+
+If this node should join an existing cluster, you can reconfigure this with
+'/usr/share/elasticsearch/bin/elasticsearch-reconfigure-node --enrollment-token <token-here>'
+after creating an enrollment token on your existing cluster.
+
+You can complete the following actions at any time:
+
+Reset the password of the elastic built-in superuser with 
+'/usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic'.
+
+Generate an enrollment token for Kibana instances with 
+ '/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana'.
+
+Generate an enrollment token for Elasticsearch nodes with 
+'/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s node'.
+
+-------------------------------------------------------------------------------------------------
+### NOT starting on installation, please execute the following statements to configure elasticsearch service to start automatically using systemd
+ sudo systemctl daemon-reload
+ sudo systemctl enable elasticsearch.service
+### You can start elasticsearch service by executing
+ sudo systemctl start elasticsearch.service
+
+
+
+
+https://itnixpro.com/install-elk-stack-8-on-ubuntu/  ===== https://itnixpro.com/install-elk-stack-8-on-ubuntu/
+ If you want to view Elasticsearch service logging
+ sudo journalctl -u elasticsearch
+ sudo journalctl -u elasticsearch -f
+
+
+
+client.incides.create({
+  index: "developers",
+  type: "developer",
+  body: {
+    mappings: {
+      developer: {
+        properties: {
+          name: { type: "text" },
+          skills: {
+            type: "nested",
+            properties: {
+              language: { type: "keyword" },
+              level: { type: "keyword"}
+            }
+          }
+        }
+      }
+    }
+  }
+})
+
+
+✅ Elasticsearch security features have been automatically configured!
+✅ Authentication is enabled and cluster connections are encrypted.
+ℹ️ Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
+wTdmHPQwWxXMGm*riZVF
+✅ Both the ElasticSearch server user&password and the Kibana token should be displayed on the terminal outputs. SAVE THEM!
+
+https://bitlaunch.io/blog/install-elasticsearch-on-ubuntu-20-04-lts/
+
+
+
+
+
+Install and Configure Elasticsearch
+--------------------------------------
+In this step, we will install and configure the Elasticsearch on the single node server 'ELK20' with the internal IP address '172.16.0.3'.
+sudo vim /etc/hosts
+................
+172.16.0.3    ELK20
+
+
+sudo vim elasticsearch.yml
+------------------------------
+node.name: ELK20
+network.host: 172.16.0.3
+http.port: 9200
+cluster.initial_master_nodes: ["ELK20"]
+xpack.security.enabled: true
+
+edit the JVM options to set the memory limits:
+-------------------------------------------------------
+$ sudo vi /etc/elasticsearch/jvm.options
+-Xms1g
+-Xmx1g
+OR
+echo -e "-Xms512M\n-Xmx512M" > /etc/elasticsearch/jvm.options.d/jvm.options
+
+Next, we will generate the password for the built-in user on Elasticsearch.(all users)
+-----------------------------------------------------------------------------
+cd /usr/share/elasticsearch/
+bin/elasticsearch-setup-passwords auto -u "http://172.16.0.3:9200"
+Type 'y' to confirm and generate the password.
+
+To test our Elasticsearch installation, run the curl command with the default user 'elastic' as below.
+-----------------------------------------------------------------
+curl -X GET -u elastic "http://172.16.0.3:9200/?pretty"                         OR   curl -k -XGET https://localhost:9200 -u elastic --cacert /etc/elasticsearch/certs/http_ca.crt
+Type the password for 'elastic' user, and below is the result you will get.
+
+
+sudo apt update -y && apt upgrade -y
+sudo apt install kibana=elastic_version_number
+sudo cp /etc/kibana/kibana.yml /etc/kibana/kibana.yml.bak
+sudo vim /etc/kibana/kibana.yml
+----------------------------------It's recommended to run Kibana on the local network because we will use the Nginx as a reverse proxy for Kibana.
+server.port: 5601
+server.host: "172.16.0.3"
+server.name: "ELK20"
+elasticsearch.url: "http://172.16.0.3:9200"
+elasticsearch.username: "kibana_system"
+elasticsearch.password: "N88VBkkelfSV3mBfO6Vh"
+//server.host: '0.0.0.0'  //Uncomment and configure server.host to allow connection from remote hos
+//elasticsearch.hosts: ["http://127.0.0.1:9200"]  //Uncomment elasticsearch.hosts and specify Elasticsearch server to connect to
+
+Save the file and configure Kibana to run at startup and start its service.
+-------------------------------
+sudo systemctl daemon-reload
+sudo systemctl enable kibana.service
+sudo systemctl start kibana.service
+
+https://www.howtoforge.com/tutorial/ubuntu-elastic-stack/
+https://sergiiblog.com/java-elasticsearch/
+
+Next, we will create a new user that will be used to log in to the Kibana dashboard.
+Create a new user named 'hakase' and the password 'hakasepasskibana' with the role 'kibana_admin' as below.
+curl -X POST -u elastic "http://172.16.0.3:9200/_security/user/hakase?pretty" -H 'Content-Type: application/json' -d'
+{
+  "password" : "hakasepasskibana",
+  "roles" : [ "kibana_admin" ]
+}
+'
+
+
+
+
+
+root@ubuntu20:~# systemctl start elasticsearch
+.if service was unable to start, then check below log file for any errors.
+-------------------------------------------------------------------------------
+root@ubuntu20:~# tail -f /var/log/elasticsearch/elasticsearch.log
+
+
+
+
+
+
+
+
+
+
+
+
+
+sudo vim /etc/elasticsearch/elasticsearch.yml
+------------------------------------------------
+network.host: 0.0.0.0
+discovery.seed_hosts: [ ]
+xpack.security.enabled: false
+
+After changing in configuration file you need to restart so run the below command:
+------------------------------------------
+sudo systemctl restart elasticsearch

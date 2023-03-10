@@ -30,6 +30,7 @@ public class Category implements Serializable {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)//Avoiding empty json arrays.objects
     @OneToMany(mappedBy = "mainCategory", fetch = FetchType.EAGER)
+    @NotFound(action = NotFoundAction.IGNORE)
     private List<Category> subCategory;
 
     public Integer getCategoryId() {

@@ -15,15 +15,40 @@ transactionListView.setInfo1(operatorName+" Recharge of "+ mobileNumber);
 
 
 
+https://thepracticaldeveloper.com/spring-boot-kafka-config/
+https://arnoldgalovics.com/reliable-kafka-messaging-spring-boot/
 
 
+zookeeper-server-start.bat ..\..\config\zookeeper.properties
+kafka-server-start.bat ..\..\config\server.properties
+kafka-topics.bat --create --topic my-topic --bootstrap-server localhost:9092 --replication-factor 1 --partitions 3
+//[kafka directory]\bin\windows\kafka-topics.bat --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic [topic name]
+kafka-console-producer.bat --broker-list localhost:9092 --topic my-topic
+kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+//kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic [topic name] --from-beginning
 
-YPP-13968 and YPP-13967 ==  23-Jan 2023 worked on errorCode for KYC service and Raised PR, But not provoded audit log
-YPP-14051  == 24-Jan-2023
-YPP-13968 and YPP-13967  == 25-Jan 2023 and 26-Jan 2023 and added audit log as well.
+
+ListenableFuture<SendResult<String, String>> future = this.kafkaTemplate.send(TOPIC, message);
+future.addCallback(new ListenableFutureCallback<>() {
+    @Override
+    public void onFailure(Throwable ex) {
+    logger.info("Unable to send message=[ {} ] due to : {}", message, ex.getMessage());
+    }
+
+    @Override
+    public void onSuccess(SendResult<String, String> result) {
+    logger.info("Sent message=[ {} ] with offset=[ {} ]", message, result.getRecordMetadata().offset());
+    }
+});
 
 
-
+@KafkaListener(id = "normal-topic-consumer", groupId = "normal-topic-group", topics = "normal-topic")
+public void consume(ConsumerRecord<?, ?> consumerRecord, Acknowledgment ack) {
+    log.info("Getting consumer record key: '" + consumerRecord.key() + "', value: '" + consumerRecord.value() + "', partition: " + consumerRecord.partition() + " and offset: " + consumerRecord.offset() + " at " + new Date(consumerRecord.timestamp()));
+    String json = consumerRecord.value().toString();
+    log.info("Consuming normal message {}", json);
+    ack.acknowledge();
+}
 
 
 

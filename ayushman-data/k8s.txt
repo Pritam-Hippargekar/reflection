@@ -1,0 +1,129 @@
+Ingress, LoadBalancer, and NodePort
+------------------------------------------
+Ingress, LoadBalancer, and NodePort are all ways of exposing services within your K8S cluster for external consumption.
+NodePort : Any request received on the port by the cluster simply gets forwarded to the service.
+LoadBalancer: Each time a new service is exposed, a new LoadBalancer needs to be created to get a public IP address.
+Ingress: decoupled entity that can be created and destroyed separately from any services.
+
+An Ingress in K8S is a robust way to expose services within your K8S cluster to the outside world. 
+It allows you to consolidate routing rules in one place. 
+There are many available Ingress controllers available for use
+
+https://medium.com/awesome-cloud/aws-difference-between-application-load-balancer-and-network-load-balancer-cb8b6cd296a4
+
+
+3. LoadBalancer
+Use Cases
+------------
+When you are using a cloud provider to host your Kubernetes cluster.
+This type of service is typically heavily dependent on the cloud provider.
+
+
+
+MSVDM2PConfig
+--------------
+id
+tenantName
+businessName
+ownerName
+ownerId
+status      MSVDM2PConfigStatus (ACTIVE, INACTIVE)
+ownerType   OwnerTypeEnum (PARTNER,PARTNER_CLIENT)
+CreatedAt
+ModifiedAt
+
+
+
+
+
+Bulk BIN List Upload
+----------------------
+private Long id;
+private String fileName;
+private MultipartFile file;(contains STR data)
+private String filePath;
+private Long approvalRequestId;
+private Integer totalSuccess=0;
+private Integer totalFailed=0;
+private Integer totalCount=0;
+private Long uploadedBy;
+private String errorMessage;
+private Boolean isSafeToDownload=Boolean.FALSE;
+private BulkBINListStatus uploadStatus;
+networkType – networkTypeEnum VISA,MASTER,RUPAY,AMEX,DINERS,DISCOVER
+msvdEnabled – true, false
+
+
+
+Bulk BIN List Records
+---------------------
+private Long id;
+private BulkBINListStatus uploadStatus;
+private String errorMessage;
+private String STR;
+private Long BulkBINListUploadId;
+
+
+BINList
+--------
+private Long id;
+private String binNumber; (STR value)
+networkType – networkTypeEnum VISA,MASTER,RUPAY,AMEX,DINERS,DISCOVER
+msvdEnabled – true/false
+private Long approvalRequestId;
+private Long BulkBINListUploadId;
+private Long BulkBINListRecordsId;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+BulkBINListUpload
+========================
+private Long id;
+private String fileName;
+private String filePath;
+private Integer totalSuccess=0;
+private Integer totalFailed=0;
+private Integer totalCount=0;
+private String uploadedBy;
+private String errorMessage;
+private Boolean isSafeToDownload=Boolean.FALSE;
+private BulkBINListStatus uploadStatus;
+
+BulkBINListRecords
+========================
+private Long id;
+private String errorMessage;
+private String binNumber 
+private String msvdEnabled – true, false
+private BulkBINListStatus recordStatus; SUCCESS,PENDING,FAIL,IN_PROCESS
+private String networkType – NetworkTypeEnum VISA,MASTER,RUPAY,AMEX,DINERS,DISCOVER
+private Long BulkBINListUploadId;
+
+
+BINList
+========================
+private Long id;
+private String binNumber; (STR value)
+networkType – networkTypeEnum VISA,MASTER,RUPAY,AMEX,DINERS,DISCOVER
+msvdEnabled – true/false
+private Long BulkBINListUploadId;
+private Long BulkBINListRecordsId;
+
+
+
+
+BulkBINListUploadFileDTO
+BinNumber (6 digit)
+NetworkType (VISA/MASTER/RUPAY/AMEX/DINERS/DISCOVER)
+MSVDEnabled – true/false
