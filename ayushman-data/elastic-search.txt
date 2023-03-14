@@ -13,7 +13,7 @@ discovery.seed_hosts:[] ==== setting Provides a list of master-eligible nodes in
 cluster.initial_master_nodes:[] === setting defines the initial set of master-eligible nodes.
 The value of this setting MUST match the value of node.name
 
-
+@Document(indexName = "goods",type = "_doc",shards = 3, replicas = 1)
 https://kifarunix.com/how-to-enable-basic-authentication-on-elk-stack/
 
 
@@ -33,12 +33,15 @@ You want to create an autocomplete
 You want to create a search system
 
 
-@Document(indexName="sale", type="Sale")
+@Document(indexName = "goodsIndex",type = "goodsType",shards = 3, replicas = 1)
 public class Sale {
    @Id
    public String orderNo;
+   @Field(type = FieldType.Text, analyzer = "ik_max_word")
+   public String title;
    public Date date;
    public Double amount;
+   @Field(type = FieldType.Keyword)
    public String reference;
    @Field(type = FieldType.Nested)
    public List<LineItem> lineItems = new ArrayList();
@@ -50,6 +53,155 @@ public class LineItem {
    public Double qty;
    public Double price;
 }
+
+
+
+
+mapping_test.json
+---------------------------https://hackmd.io/@obj0/SkUf0ixio-
+{
+    "properties": {
+        "brandName": {
+            "type": "keyword"
+        }, 
+        "categoryName": {
+            "type": "keyword"
+        }, 
+        "createTime": {
+            "type": "date", 
+            "format": "yyyy-MM-dd HH:mm:ss"
+        }, 
+        "id": {
+            "type": "long"
+        }, 
+        "price": {
+            "type": "double"
+        }, 
+        "saleNum": {
+            "type": "integer"
+        }, 
+        "status": {
+            "type": "integer"
+        }, 
+        "stock": {
+            "type": "integer"
+        }, 
+        "spec": {
+            "type": "text", 
+            "analyzer": "ik_max_word", 
+            "search_analyzer": "ik_smart"
+        }, 
+        "title": {
+            "type": "text", 
+            "analyzer": "ik_max_word", 
+            "search_analyzer": "ik_smart"
+        }
+    }
+}
+
+@Service
+public class IndexTestServiceImpl implements IndexTestService {
+    
+    @value("classpath:json/mapping_test.json")
+    private resoure mappingTest;
+
+    @Autowired
+    RestHighLevelClient restHighLevelClient;
+    
+    private String shardNumName = "number_of_shards";
+    private String replicaNumName = "number_of_replicas";
+    private String index = "goodsIndex"
+
+    @Override
+    public boolean indexCreate() throws Exception {
+        CreateIndexRequest indexRequest = new CreateIndexRequest(index);
+        
+        indexRequest.settings(Settings.builder().put(shardNumName, 3).put(replicaNumName, 1));
+        
+        String mappingJson = IOUtils.toString(mappingTest.getInputStream(), Charset.forName("UTF-8"));
+        indexRequest.mapping(mappingJson, XContentType.JSON);
+        // 4、 设置索引的别名
+        // 5、 发送请求
+        // 5.1 同步方式发送请求
+        // 请求服务器
+        IndicesClient indicesClient = restHighLevelClient.indices();
+        CreateIndexResponse response = indicesClient.create(indexRequest, RequestOptions.DEFAULT);
+
+        return response.isAcknowledged();
+    }
+}  
+
+
+
+
+
+
+VALUES('Category 1')
+VALUES('Category 2')
+VALUES('Category 3')
+VALUES('Category 4')
+
+public class Category{
+  private Long categoryId;
+	private String name;
+  private Set<Product> products
+}
+
+VALUES('Laptop 2', '1000.00', 2, 'good', 1, '2016-06-10', 1);
+VALUES('Laptop 3', '200.00', 5, 'good', 1, '2015-06-15', 1);
+VALUES('Laptop 4', '500.00', 8, 'good', 0, '2015-06-24', 1);
+VALUES('Computer 1', '560.00', 10, 'good', 0, '2015-02-25', 2);
+VALUES('Computer 2', '520.00', 4, 'good', 0, '2015-06-28', 2);
+VALUES('Computer 3', '720.00', 5, 'good', 1, '2015-08-25', 2);
+VALUES('Laptop 1', '110.00', 19, 'good', 0, '2016-07-12', 2);
+VALUES('Mobile 1', '222.00', 5, 'good', 1, '2015-03-16', 3);
+VALUES('Mobile 2', '1000.00', 4, 'good', 1, '2015-06-27', 3);
+VALUES('Mobile 3', '1000.00', 4, 'good', 1, '2015-06-27', 3);
+
+
+public class Product{
+  private Long productId;
+	private String name;
+	private BigDecimal price;
+	private int quantity;
+	private String description;
+	private boolean active;
+	private Date creationDate;
+}
+
+
+{
+  "mappings": {
+    "blog": {
+      "properties": {
+        "categoryId": { "type": "long" },
+        "name": { "type": "text" },
+        "products": {
+          "type": "nested",
+          "properties": {
+            "productId":    { "type": "long"  },
+            "name": { "type": "text"  },
+            "price":   { "type": "float"   },
+            "quantity":    { "type": "integer" },
+            "description": { "type": "keyword" },
+            "active": { "type": "boolean" },
+            "creationDate": { "type": "date" },
+             "latitude": { "type": "float" },
+            "longitude": { "type": "float" }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
 
 public void removeFromAgenda(User user, String sessionId) throws IOException {
     String script = """
