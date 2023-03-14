@@ -9,6 +9,30 @@ https://sergiiblog.com/spring-boot-elasticsearch-model-data-layer/
 https://blogs.perficient.com/2022/08/22/elasticsearch-java-api-client-springboot/
 
 
+discovery.seed_hosts:[] ==== setting Provides a list of master-eligible nodes in the cluster.
+cluster.initial_master_nodes:[] === setting defines the initial set of master-eligible nodes.
+The value of this setting MUST match the value of node.name
+
+
+https://kifarunix.com/how-to-enable-basic-authentication-on-elk-stack/
+
+
+
+Match Query = will get analyzed into terms first
+Term Query = will not get analyzed into terms first
+
+Use keyword field data type if:
+----------------------------------
+You want an exact match query
+You want to make Elasticsearch function like other databases
+You want to use it for wildcard query
+
+Use text field data type if:
+------------------------------
+You want to create an autocomplete
+You want to create a search system
+
+
 @Document(indexName="sale", type="Sale")
 public class Sale {
    @Id
@@ -43,6 +67,17 @@ public void removeFromAgenda(User user, String sessionId) throws IOException {
         .retryOnConflict(3),
         User.class);
     }
+
+
+
+https://atetux.com/how-to-install-elastic-stack-8-on-debian-11
+
+for the network there are 3 options
+----------------------------------------------
+0.0.0.0 which will make your configuration accept all network connections
+127.0.0.1 which is local host, and this is actually the default
+You can choose to bind the network. host with your local Ip address
+
 
 https://medium.com/devops-dudes/elasticsearch-8-x-deployment-ac990b9e4c56
 https://unixwise.xyz/wordpress/2022/07/install-elastic-elk832-onto-ubuntu20/
@@ -162,6 +197,51 @@ client.incides.create({
   }
 })
 
+
+{
+  "script": {
+    "lang": "painless",
+    "source": """
+            for (int i = 0; i < ctx._source.employees.length; ++i) {
+              if(ctx._source.employees[i].firstname == params.emp_name) {
+                ctx._source.employees[i].age = 35;
+              }
+            }
+""",
+    "params": {
+      "emp_name": "Garrett"
+    }
+  }
+}
+https://codecurated.com/blog/how-to-connect-java-with-elasticsearch/
+https://juejin.cn/post/7070469367456071717  ==  IMP
+How to manage nested objects in Elasticsearch documents
+------------------------------------------------------------
+https://iridakos.com/programming/2019/05/02/add-update-delete-elasticsearch-nested-objects
+
+{
+  "mappings": {
+    "blog": {
+      "properties": {
+        "productId": { "type": "integer" },
+        "title": { "type": "keyword" },
+        "body": { "type": "string" },
+        "tags": { "type": "text" },
+        "published_on": { "type": "text" },
+        "comments": {
+          "type": "nested",
+          "properties": {
+            "name":    { "type": "keyword"  },
+            "comment": { "type": "string"  },
+            "age":     { "type": "short"   },
+            "rating":   { "type": "short"   },
+            "commented_on":    { "type": "text"    }
+          }
+        }
+      }
+    }
+  }
+}
 
 ✅ Elasticsearch security features have been automatically configured!
 ✅ Authentication is enabled and cluster connections are encrypted.
