@@ -43,7 +43,7 @@ public class Sale {
    public Double amount;
    @Field(type = FieldType.Keyword)
    public String reference;
-   @Field(type = FieldType.Nested)
+   @Field(type = FieldType.Nested,name = "lineItems")
    public List<LineItem> lineItems = new ArrayList();
 }
 
@@ -133,7 +133,18 @@ public class IndexTestServiceImpl implements IndexTestService {
 
 
 
+SELECT Customers.CustomerID, Customers.Name, Count(Sales.SalesID)
+FROM Customers
+   INNER JOIN Sales
+   ON Customers.CustomerID = Sales.CustomerID
+WHERE Sales.LastSaleDate BETWEEN #1/1/2016# AND #12/31/2016#
+GROUP BY Customers.CustomerID, Customers.Name
+HAVING Count(Sales.SalesID) > 5
 
+
+ 
+“text” : full-text and relevancy search in documents  ex :  bodies of e-mails or product descriptions
+“keyword” : exact-value search for sorting, aggregation and filtering documents ex : email addresses, hostnames, status codes, zip codes, or tags.
 
 
 VALUES('Category 1')
@@ -167,8 +178,42 @@ public class Product{
 	private String description;
 	private boolean active;
 	private Date creationDate;
+  private GeoLocation location;
 }
 
+
+class GeoLocation {  //https://www.bytefish.de/blog/elasticsearch_java.html
+  private double lat;
+  private double lon;
+
+  public GeoLocation() {}
+
+  public GeoLocation(double lat, double lon) {
+      this.lat = lat;
+      this.lon = lon;
+  }
+
+  public double getLat() {
+      return lat;
+  }
+
+  public void setLat(double lat) {
+      this.lat = lat;
+  }
+
+  public double getLon() {
+      return lon;
+  }
+
+  public void setLon(double lon) {
+      this.lon = lon;
+  }
+
+  @Override
+  public String toString() {
+      return "CustomGeoPoint{" + "lat=" + lat + ", lon=" + lon + '}';
+  }
+}
 
 {
   "mappings": {
@@ -181,13 +226,21 @@ public class Product{
           "properties": {
             "productId":    { "type": "long"  },
             "name": { "type": "text"  },
-            "price":   { "type": "float"   },
+            "price":   { "type": "double"   },
             "quantity":    { "type": "integer" },
             "description": { "type": "keyword" },
             "active": { "type": "boolean" },
             "creationDate": { "type": "date" },
-             "latitude": { "type": "float" },
-            "longitude": { "type": "float" }
+             "location": { "type" : "geo_point"  },
+             "name": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            }
           }
         }
       }
@@ -197,8 +250,36 @@ public class Product{
 
 
 
+"location": {
+      "lat": 49.0090639,
+      "lon": 8.4028365
+    },
+"distance": 1.2335132790824628
+
+"location":{
+    "properties":{
+        "lat":{
+            "type":"float"
+        },
+        "lon":{
+            "type":"float"
+        }
+    }
+}
 
 
+
+
+"bookId": {
+                    "type": "keyword"
+                },
+                "message": {
+                    "type": "text"
+                },
+                "timestamp": {
+                    "format": "epoch_millis",
+                    "type": "date"
+                }
 
 
 
