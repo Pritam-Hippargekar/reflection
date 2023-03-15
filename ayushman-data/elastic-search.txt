@@ -18,19 +18,7 @@ https://kifarunix.com/how-to-enable-basic-authentication-on-elk-stack/
 
 
 
-Match Query = will get analyzed into terms first
-Term Query = will not get analyzed into terms first
 
-Use keyword field data type if:
-----------------------------------
-You want an exact match query
-You want to make Elasticsearch function like other databases
-You want to use it for wildcard query
-
-Use text field data type if:
-------------------------------
-You want to create an autocomplete
-You want to create a search system
 
 
 @Document(indexName = "goodsIndex",type = "goodsType",shards = 3, replicas = 1)
@@ -43,7 +31,7 @@ public class Sale {
    public Double amount;
    @Field(type = FieldType.Keyword)
    public String reference;
-   @Field(type = FieldType.Nested,name = "lineItems")
+   @Field(type = FieldType.Nested,name = "line_items")
    public List<LineItem> lineItems = new ArrayList();
 }
 
@@ -120,18 +108,13 @@ public class IndexTestServiceImpl implements IndexTestService {
         
         String mappingJson = IOUtils.toString(mappingTest.getInputStream(), Charset.forName("UTF-8"));
         indexRequest.mapping(mappingJson, XContentType.JSON);
-        // 4、 设置索引的别名
-        // 5、 发送请求
-        // 5.1 同步方式发送请求
-        // 请求服务器
+
         IndicesClient indicesClient = restHighLevelClient.indices();
         CreateIndexResponse response = indicesClient.create(indexRequest, RequestOptions.DEFAULT);
 
         return response.isAcknowledged();
     }
 }  
-
-
 
 SELECT Customers.CustomerID, Customers.Name, Count(Sales.SalesID)
 FROM Customers
@@ -142,21 +125,28 @@ GROUP BY Customers.CustomerID, Customers.Name
 HAVING Count(Sales.SalesID) > 5
 
 
+Match Query = will get analyzed into terms first
+Term Query = will not get analyzed into terms first
  
 “text” : full-text and relevancy search in documents  ex :  bodies of e-mails or product descriptions
+Use text field data type if:
+------------------------------
+You want to create an autocomplete
+You want to create a search system
+
 “keyword” : exact-value search for sorting, aggregation and filtering documents ex : email addresses, hostnames, status codes, zip codes, or tags.
+
+Use keyword field data type if:
+----------------------------------
+You want an exact match query
+You want to make Elasticsearch function like other databases
+You want to use it for wildcard query
 
 
 VALUES('Category 1')
 VALUES('Category 2')
 VALUES('Category 3')
 VALUES('Category 4')
-
-public class Category{
-  private Long categoryId;
-	private String name;
-  private Set<Product> products
-}
 
 VALUES('Laptop 2', '1000.00', 2, 'good', 1, '2016-06-10', 1);
 VALUES('Laptop 3', '200.00', 5, 'good', 1, '2015-06-15', 1);
@@ -169,6 +159,12 @@ VALUES('Mobile 1', '222.00', 5, 'good', 1, '2015-03-16', 3);
 VALUES('Mobile 2', '1000.00', 4, 'good', 1, '2015-06-27', 3);
 VALUES('Mobile 3', '1000.00', 4, 'good', 1, '2015-06-27', 3);
 
+
+public class Category{
+  private Long categoryId;
+	private String name;
+  private Set<Product> products
+}
 
 public class Product{
   private Long productId;
@@ -193,45 +189,30 @@ class GeoLocation {  //https://www.bytefish.de/blog/elasticsearch_java.html
       this.lon = lon;
   }
 
-  public double getLat() {
-      return lat;
-  }
-
-  public void setLat(double lat) {
-      this.lat = lat;
-  }
-
-  public double getLon() {
-      return lon;
-  }
-
-  public void setLon(double lon) {
-      this.lon = lon;
-  }
-
   @Override
   public String toString() {
       return "CustomGeoPoint{" + "lat=" + lat + ", lon=" + lon + '}';
   }
 }
 
-{
+
   "mappings": {
     "blog": {
       "properties": {
         "categoryId": { "type": "long" },
-        "name": { "type": "text" },
+        "name":       { "type": "text" },
         "products": {
           "type": "nested",
           "properties": {
             "productId":    { "type": "long"  },
-            "name": { "type": "text"  },
-            "price":   { "type": "double"   },
-            "quantity":    { "type": "integer" },
-            "description": { "type": "keyword" },
-            "active": { "type": "boolean" },
+            "name":         { "type": "text"  },
+            "price":        { "type": "double"   },
+            "quantity":     { "type": "integer" },
+            "description":  { "type": "text" },
+            "active":       { "type": "boolean" },
             "creationDate": { "type": "date" },
-             "location": { "type" : "geo_point"  },
+             "location":    { "type" : "geo_point"  },
+
              "name": {
               "type": "text",
               "fields": {
@@ -241,12 +222,13 @@ class GeoLocation {  //https://www.bytefish.de/blog/elasticsearch_java.html
                 }
               }
             }
+
           }
         }
       }
     }
   }
-}
+
 
 
 
@@ -268,6 +250,9 @@ class GeoLocation {  //https://www.bytefish.de/blog/elasticsearch_java.html
 }
 
 
+"script" : {
+    "inline": "ctx._source.counter = ctx._source.value ? ctx._source.counter += 1 : 1"
+}
 
 
 "bookId": {

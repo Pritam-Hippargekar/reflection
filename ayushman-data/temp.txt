@@ -1,33 +1,3 @@
-  Optional<AccountVerificationRecord> accountVerificationRecordDetails = accountVerificationRecordRepository.findByAccountVerificationId(
-                            verificationResponseDto.getAccountVerificationRecord().getAccountVerificationId());
-            			if(!accountVerificationRecordDetails.isPresent()){
-
-                        }
-                        AccountVerificationRecord accountVerificationRecordObj = accountVerificationRecordDetails.get();
-
-
-
-status  
-userType not null remove
-download 
-
-    <changeSet id="202302170957-drop-column-add-column" author="jhipster-entity">
-<!--        <dropColumn tableName="bulk_cug_user_upload">-->
-<!--            <column  name="user_type"/>-->
-<!--        </dropColumn>-->
-        <addColumn tableName="bulk_cug_user_upload">
-            <column name="user_type" type="varchar(255)">
-                <constraints nullable="true" />
-            </column>
-        </addColumn>
-    </changeSet>
-
-
-1) approval request (update) 14114 === old value / new value   on DTo and entity.  done
-2) yes-pay-lite/next == invalid file upload
-3) 1 mb = max file upload size == done 
-4) file download s3 bucket. for upload (https://ypp.sodelsolutions.com/services/system/api/bulk-cug-user-uploads/3/download/Sample%20Bulk%20Cug%20User%20Upload%20file%20(5).csv&isCugUser=true)
-
 
 
 QA : 
@@ -45,85 +15,6 @@ Sodel@#123
 
 
 
-1. Upload   =  BulkMerchantDisbursementUpload - Bulk CUG User Upload
-2. Records  =  BulkMdFileUploadRecords - Bulk CUG File Records
-3. MainTable=  MerchantDisbursementRecord - CUG User List
-
-
-@All due to some medical reasons. I will leaving for the day after 5 o'clock and will work from home 13 and 14 February.
-
-
-BulkCugUserUpload   BulkCugUserUploadFileProcessJob  BulkCugUserUploadExecutor      
----------------------
-fileName (String) required
-totalSuccess (Integer)
-totalFailed (Integer)
-totalCount (Integer)
-uploadedBy (String)
-errorMessage (String) 
-isSafeToDownload (Boolean)
-status (BulkCugUserRecordStatus) required    SUCCESS,PENDING,FAIL,IN_PROCESS
-appName (AppNameEnum) required
-
-
-BulkCugUserFileRecord      BulkCugUserUploadJob
--------------------------
-status (BulkCugUserRecordStatus) required                        SUCCESS, PENDING, FAIL, IN_PROCESS
-errorCode (String)
-errorMessage (String)
-userIdentifierValue (String)
-BulkCugUserUpload BulkCugUserUpload(M20)
-
-
-status
-errorMessage
-bulkCugUserUploadId (M2O)
-userIdentifierValue
-
-CUGUserList
---------------
-Id
-appName – YES_PAY_LITE,YES_PAY_NEXT,YES_PAY_BIZ
-userType – Only applicable for YES_PAY_BIZ app (SELLER,SELLER_USER)
-userIdentifierType – Dropdown MOBILE for now
-userIdentifierValue - mobileNumber(String)
-status – ACTIVE,INACTIVE
-BulkCugUserUploadId (M2O)
-BulkCugUserFileRecordId (M2O)
-
-
-
-CUGUserListStatusEnum
-
-
-appName (AppNameEnum) required
-userType (UserTypeEnum) required
-userIdentifierType (UserIdentifierTypeEnum) required
-userIdentifierValue (String) required unique
-
-
-
-
-
-CobAppRegistrationApiResource coBank
-YesPayBizAppRegistrationApiResource seller
-
-
-
- "billAmountSection": {
-        "payableAmount": "480",  //amount
-
-        "beforeAmount": "460",   // Early Payment Amount
-        "beforeDate": "2023-01-25", //// Early Payment date
-
-        "afterAmount": "490",   //Late(due) Payment Amount 
-        "afterDate": "2023-02-06" //Late(due) Payment date 
-      },
-
-private String payableAmount;
-
-
-
 Unit	Equivalent
 1 kilobyte (KB)	1,024 bytes
 1 megabyte (MB)	(1024x1024) 1,048,576 bytes       1 MB is 1,024 kilobytes   
@@ -136,14 +27,6 @@ Unit	Equivalent
 
 entity = DTO = QueryService = Criteria = then .xml file changeset.
 
-
-
-
-
-
-blank file upload == not allowed.
-uploaded by === is coming null.
-invalid file not upload. (validate file not containd any special character)
 
 
 public class Base {
@@ -294,20 +177,6 @@ Output: Mishka is 3 year(s) old.
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 public static Object launchProcess(String className, String methodName, Class<?>[] argsTypes, Object[] methodArgs)
         throws Exception {
 
@@ -325,12 +194,3 @@ Class<?>[] argsTypes = {String.class,  String.class};
 Object[] methArgs = { "hello", "world" };   
 launchProcess(className, methodName, argsTypes, methArgs);
 
-
-
-
- 
-SELECT * FROM QRTZ_CRON_TRIGGERS WHERE TRIGGER_NAME='RTGSTransactionStatusUpdateTrigger' or TRIGGER_NAME='IMPSTransactionStatusUpdateTrigger'
-SELECT * FROM  QRTZ_TRIGGERS WHERE TRIGGER_NAME='RTGSTransactionStatusUpdateTrigger' or TRIGGER_NAME='IMPSTransactionStatusUpdateTrigger'
-
-DELETE FROM QRTZ_CRON_TRIGGERS WHERE SCHED_NAME='Disbursement' and TRIGGER_NAME='RTGSTransactionStatusUpdateTrigger' and TRIGGER_GROUP='DEFAULT';
-DELETE FROM QRTZ_TRIGGERS WHERE SCHED_NAME='Disbursement' and TRIGGER_NAME='IMPSTransactionStatusUpdateTrigger' and TRIGGER_GROUP='DEFAULT';
