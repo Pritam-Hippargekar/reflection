@@ -1,0 +1,462 @@
+YPP-14768 API ADD_CLIENT_SOURCE_ACC
+====================================
+
+ private PartnerApisResponse addSourceAccount(PartnerApisRequest partnerApisRequest, Partner partner) {
+        log.info("request to add source account: {}");
+        try {
+            //Check for client  program
+            List<PartnerProgram> partnerPrograms = this.partnerProgramRepository.findByPartnerIdAndStatus(partner.getId(), Status.ACTIVE);
+            boolean access = partnerPrograms.stream()
+                .anyMatch(partnerProgram -> "CLIENT_PROGRAM".equals(partnerProgram.getYpHubProgram().getName()));
+            if (!access) {
+                log.info("client  program is not enabled for the partner {}", partner.getId());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "P005")));
+            }
+            //Check for missing parameter
+            if (StringUtils.isAnyBlank(partnerApisRequest.getRequestId(), partnerApisRequest.getP1(), partnerApisRequest.getP2(), partnerApisRequest.getP3())) {
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "P006")));
+            }
+            //Check for client identifier presence
+            Optional<PartnerClient> partnerClient = this.partnerClientRepository.findByClientIdentifierAndPartnerId(partnerApisRequest.getP1(), partner.getId());
+            if (!partnerClient.isPresent()) {
+                log.info("Invalid client identifier {}", partnerApisRequest.getP1());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA005")));
+            }
+            //Check for invalid source account no
+            if (!partnerApisRequest.getP2().matches("[a-zA-Z0-9]+")) {
+                log.info("Invalid source account no {}", partnerApisRequest.getP2());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA011")));
+            }
+            //Check for invalid IFSC code
+            if (!RandomUtil.isValidIFSCode(partnerApisRequest.getP3())) {
+                log.info("Invalid source account IFSC {}", partnerApisRequest.getP3());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA012")));
+            }
+            //Source account no already exist
+            Optional<PartnerClientSourceAccount> sourceAccount = this.partnerClientSourceAccountRepository.findByPartnerClientIdAndAccountNumber(partnerClient.get().getId(), partnerApisRequest.getP2());
+            if (sourceAccount.isPresent()) {
+                log.info("Source account no already exist account no {}", partnerApisRequest.getP2());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA018")));
+            }
+            if(partnerClient.get().getIsSuspended() == Boolean.TRUE) {
+           	 log.info("Client is suspended {}", partnerClient.get().getIsSuspended());
+           	 return new PartnerApisResponse(DAErrorCode.CLIENT_IS_SUSPENDED);
+           }
+
+          
+            //check count on purpose level
+//          Optional<PartnerDASetup> partnerDASetup = Optional.empty();
+          Optional<ClientValidationConfig> clientValidationConfig = this.clientValidationConfigRepository.findByPartnerIdAndPurpose(partner.getId(), PurposeClientValidationConfigEnum.valueOf(partnerClient.get().getPurpose().toString()));
+          if(!clientValidationConfig.isPresent()) {
+				log.info("Client validation config is missing for partner {}", partner.getId());
+				return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA112")));
+			}
+          if (PartnerClientPurposeEnum.DC_AGGREGATOR.equals(partnerClient.get().getPurpose())) {
+              //Number of source account limit reached
+//              partnerDASetup = this.partnerDASetupRepository.findByPartnerId(partner.getId());
+              
+              Long noOfSourceAccounts = this.partnerClientSourceAccountRepository.countByPartnerClientIdAndPartnerClientPurpose(partnerClient.get().getId(), partnerClient.get().getPurpose());
+
+//              if (noOfSourceAccounts.intValue() >= partnerDASetup.get().getMaximumSourceAccounts()) {
+              if (noOfSourceAccounts.intValue() >= clientValidationConfig.get().getMaximumSourceAccounts()) {
+//                  log.info("Maximum number of source account reached maximum accounts {}", partnerDASetup.get().getMaximumSourceAccounts());
+                  log.info("Maximum number of source account reached maximum accounts {}", clientValidationConfig.get().getMaximumSourceAccounts());
+                  return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA019")));
+              }
+          }
+          //check count on purpose level
+//          Optional<ClientValidationConfig> clientValidationConfig = Optional.empty();
+          if (PartnerClientPurposeEnum.GIFT_CARD.equals(partnerClient.get().getPurpose())) {
+              //Number of source account limit reached
+              Long noOfSourceAccounts = this.partnerClientSourceAccountRepository.countByPartnerClientIdAndPartnerClientPurpose(partnerClient.get().getId(), partnerClient.get().getPurpose());
+              if (noOfSourceAccounts.intValue() >= clientValidationConfig.get().getMaximumSourceAccounts()) {
+                  log.info("Maximum number of source account reached maximum accounts {}", clientValidationConfig.get().getMaximumSourceAccounts());
+                  return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA019")));
+              }
+          }
+          
+            PartnerClientSourceAccount sourceAccountObj = new PartnerClientSourceAccount();
+            sourceAccountObj.setAccountNumber(partnerApisRequest.getP2());
+            sourceAccountObj.setIfscCode(partnerApisRequest.getP3());
+            sourceAccountObj.setPartnerClient(partnerClient.get());
+            sourceAccountObj.setStatus(Status.ACTIVE);
+
+            Boolean accountVerification = Boolean.FALSE;
+            PANAccountApiRequest panAccountApiRequest = null;
+            if (Boolean.TRUE.equals(clientValidationConfig.isPresent() && clientValidationConfig.get().isSourceAccountVerification())) {
+                //call common account verification process
+                String karzaType = "individual";
+                PanVerificationDetails panVerificationDetails = createPanVerification(partnerClient.get().getPan());
+                try {
+//                    AccountVerificationResponseDto verificationResponseDto = accountVerificationService.accountVerificationProcess(
+//                        partnerApisRequest.getP2(), partnerApisRequest.getP3(), Boolean.FALSE, partnerClient.get().getClientName(), partnerClient.get().getPan(), null, ChannelEnum.INTERNAL, partner,
+//                        AccountOwnerType.CLIENT_SOURCE_ACCOUNT.name(), null, karzaType, null);
+//                    
+
+        			AccountVerificationResponseDto verificationResponseDto = commonAccountVerfService
+        					.accountVerificationProcess( partnerApisRequest.getP2(), partnerApisRequest.getP3(), Boolean.FALSE, partnerClient.get().getClientName(), partnerClient.get().getPan(), null, ChannelEnum.INTERNAL, partner,
+        	                        AccountOwnerType.CLIENT_SOURCE_ACCOUNT.name(), null, karzaType, null);
+                    
+                    log.info("verificationResponse: {}", verificationResponseDto);
+   
+                    if (null != verificationResponseDto && null != verificationResponseDto.getAccountVerificationStatus() && AccountVerificationStatusEnum.SUCCESS.equals(verificationResponseDto.getAccountVerificationStatus())) {
+                    	Boolean isAccVerifiedWithTable = Boolean.FALSE;
+                    	if (AccountVerificationModeEnum.ACC_VER_TABLE.equals(verificationResponseDto.getAccountVerificationMode())) {
+                    		AccountVerificationRecord accountVerificationRecord = verificationResponseDto.getAccountVerificationRecord();
+                    		log.debug("AccountVerificationMode: {}, for accountVerificationRecord Id: {} and ActualAccVerificationRecord's Id: {}", verificationResponseDto.getAccountVerificationMode(), accountVerificationRecord.getId(), accountVerificationRecord.getAccountVerificationId());	
+                    		Optional<AccountVerificationRecord> actualAccVerificationRecordInfo = accountVerificationRecordRepository.findById(accountVerificationRecord.getAccountVerificationId());
+                    		if (actualAccVerificationRecordInfo.isPresent() && !AccountVerificationModeEnum.PAN_ACCOUNT_API.equals(actualAccVerificationRecordInfo.get().getAccountVerificationMode())) {
+                    			isAccVerifiedWithTable = Boolean.TRUE;
+                    			log.debug("ActualAccVerificationRecords AccountVerificationMode: {} and isAccVerifiedWithTable: {}", actualAccVerificationRecordInfo.get().getAccountVerificationMode(), isAccVerifiedWithTable);	
+                    		}
+                    	}	
+                    	if (null != panVerificationDetails && null != verificationResponseDto.getAccountVerificationMode()
+                    			&& (Arrays.asList(AccountVerificationModeEnum.UNIVERSAL_VPA_VALIDATION, AccountVerificationModeEnum.PENNY_DROP_IMPS).contains(verificationResponseDto.getAccountVerificationMode())
+                    					|| isAccVerifiedWithTable)) {
+                    		log.info("Nsdl Request panFirstName : {}, panLastName: {}, nameOnCard: {}, nameToCompare: {}, partner: {}, ownerType: {}, ownerId: {}, isNameToCompareVerified: {}, type:{}",panVerificationDetails.getFirstName(), panVerificationDetails.getLastName(), partnerClient.get().getClientName(), verificationResponseDto.getVerifiedAccountName(), partner, KycOwnerType.PARTNER_CLIENT.name(), partnerClient.get().getId(), Boolean.FALSE, karzaType);
+                    		NsdlNameMatchResponse response = nsdlNameMatchService.nsdlNameMatchProcess(panVerificationDetails.getFirstName(), panVerificationDetails.getLastName(),  partnerClient.get().getClientName(), verificationResponseDto.getVerifiedAccountName(), partner, KycOwnerType.PARTNER_CLIENT.name(), partnerClient.get().getId(), Boolean.FALSE, karzaType);
+                    		log.info("NsdlNameResponse : {}", response);
+                    		if (null == response) {
+                    			log.info("Agent details does not null with PAN details: {}", panVerificationDetails);
+                    			return new PartnerApisResponse(DAErrorCode.UNABLE_TO_ADD_SOURCE_ACCOUNT_PLEASE_TRY_AGAIN_LATER);
+                    		}
+                    		if (!response.getMatch()) {
+                    			log.info("Agent details doesn’t match with PAN details: {} , panVerificationDetails: {}", panVerificationDetails);
+                    			return new PartnerApisResponse(DAErrorCode.SOURCE_ACCOUNT_COULD_NOT_BE_ADDED_AS_CLIENT_NAME_DOES_NOT_MATCH_WITH_ACCOUNT_NAME);
+                    		}
+                    		if (response != null && null != response.getStatus() && response.getStatus().equalsIgnoreCase(AccountVerificationStatusEnum.TIMEOUT.name())) {
+                    			log.info("Exception in name matching method : {}" + response.getStatus());
+                    			return new PartnerApisResponse(DAErrorCode.SOURCE_ACCOUNT_COULD_NOT_BE_ADDED_AS_NAME_MATCHING_REQUEST_TIMED_OUT);
+                    		}
+                    		//common method called for update source Account details
+                    		try {
+                    			sourceAccountValueUpdate(sourceAccountObj, verificationResponseDto,partnerClient.get(), Boolean.TRUE);
+                    		} catch (Exception e) {
+                    			log.error("Exception in source account updation : {}" + e.getLocalizedMessage());
+                    			return new PartnerApisResponse(DAErrorCode.UNABLE_TO_ADD_PARTNER_CLEINT);
+                    		}
+                    	} else {
+                    		//common method called for update source Account details
+                    		try {
+                    			sourceAccountValueUpdate(sourceAccountObj, verificationResponseDto,partnerClient.get(), Boolean.TRUE);
+                    		} catch (Exception e) {
+                    			return new PartnerApisResponse(DAErrorCode.UNABLE_TO_ADD_PARTNER_CLEINT);
+                    		}
+
+                    	} 
+                    } else {
+                    	if (clientValidationConfig.get().getManualSourceAccVerification()) {
+                    		//common method called for update source Account details
+                    		try {
+                    			sourceAccountValueUpdate(sourceAccountObj, verificationResponseDto,partnerClient.get(), Boolean.FALSE);
+                    		} catch (Exception e) {
+                    			log.error("Exception in source account updation : {}" + e.getLocalizedMessage());
+                    			return new PartnerApisResponse(DAErrorCode.UNABLE_TO_ADD_PARTNER_CLEINT);
+                    		}
+                    	}
+                        if (AccountVerificationStatusEnum.FAILED.equals(verificationResponseDto.getAccountVerificationStatus())) {
+                            log.info("Account verification failed for partner client pan {} account no {} , ifscCode {} ", panVerificationDetails.getPanNo(), partnerApisRequest.getP6(), partnerApisRequest.getP7());
+                            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA087")));
+                        } else if (AccountVerificationStatusEnum.TIMEOUT.equals(verificationResponseDto.getAccountVerificationStatus())) {
+                            log.info("Account verification timed out for partner client pan {} account no {} , ifscCode {} ", panVerificationDetails.getPanNo(), partnerApisRequest.getP6(), partnerApisRequest.getP7());
+                            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA088")));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Exception in AccountVerification, {}", e.getLocalizedMessage());
+                    return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA020")));
+                }
+            }
+
+            sourceAccountObj = this.partnerClientSourceAccountRepository.save(sourceAccountObj);
+            //Success response
+            PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "00")));
+            partnerApisResponse.setRequestId(partnerApisRequest.getRequestId());
+            partnerApisResponse.setStatus("SUCCESS");
+            partnerApisResponse.setClientIdentifier(partnerClient.get().getClientIdentifier());
+            return partnerApisResponse;
+        } catch (Exception ex) {
+            log.info("Exception in add source account : {}" + ex.getLocalizedMessage());
+            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT_SOURCE_ACC, "YPP", "", "DCA020")));
+        }
+    }
+
+   private PanVerificationDetails createPanVerification(String pan) {
+        PanVerificationDetails details = new PanVerificationDetails();
+        details.setPanNo(pan);
+        details.setOwnerType(KycOwnerType.PARTNER_CLIENT);
+        panVerificationDetailsRepository.save(details);
+        return details;
+    }
+
+	public AccountVerificationResponseDto accountVerificationProcess(String accountNumber, String ifscCode, Boolean isNameVerification, String nameToBeVerify, String panNumber, List<AccVerModeEnum> verificationModeList, ChannelEnum channel, Partner partner, String ownerType, Long ownerId, String entityType, BigDecimal fees) throws IOException {
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		Map<String, Object> request = new HashMap<>();
+		request.put("accountNumber", accountNumber);
+		request.put("ifscCode", ifscCode);
+		request.put("isNameVerification", isNameVerification);
+		request.put("nameToBeVerify", nameToBeVerify);
+		request.put("isNameVerification", isNameVerification);
+		request.put("nameToBeVerify", nameToBeVerify);
+		request.put("panNumber", panNumber);
+		request.put("verificationModeList", verificationModeList);
+		request.put("channel", channel);
+		request.put("partnerId", partner.getId());
+		request.put("ownerType", ownerType);
+		request.put("ownerId", ownerId);
+		request.put("entityType", entityType);
+		request.put("fees", fees);
+		String json = new ObjectMapper().writeValueAsString(request);
+		log.info("JSON {} and headers {} for common account verification through seller", json, headers);
+		HttpEntity<String> httpEntity = new HttpEntity<String>(json, headers);
+		ResponseEntity<AccountVerificationResponseDto> resp =this.restTemplate.postForEntity(sellerServiceUrl , httpEntity, AccountVerificationResponseDto.class);
+		log.debug("Response  in json {}", resp);
+		AccountVerificationResponseDto body = resp.getBody();
+		log.info("Account Verifcation response body : {} {} {}", body, resp.getStatusCode(), resp.getHeaders());
+		//AccountVerificationResponseDto accountVerificationResponseDto = new ObjectMapper().readValue(body, AccountVerificationResponseDto.class);
+		return body;
+	}
+
+	public NsdlNameMatchResponse nsdlNameMatchProcess(String panFirstName, String panLastName, String nameOnCard, String nameToCompare, Partner partner, String ownerType, Long ownerId, Boolean isNameToCompareVerified, String type) throws Exception  {
+		log.info("Nsdl Name Match Process Starts With panFirstName: {}, panLastName: {}, nameOnCard: {}, nameToCompare: {}", panFirstName, panLastName, nameOnCard, nameToCompare);
+		nameToCompare = nameToCompare.toLowerCase();
+
+		String[] nameToCompareArray = nameToCompare.split(" ");
+		String nameToCompareTrimmed = nameToCompare.replaceAll("[., ]", "");
+		if (StringUtils.isNotBlank(nameOnCard)) {
+			nameOnCard = nameOnCard.toLowerCase();
+			String nameOnCardTrimmed = nameOnCard.replaceAll("[., ]", "");
+			if (nameToCompareTrimmed.contains(nameOnCardTrimmed)) {
+				log.info("Match Case 1");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+			if (isNameToCompareVerified) {
+				if (StringUtils.isNotBlank(nameToCompareTrimmed) && nameOnCardTrimmed.contains(nameToCompareTrimmed)) {
+					log.info("Match Case 2");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+			}
+			String[] nameOnCardArray = nameOnCard.split(" ");
+			Arrays.sort(nameToCompareArray);
+			Arrays.sort(nameOnCardArray);
+			if (Arrays.equals(nameToCompareArray, nameOnCardArray)) {
+				log.info("Match Case 3");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+		}
+		if (StringUtils.isNoneBlank(panFirstName, panLastName)) {
+			if (nameToCompare.contains(panFirstName.toLowerCase()) && Arrays.stream(nameToCompareArray).anyMatch(panLastName.substring(0,1)::equalsIgnoreCase)) {
+				log.info("Match Case 4");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+			if (nameToCompare.contains(panLastName.toLowerCase()) && Arrays.stream(nameToCompareArray).anyMatch(panFirstName.substring(0,1)::equalsIgnoreCase)) {
+				log.info("Match Case 5");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+		}
+		if (null != panFirstName && null != panLastName) {
+			String panFirstNameTrimmed = panFirstName.replaceAll("[., ]", "").toLowerCase();
+			String panLastNameTrimmed = panLastName.replaceAll("[., ]", "").toLowerCase();
+			if (!StringUtils.isAllBlank(panFirstNameTrimmed,panLastNameTrimmed)) {
+				if (nameToCompareTrimmed.contains(panFirstNameTrimmed) && nameToCompareTrimmed.contains(panLastNameTrimmed)) {
+					log.info("Match Case 6");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+				if (isNameToCompareVerified && StringUtils.isNotBlank(nameToCompareTrimmed) && panFirstNameTrimmed.concat(panLastNameTrimmed).contains(nameToCompareTrimmed)) {
+					log.info("Match Case 7");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+			}
+		}
+		KarzaNameMatchRequest karzaNameMatchRequest = null;
+		if (StringUtils.isNotBlank(nameOnCard)) {
+			karzaNameMatchRequest = createKarzaNameMatchRequest(nameOnCard, nameToCompare, partner, ownerType, ownerId);
+		} else {
+			karzaNameMatchRequest = createKarzaNameMatchRequest(panFirstName + " " + panLastName, nameToCompare, partner, ownerType, ownerId);
+		}
+		try {
+		String response = karzaApiService.callKarzaApi(karzaNameMatchRequest, type);
+		if (null != response) {
+			KarzaResponseDto dmtResponseDTO = new ObjectMapper().readValue(response, KarzaResponseDto.class);
+			if (null != dmtResponseDTO) {
+				karzaNameMatchRequest.setStatusCode(StringUtils.isNotBlank(dmtResponseDTO.getStatusCode()) ? Integer.valueOf(dmtResponseDTO.getStatusCode())
+						: (StringUtils.isNotBlank(dmtResponseDTO.getStatus()) ? Integer.valueOf(dmtResponseDTO.getStatus()) : null));
+				karzaNameMatchRequest.setResponseData(response);
+				karzaNameMatchRequest.setRequestId(dmtResponseDTO.getRequestId());
+				karzaNameMatchRequest.setEntityType(type);
+				karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+				if (null != dmtResponseDTO.getResult()) {
+					karzaNameMatchRequest.setScore(new BigDecimal(dmtResponseDTO.getResult().getScore()));
+					karzaNameMatchRequest.setResult(Boolean.valueOf(dmtResponseDTO.getResult().getResult()));
+					karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+					if (dmtResponseDTO.getResult().getResult().equalsIgnoreCase("True")
+							&& new BigDecimal(dmtResponseDTO.getResult().getScore()).compareTo(new BigDecimal(0.65)) > 0) {
+						return new NsdlNameMatchResponse(Boolean.TRUE, new BigDecimal(dmtResponseDTO.getResult().getScore()),null);
+					} else {
+						return new NsdlNameMatchResponse(Boolean.FALSE, new BigDecimal(dmtResponseDTO.getResult().getScore()),null);
+					}
+				}
+			}
+		}} catch (org.apache.http.conn.ConnectTimeoutException r) {
+			log.info("ConnectTimeoutException cought {}", r.getMessage());
+			karzaNameMatchRequest.setStatusCode(999);
+			karzaNameMatchRequest.setResponseData("Timeout");
+			karzaNameMatchRequest.setEntityType(type);
+			karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+//			return new NsdlNameMatchResponse(Boolean.FALSE, null);
+            return new NsdlNameMatchResponse(Boolean.FALSE, null, karzaNameMatchRequest.getResponseData());
+		} catch (ClientProtocolException p) {
+			log.info("ClientProtocolException cought {}", p.getMessage());
+			String statusCode = p.getMessage().substring(p.getMessage().length() - 3);
+			karzaNameMatchRequest.setStatusCode(Integer.valueOf(statusCode));
+			karzaNameMatchRequest.setEntityType(type);
+			karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+			return new NsdlNameMatchResponse(Boolean.FALSE, null,null);
+		}
+		return new NsdlNameMatchResponse(Boolean.FALSE, null,null);
+	}
+
+	public NsdlNameMatchResponse nsdlNameMatchProcess(String panFirstName, String panLastName, String nameOnCard, String nameToCompare, Partner partner, String ownerType, Long ownerId, Boolean isNameToCompareVerified, String type) throws Exception  {
+		log.info("Nsdl Name Match Process Starts With panFirstName: {}, panLastName: {}, nameOnCard: {}, nameToCompare: {}", panFirstName, panLastName, nameOnCard, nameToCompare);
+		nameToCompare = nameToCompare.toLowerCase();
+
+		String[] nameToCompareArray = nameToCompare.split(" ");
+		String nameToCompareTrimmed = nameToCompare.replaceAll("[., ]", "");
+		if (StringUtils.isNotBlank(nameOnCard)) {
+			nameOnCard = nameOnCard.toLowerCase();
+			String nameOnCardTrimmed = nameOnCard.replaceAll("[., ]", "");
+			if (nameToCompareTrimmed.contains(nameOnCardTrimmed)) {
+				log.info("Match Case 1");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+			if (isNameToCompareVerified) {
+				if (StringUtils.isNotBlank(nameToCompareTrimmed) && nameOnCardTrimmed.contains(nameToCompareTrimmed)) {
+					log.info("Match Case 2");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+			}
+			String[] nameOnCardArray = nameOnCard.split(" ");
+			Arrays.sort(nameToCompareArray);
+			Arrays.sort(nameOnCardArray);
+			if (Arrays.equals(nameToCompareArray, nameOnCardArray)) {
+				log.info("Match Case 3");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+		}
+		if (StringUtils.isNoneBlank(panFirstName, panLastName)) {
+			if (nameToCompare.contains(panFirstName.toLowerCase()) && Arrays.stream(nameToCompareArray).anyMatch(panLastName.substring(0,1)::equalsIgnoreCase)) {
+				log.info("Match Case 4");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+			if (nameToCompare.contains(panLastName.toLowerCase()) && Arrays.stream(nameToCompareArray).anyMatch(panFirstName.substring(0,1)::equalsIgnoreCase)) {
+				log.info("Match Case 5");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+		}
+		if (null != panFirstName && null != panLastName) {
+			String panFirstNameTrimmed = panFirstName.replaceAll("[., ]", "").toLowerCase();
+			String panLastNameTrimmed = panLastName.replaceAll("[., ]", "").toLowerCase();
+			if (!StringUtils.isAllBlank(panFirstNameTrimmed,panLastNameTrimmed)) {
+				if (nameToCompareTrimmed.contains(panFirstNameTrimmed) && nameToCompareTrimmed.contains(panLastNameTrimmed)) {
+					log.info("Match Case 6");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+				if (isNameToCompareVerified && StringUtils.isNotBlank(nameToCompareTrimmed) && panFirstNameTrimmed.concat(panLastNameTrimmed).contains(nameToCompareTrimmed)) {
+					log.info("Match Case 7");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+			}
+		}
+		KarzaNameMatchRequest karzaNameMatchRequest = null;
+		if (StringUtils.isNotBlank(nameOnCard)) {
+			karzaNameMatchRequest = createKarzaNameMatchRequest(nameOnCard, nameToCompare, partner, ownerType, ownerId);
+		} else {
+			karzaNameMatchRequest = createKarzaNameMatchRequest(panFirstName + " " + panLastName, nameToCompare, partner, ownerType, ownerId);
+		}
+		try {
+		String response = karzaApiService.callKarzaApi(karzaNameMatchRequest, type);
+		if (null != response) {
+			KarzaResponseDto dmtResponseDTO = new ObjectMapper().readValue(response, KarzaResponseDto.class);
+			if (null != dmtResponseDTO) {
+				karzaNameMatchRequest.setStatusCode(StringUtils.isNotBlank(dmtResponseDTO.getStatusCode()) ? Integer.valueOf(dmtResponseDTO.getStatusCode())
+						: (StringUtils.isNotBlank(dmtResponseDTO.getStatus()) ? Integer.valueOf(dmtResponseDTO.getStatus()) : null));
+				karzaNameMatchRequest.setResponseData(response);
+				karzaNameMatchRequest.setRequestId(dmtResponseDTO.getRequestId());
+				karzaNameMatchRequest.setEntityType(type);
+				karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+				if (null != dmtResponseDTO.getResult()) {
+					karzaNameMatchRequest.setScore(new BigDecimal(dmtResponseDTO.getResult().getScore()));
+					karzaNameMatchRequest.setResult(Boolean.valueOf(dmtResponseDTO.getResult().getResult()));
+					karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+					if (dmtResponseDTO.getResult().getResult().equalsIgnoreCase("True")
+							&& new BigDecimal(dmtResponseDTO.getResult().getScore()).compareTo(new BigDecimal(0.65)) > 0) {
+						return new NsdlNameMatchResponse(Boolean.TRUE, new BigDecimal(dmtResponseDTO.getResult().getScore()),null);
+					} else {
+						return new NsdlNameMatchResponse(Boolean.FALSE, new BigDecimal(dmtResponseDTO.getResult().getScore()),null);
+					}
+				}
+			}
+		}} catch (org.apache.http.conn.ConnectTimeoutException r) {
+			log.info("ConnectTimeoutException cought {}", r.getMessage());
+			karzaNameMatchRequest.setStatusCode(999);
+			karzaNameMatchRequest.setResponseData("Timeout");
+			karzaNameMatchRequest.setEntityType(type);
+			karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+//			return new NsdlNameMatchResponse(Boolean.FALSE, null);
+            return new NsdlNameMatchResponse(Boolean.FALSE, null, karzaNameMatchRequest.getResponseData());
+		} catch (ClientProtocolException p) {
+			log.info("ClientProtocolException cought {}", p.getMessage());
+			String statusCode = p.getMessage().substring(p.getMessage().length() - 3);
+			karzaNameMatchRequest.setStatusCode(Integer.valueOf(statusCode));
+			karzaNameMatchRequest.setEntityType(type);
+			karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+			return new NsdlNameMatchResponse(Boolean.FALSE, null,null);
+		}
+		return new NsdlNameMatchResponse(Boolean.FALSE, null,null);
+	}
+
+	private KarzaNameMatchRequest createKarzaNameMatchRequest(String nameOnCard, String nameToCompare, Partner partner, String ownerType, Long ownerId) {
+		KarzaNameMatchRequest karzaNameMatchRequest = new KarzaNameMatchRequest();
+		karzaNameMatchRequest.setName1(nameOnCard);
+		karzaNameMatchRequest.setName2(nameToCompare);
+		karzaNameMatchRequest.setOwnerType(OwnerTypeEnum.valueOf(ownerType));
+		karzaNameMatchRequest.setOwnerId(ownerId);
+		karzaNameMatchRequest.setPartner(partner);
+		return karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+	}
+
+    public String callKarzaApi(KarzaNameMatchRequest karzaNameMatchRequest, String type) throws Exception {
+        String requestJson = getRequestJson(karzaNameMatchRequest, type);
+        Map<String, String> headers = new HashMap<>();
+        headers.put("x-karza-key", xKarzaKey);
+        headers.put("Content-Type", "application/json");
+        log.info("Request To karza with Request {}", requestJson);
+        String response = httpServiceUtil.post(url, headers, requestJson, 30);
+        log.info("Response from karza with Response {}", response);
+		return response;
+    }
+
+	private String getRequestJson(KarzaNameMatchRequest karzaNameMatchRequest, String type) throws JSONException {
+		return new JSONObject().put("name1", karzaNameMatchRequest.getName1()).put("name2", karzaNameMatchRequest.getName2()).put("type", type).put("preset", "G")
+				.put("allowPartialMatch", true).toString();
+	}
+
+     @Transactional
+    private void sourceAccountValueUpdate(PartnerClientSourceAccount sourceAccount, AccountVerificationResponseDto verificationResponseDto,PartnerClient partnerClient, Boolean isAccountVerified) {
+        log.info("source account value update method called for update sourceAccount {} ", sourceAccount);
+        AccountVerificationRecord accountVerificationRecord = accountVerificationRecordRepository.findById(verificationResponseDto.getAccountVerificationRecord().getId()).get();
+        log.info("Account Verification Record fetch by id: {}", accountVerificationRecord);
+        if (null != verificationResponseDto.getAccountVerificationRecord()) {
+            log.info("after getting verification record");
+            sourceAccount.setAccountVerificationReferenceId(verificationResponseDto.getAccountVerificationRecord().getId());
+            sourceAccount.setIsAccountVerified(isAccountVerified);
+            sourceAccount.setAccountVerificationMode(verificationResponseDto.getAccountVerificationMode().name());
+            sourceAccount = partnerClientSourceAccountRepository.save(sourceAccount);
+            log.info("saving owner id as source account id : {}", sourceAccount.getId());
+            accountVerificationRecord.setOwnerId(sourceAccount.getId());
+            accountVerificationRecordRepository.save(accountVerificationRecord);
+            log.info("saving accountVerificationRecord id : {}", accountVerificationRecord.getId());
+        }
+    }

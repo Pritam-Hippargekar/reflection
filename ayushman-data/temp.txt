@@ -1,4 +1,15 @@
 
+uploadedBy binlistrecord  ==  should come emailId
+
+
+
+
+
+
+
+
+
+
 
 QA : 
 system@localhost
@@ -194,3 +205,1201 @@ Class<?>[] argsTypes = {String.class,  String.class};
 Object[] methArgs = { "hello", "world" };   
 launchProcess(className, methodName, argsTypes, methArgs);
 
+
+https://github.com/NLPchina/elasticsearch-sql/blob/master/src/main/java/org/nlpcn/es4sql/query/maker/Maker.java#L156
+x = QueryBuilders.scriptQuery(new Script(scriptFilter.getScriptType(), Script.DEFAULT_SCRIPT_LANG,scriptFilter.getScript(), params));
+
+Map<String, Object> lockObject = lockObject(lockConfiguration.getName(),
+            lockConfiguration.getLockAtMostUntil(),
+            now());
+        UpdateRequest ur = new UpdateRequest()
+            .index(index)
+            .type(type)
+            .id(lockConfiguration.getName())
+            .script(new Script(ScriptType.INLINE,
+                "painless",
+                UPDATE_SCRIPT,
+                lockObject)
+            )
+            .upsert(lockObject)
+            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        UpdateResponse res = highLevelClient.update(ur, RequestOptions.DEFAULT);
+
+private static final String UPDATE_SCRIPT =
+        "if (ctx._source." + LOCK_UNTIL + " <= " + "params." + LOCKED_AT + ") { " +
+            "ctx._source." + LOCKED_BY + " = params." + LOCKED_BY + "; " +
+            "ctx._source." + LOCKED_AT + " = params." + LOCKED_AT + "; " +
+            "ctx._source." + LOCK_UNTIL + " =  params." + LOCK_UNTIL + "; " +
+            "} else { " +
+            "ctx.op = 'none' " +
+            "}";
+
+
+
+
+TransportClient esClient = EsClient.getInstance();
+UpdateRequest updateRequest = new UpdateRequest("notes2", "note", "2");
+Map<String, Object> params = new HashMap() {
+    {
+        put("click_count", 120);
+        put("impr_count", 5);
+    }
+};
+String code = "ctx._source.click_count=params.click_count;ctx._source.impr_count=params.impr_count;ctx._source.ctr=(double)ctx._source.click_count/ctx._source.impr_count*100";
+Script script = new Script(ScriptType.INLINE,  Script.DEFAULT_SCRIPT_LANG, code, params);
+updateRequest.script(script);
+updateRequest.retryOnConflict(3);
+esClient.update(updateRequest).get();
+
+https://blog.csdn.net/UbuntuTouch/article/details/115692778
+
+
+
+ Script.DEFAULT_SCRIPT_LANG
+
+
+
+
+
+   private Script createTagScript(Tag[] tags) {
+        return new Script(ScriptType.INLINE, "painless",
+                "int updates = 0;" +
+                        "if (ctx._source.tags == null) ctx._source.tags = [];" +
+                        "for (int i = 0; i < params.tags.length; i++) {" +
+                        "  if (!ctx._source.tags.contains(params.tags[i])) {" +
+                        "   ctx._source.tags.add(params.tags[i]);" +
+                        "   updates++;" +
+                        "  }" +
+                        "}" +
+                        "if (updates == 0) ctx.op = 'noop';",
+                new HashMap<String, Object>() {{put("tags", stream(tags).map(t -> t.label).collect(toList()));}});
+    }
+
+    private Script createUntagScript(Tag[] tags) {
+        return new Script(ScriptType.INLINE, "painless",
+                "int updates = 0;" +
+                        "for (int i = 0; i < params.tags.length; i++) {" +
+                        "  if (ctx._source.tags.contains(params.tags[i])) {" +
+                        "    ctx._source.tags.remove(ctx._source.tags.indexOf(params.tags[i]));" +
+                        "    updates++;" +
+                        "  }" +
+                        "}" +
+                        "if (updates == 0) ctx.op = 'noop';",
+                new HashMap<String, Object>() {{put("tags", stream(tags).map(t -> t.label).collect(toList()));}});
+    }
+
+
+    private FunctionScoreQueryBuilder getFunctionScoreQueryBuilder(QueryBuilder queryBuilder){
+        Script script = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, inlineScript, params);
+        ScriptScoreFunctionBuilder scoreFunction = ScoreFunctionBuilders.scriptFunction(script);
+        return new FunctionScoreQueryBuilder(queryBuilder, scoreFunction);
+    }
+
+
+
+
+    Elasticsearch + Java REST Client [7.10] » Java High Level REST Client » Search APIs
+ตัวอย่างคร่าวๆนะครับ
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.4.0</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>com.zengcode</groupId>
+    <artifactId>spring-boot-docker</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>spring-boot-docker</name>
+    <description>Spring Boot on Docker</description>
+
+    <properties>
+        <java.version>1.8</java.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>7.10.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>7.10.1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+Code ตัวอย่าง
+
+package com.zengcode.elasticsearch.configuration;
+
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class ApplicationConfiguration {
+
+    @Bean
+    public RestHighLevelClient restHighLevelClient(){
+        final CredentialsProvider credentialsProvider =new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY,new UsernamePasswordCredentials("user", "password"));
+        RestClientBuilder builder =RestClient.builder(
+                new HttpHost("localhost", 9002, "http")
+        ).setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+
+        RestHighLevelClient client = new RestHighLevelClient(builder);
+        return client;
+    }
+}
+package com.zengcode.elasticsearch.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexResponse;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.unit.Fuzziness;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.AvgAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.ScoreSortBuilder;
+import org.elasticsearch.search.sort.SortOrder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+@RestController
+public class ElasticSearchController {
+
+    @Autowired
+    private RestHighLevelClient client;
+
+    @GetMapping(value = "/create")
+    public String ping() throws IOException {
+        CreateIndexRequest request = new CreateIndexRequest("users");
+        request.settings(Settings.builder()
+                .put("index.number_of_shards", 1)
+                .put("index.number_of_replicas", 2)
+        );
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "text");
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("userId", message);
+        properties.put("name", message);
+        Map<String, Object> mapping = new HashMap<>();
+        mapping.put("properties", properties);
+        request.mapping(mapping);
+        CreateIndexResponse indexResponse = client.indices().create(request, RequestOptions.DEFAULT);
+        return "created";
+    }
+
+    @GetMapping(value = "/upsert")
+    public String upsert() throws IOException {
+        IndexRequest request = new IndexRequest("users");
+        Map<String, Object> users = new HashMap<>();
+        users.put("id", "001");
+        users.put("name", "Chiwa Kantawong");
+        users.put("age", 25);
+        request.id(users.get("id").toString());
+        request.source(new ObjectMapper().writeValueAsString(users), XContentType.JSON);
+        IndexResponse indexResponse = client.index(request, RequestOptions.DEFAULT);
+        System.out.println("response id: "+indexResponse.getId());
+
+        users = new HashMap<>();
+        users.put("id", "002");
+        users.put("name", "Pea Kantawong");
+        users.put("age", 24);
+        request.id(users.get("id").toString());
+        request.source(new ObjectMapper().writeValueAsString(users), XContentType.JSON);
+         indexResponse = client.index(request, RequestOptions.DEFAULT);
+        return "success";
+    }
+
+    @GetMapping(value = "delete")
+    public String delete() throws IOException {
+        DeleteRequest request = new DeleteRequest("users","001");
+        DeleteResponse deleteResponse = client.delete(request,RequestOptions.DEFAULT);
+        return deleteResponse.getId();
+    }
+//partial update
+@GetMapping(value = "update")
+public UpdateResponse update() throws IOException {
+    Map<String, Object> jsonMap = new HashMap<>();
+    jsonMap.put("reason", "daily update");
+    UpdateRequest request = new UpdateRequest("users","001")
+            .doc(jsonMap);
+
+    UpdateResponse updateResponse = client.update(request,RequestOptions.DEFAULT);
+    return updateResponse;
+}
+@GetMapping(value = "get")
+public GetResponse get() throws IOException {
+
+    GetRequest request = new GetRequest(
+            "users",
+            "001");
+  
+    GetResponse getResponse = client.get(request, RequestOptions.DEFAULT);
+    return getResponse;
+}
+@GetMapping(value = "getSource")
+public GetSourceResponse getSource() throws IOException {
+
+    GetSourceRequest request = new GetSourceRequest(
+            "users",
+            "001");
+    GetSourceResponse getResponse = client.getSource(request, RequestOptions.DEFAULT);
+    return getResponse;
+}
+    @GetMapping(value = "search1")
+    public SearchResponse search1() throws IOException {
+        QueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("name", "Chiwa Kantawong");
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(matchQueryBuilder);
+
+        SearchRequest searchRequest = new SearchRequest("users");
+        searchRequest.source(sourceBuilder);
+        SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+        return searchResponse;
+    }
+
+    @GetMapping(value = "search2")
+    public SearchResponse search2() throws IOException {
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.matchQuery("name", "Chiwa"))
+                .from(0)
+                .size(100)
+                .timeout(new TimeValue(3, TimeUnit.MINUTES))
+                .sort(new FieldSortBuilder("_id").order(SortOrder.ASC))
+                .sort(new ScoreSortBuilder().order(SortOrder.DESC));
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("users");
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+        return searchResponse;
+    }
+
+    @GetMapping(value = "search3")
+    public SearchResponse search3() throws IOException {
+        QueryBuilder matchQueryBuilder = QueryBuilders.matchAllQuery();
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(matchQueryBuilder);
+
+        SearchRequest searchRequest = new SearchRequest("users");
+        searchRequest.source(sourceBuilder);
+        SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+        return searchResponse;
+    }
+
+    @GetMapping(value = "search4")
+    public SearchResponse search4() throws IOException {
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.termQuery("name", "Chiwa Kantawong"))
+                .from(0)
+                .size(100)
+                .timeout(new TimeValue(3, TimeUnit.MINUTES))
+                .sort(new FieldSortBuilder("_id").order(SortOrder.ASC))
+                .sort(new ScoreSortBuilder().order(SortOrder.DESC));
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("users");
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+        return searchResponse;
+    }
+
+    @GetMapping(value = "search5")
+    public SearchResponse search5() throws IOException {
+        MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("name", "Chiwa Kantawong");
+        matchQueryBuilder
+                .fuzziness(Fuzziness.AUTO)
+                .prefixLength(3)
+                .maxExpansions(10);
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(matchQueryBuilder);
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("users");
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+
+        return searchResponse;
+    }
+
+    @GetMapping(value = "search6")
+    public SearchResponse search6() throws IOException {
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        AvgAggregationBuilder aggregation =  AggregationBuilders.avg("avg_age").field("age");
+        SumAggregationBuilder aggregation2 =  AggregationBuilders.sum("sum_age").field("age");
+
+        searchSourceBuilder.aggregation(aggregation);
+        searchSourceBuilder.aggregation(aggregation2);
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("users");
+        searchRequest.source(searchSourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+
+        return searchResponse;
+    }
+
+    @GetMapping(value = "search7")
+    public SearchResponse search7() throws IOException {
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.matchQuery("name", "Kantawong"))
+                .from(0)
+                .size(100)
+                .timeout(new TimeValue(3, TimeUnit.MINUTES))
+                .sort(new FieldSortBuilder("_id").order(SortOrder.ASC))
+                .sort(new ScoreSortBuilder().order(SortOrder.DESC))
+         .fetchSource(false);
+
+        AvgAggregationBuilder aggregation =  AggregationBuilders.avg("avg_age").field("age");
+        SumAggregationBuilder aggregation2 =  AggregationBuilders.sum("sum_age").field("age");
+
+        sourceBuilder.aggregation(aggregation);
+        sourceBuilder.aggregation(aggregation2);
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("users");
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+        return searchResponse;
+    }
+@GetMapping(value = "search8")
+public SearchResponse search8() throws IOException {
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.query(QueryBuilders.matchQuery("name", " Kantawong"))
+            .postFilter(QueryBuilders.rangeQuery("age").from(25).to(null)) //gt 24
+            .from(0)
+            .size(100)
+            .timeout(new TimeValue(3, TimeUnit.MINUTES))
+            .sort(new FieldSortBuilder("_id").order(SortOrder.ASC))
+            .sort(new ScoreSortBuilder().order(SortOrder.DESC));
+
+    SearchRequest searchRequest = new SearchRequest()
+            .indices("users")
+            .source(sourceBuilder);
+
+    SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+    return searchResponse;
+}
+@GetMapping(value = "search9")
+public SearchResponse search9() throws IOException {
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.query(QueryBuilders.matchAllQuery())
+            .postFilter(QueryBuilders.rangeQuery("age").gte(25))
+            .from(0)
+            .size(100)
+            .timeout(new TimeValue(3, TimeUnit.MINUTES))
+            .sort(new FieldSortBuilder("_id").order(SortOrder.ASC))
+            .sort(new ScoreSortBuilder().order(SortOrder.DESC));
+
+    SearchRequest searchRequest = new SearchRequest()
+            .indices("users")
+            .source(sourceBuilder);
+
+    SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+    return searchResponse;
+}
+
+
+@GetMapping(value = "search10")
+public SearchResponse search10() throws IOException {
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    sourceBuilder.query(QueryBuilders.matchAllQuery())
+            .postFilter(QueryBuilders.rangeQuery("age").lt(25))
+            .from(0)
+            .size(100)
+            .timeout(new TimeValue(3, TimeUnit.MINUTES))
+            .sort(new FieldSortBuilder("_id").order(SortOrder.ASC))
+            .sort(new ScoreSortBuilder().order(SortOrder.DESC));
+
+    SearchRequest searchRequest = new SearchRequest()
+            .indices("users")
+            .source(sourceBuilder);
+
+    SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+    return searchResponse;
+}
+@GetMapping(value = "search11")
+public SearchResponse search11() throws IOException {
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+    MatchQueryBuilder A = QueryBuilders.matchQuery("name", "Chiwa");
+    MatchQueryBuilder B = QueryBuilders.matchQuery("name", "Pea");
+    MatchQueryBuilder C = QueryBuilders.matchQuery("name", "Kantawong");
+
+    RangeQueryBuilder D = QueryBuilders.rangeQuery("age").lte(25);
+
+    //1.(A AND B AND C)
+    BoolQueryBuilder query1 = QueryBuilders.boolQuery();
+    query1.must(A).must(B).must(C);
+
+    //2.(A OR B OR C)
+    BoolQueryBuilder query2 = QueryBuilders.boolQuery();
+    query2.should(A).should(B).should(C);
+
+    //2.(A AND C)
+    BoolQueryBuilder query3 = QueryBuilders.boolQuery();
+    query3.must(A).must(C).must(D);
+
+    //Compound
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder.must(query2).should(query3);
+
+    sourceBuilder.query(query3);
+
+    SearchRequest searchRequest = new SearchRequest()
+            .indices("users")
+            .source(sourceBuilder);
+
+    SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+    return searchResponse;
+}
+@GetMapping(value = "search12")
+public BulkByScrollResponse search12() throws IOException {
+
+    UpdateByQueryRequest request =
+            new UpdateByQueryRequest("users");
+
+    request.setQuery(new MatchQueryBuilder("_id", "001"));
+
+    request.setScript(
+            new Script(
+                    ScriptType.INLINE, "painless",
+                    "ctx._source.full_name = 'Chiwa Kantawong updated by Java'",
+                    Collections.emptyMap()));
+
+    request.setRefresh(true);
+
+    BulkByScrollResponse bulkResponse =
+            client.updateByQuery(request, RequestOptions.DEFAULT);
+
+    return bulkResponse;
+}
+@GetMapping(value = "search13")
+public BulkByScrollResponse search13() throws IOException {
+
+    UpdateByQueryRequest request =
+            new UpdateByQueryRequest("users");
+
+    request.setQuery(new MatchQueryBuilder("_id", "001"));
+
+    Map<String,Object> params = new HashMap<>();
+    params.put("my_text", ".....Hello world");
+    request.setScript(
+            new Script(
+                    ScriptType.INLINE, "painless",
+                    "ctx._source.full_name = 'Chiwa Kantawong ' + params.my_text",
+                    params));
+
+    request.setRefresh(true);
+
+    BulkByScrollResponse bulkResponse =
+            client.updateByQuery(request, RequestOptions.DEFAULT);
+
+    return bulkResponse;
+}
+    /**
+        GET users/_doc/3560500619301
+
+        GET users/_search/
+        {
+          "query": {
+            "match": {
+              "name" : "Chiwa "
+            }
+          }
+        }
+
+        GET users/_search/
+        {
+          "query": {
+            "match_all": {
+              "_name" : "Chiwa "
+            }
+          }
+        }
+
+     POST /users/_search?size=0
+     {
+         "query": {
+             "match": {
+                "name" : "Kantawong"
+             }
+         },
+         "aggs": {
+             "avg_age": { "avg": { "field": "age" } },
+             "sum_age": { "sum": { "field": "age" } }avg_age": { "avg": { "field": "age" } },
+             "sum_age": { "sum": { "field": "age" } },
+             "max_age": { "max": { "field": "age" } },
+             "min_age": { "min": { "field": "age" } }
+         }
+     }
+   **/
+
+}
+Scripting Example ตัวอย่างที่น่าใช้
+
+GET users/_search
+{
+  "query": {
+    "match_all": {
+    
+    }
+  },
+  "script_fields": {
+    "next_year_age": {
+      "script": {
+        "lang": "painless",
+        "source": """
+           Long next_age = doc['age'].value + 1;
+           return next_age
+        """
+      }
+    }
+  }
+}
+
+-----------------------------------------------------
+
+GET users/_search
+{
+  "query": {
+    "match_all": {
+    
+    }
+  },
+  "script_fields": {
+    "next_year_age": {
+      "script": {
+        "lang": "painless",
+        "source": """
+           if (doc['age'].value > 24) {
+             return doc['age'].value + " is Older"
+           }
+           return doc['age'].value + " is Younger"
+        """
+      }
+    }
+  }
+}
+-----------------------------------------------------
+GET users/_search
+{
+  "query": {
+    "match_all": {
+    
+    }
+  },
+  "script_fields": {
+    "next_year_age": {
+      "script": {
+        "lang": "painless",
+        "source": """
+        
+           return doc['age'].value + 1
+        """
+      }
+    },
+    "this_year_age": {
+      "script": {
+        "lang": "painless",
+        "source": """
+        
+           return doc['age']
+        """
+      }
+    }
+  }
+}
+-------------------------------------------------------
+DELETE customers
+
+PUT customers
+{
+  "mappings": {
+    "properties": {
+      "first_name": {
+        "type": "keyword"
+      },
+      "last_name": {
+        "type": "text"
+      }
+    }
+  }
+}
+-----------------------------------------------------
+PUT customers/_doc/1?refresh
+{
+  "first_name": "Barry",
+  "last_name": "White",
+  "age" : 20
+}
+
+PUT customers/_doc/2?refresh
+{
+  "first_name": "Chiwa",
+  "last_name": "Kantawong",
+  "age" : 25
+}
+
+GET customers/_mapping
+
+GET customers/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "script_fields": {
+    "age_report": {
+      "script": {
+        "lang": "painless",
+        "source": """
+           if (doc['age'].value >= params.comparation_age) {
+             return doc['first_name'].value + "= " + (doc['age'].value) + " gte " + params.comparation_age
+           } else {
+            return doc['first_name'].value + " = " + (doc['age'].value) + " lt " + params.comparation_age
+           }
+        """,
+        "params": {
+          "comparation_age" : 20
+        }
+      }
+    }
+  }
+}
+
+
+GET customers/_search
+{
+  "query": {
+    "match_all": {
+    
+    }
+  },
+  "script_fields": {
+    "next_year_age": {
+      "script": {
+        "lang": "painless",
+        "source": """
+           return doc['first_name'].value + " " + (doc['age'].value +1)
+        """
+      }
+    }
+  }
+}
+
+GET customers/_search
+-----------------------------------------------------
+#return value, last_name = text can not using doc
+GET customers/_search
+{
+  "script_fields": {
+    "full_name": {
+      "script": {
+        "lang": "painless",
+       "source": "doc['first_name'].value + ' ' + params._source.last_name"
+      }
+    }
+  }
+}
+-----------------------------------------------------
+#return value,
+GET customers/_search
+{
+  "script_fields": {
+    "full_name": {
+      "script": {
+        "lang": "painless",
+       "source": "params._source.first_name + ' ' + params._source.last_name"
+      }
+    }
+  }
+}
+-----------------------------------------------------
+#return value
+GET customers/_search
+{
+  "query": { 
+    "bool": { 
+      "must": [
+        { "match_all": {}}
+      ],
+      "filter": [ 
+        { "range": { "age": { "gte": 21 }}}
+      ]
+    }
+  },
+  
+  "script_fields": {
+    "full_name": {
+      "script": {
+        "lang": "painless",
+       "source": "doc['first_name'].value + ' ' + params._source.last_name + ' = ' + doc['age'].value"
+      }
+    }
+  }
+}
+ExistsQuery Example
+BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
+    .must(QueryBuilders.existsQuery("usuarioIntegracao"))
+    .must(QueryBuilders.termsQuery("tabela", "Arquivo", "Mensagem"))
+    .must(QueryBuilders.termQuery("statusTexto", "Erro"))
+    .must(QueryBuilders.rangeQuery("dataEntrada").from("now-1d/d").timeZone("-03:00"));
+
+searchSourceBuilder.query(boolQuery);
+Java Examples & Tutorials of QueryBuilders.existsQuery (org.elasticsearch.index.query) | Codota
+filterQuery.must(QueryBuilders.existsQuery(field));... filterQuery.must(QueryBuilders.existsQuery(f));
+www.codota.com
+
+Using ctx
+GET users/_doc/001
+
+POST users/_update
+{
+  "script": {
+    "lang": "painless",
+    "source": """
+    ctx._source.last = params.last;
+    ctx._source.nick = params.nick
+    """,
+    "params": {
+      "last": "gaudreau",
+      "nick": "hockey"
+    }
+  }
+}
+
+POST users/_update_by_query?wait_for_completion=true&conflicts=proceed
+{
+"script": {
+"lang": "painless",
+"source": """
+ctx._source.last = params.last;
+ctx._source.nick = params.nick;
+""",
+"params": {
+"last": "gaudreau",
+"nick": "hockey edit 001"
+}
+},
+"query": {
+"term": {
+"_id": "001"
+}
+}
+}
+POST users/_update_by_query?wait_for_completion=true&conflicts=proceed
+{
+  "script": {
+    "lang": "painless",
+    "source": """
+      ctx._source.last = params.last;
+      ctx._source.nick = params.nick;
+      ctx._source.full_name = 'Chiwa Kantawong'
+    """,
+    "params": {
+      "last": "gaudreau",
+      "nick": "hockey edit 001"
+      }
+    },
+    "query": {
+        "term": {
+        "_id": "001"
+        }
+      }
+}
+
+POST users/_update_by_query?wait_for_completion=true&conflicts=proceed
+{
+  "script": {
+    "lang": "painless",
+    "source": """
+      ctx._source.last = params.last;
+      ctx._source.nick = params.nick;
+      ctx._source.remove('full_name')
+    """,
+    "params": {
+        "last": "gaudreau",
+        "nick": "hockey edit 001"
+      }
+    },
+    "query": {
+      "term": {
+        "_id": "001"
+      }
+  }
+}
+If you plan to use the _update_by_query API, I'd recommend you to do something like:
+
+POST your_index/_update_by_query
+{
+  "query": {
+    "bool": {
+      "must_not": {
+        "exists": {
+          "field": "tags"
+        }
+      }
+    }
+  },
+  "script": {
+    "source": "ctx._source.tags = ''"
+  }
+}
+Otherwise, just using painless, you can do something like:
+
+{
+  "script": {
+    "source": """
+      if(ctx._source.tags == null) {
+        ctx._source.tags = null;
+      }
+    """
+  }
+}
+Using Java UpdateByQueryRequest
+https://www.fatalerrors.org/a/elasticsearch-java-high-level-rest-client-update-by-query-api.html
+
+@GetMapping(value = "search12")
+public BulkByScrollResponse search12() throws IOException {
+
+    UpdateByQueryRequest request =
+            new UpdateByQueryRequest("users");
+
+    request.setQuery(new MatchQueryBuilder("_id", "001"));
+
+    request.setScript(
+            new Script(
+                    ScriptType.INLINE, "painless",
+                    "ctx._source.full_name = 'Chiwa Kantawong updated by Java'",
+                    Collections.emptyMap()));
+
+    request.setRefresh(true);
+
+    BulkByScrollResponse bulkResponse =
+            client.updateByQuery(request, RequestOptions.DEFAULT);
+
+    return bulkResponse;
+}
+
+@GetMapping(value = "search13")
+public BulkByScrollResponse search13() throws IOException {
+
+    UpdateByQueryRequest request =
+            new UpdateByQueryRequest("users");
+
+    request.setQuery(new MatchQueryBuilder("_id", "001"));
+
+    Map<String,Object> params = new HashMap<>();
+    params.put("my_text", ".....Hello world");
+    request.setScript(
+            new Script(
+                    ScriptType.INLINE, "painless",
+                    "ctx._source.full_name = 'Chiwa Kantawong ' + params.my_text",
+                    params));
+
+    request.setRefresh(true);
+
+    BulkByScrollResponse bulkResponse =
+            client.updateByQuery(request, RequestOptions.DEFAULT);
+
+    return bulkResponse;
+}
+Asynchronous execution
+client.updateByQueryAsync(request, RequestOptions.DEFAULT, listener);
+listener = new ActionListener<BulkByScrollResponse>() {
+    @Override
+    public void onResponse(BulkByScrollResponse bulkResponse) {
+        
+    }
+    @Override
+    public void onFailure(Exception e) {
+        
+    }
+};
+Script with filter
+GET /users/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match_all": {}
+      },
+      "filter": {
+        "bool": {
+          "must": {
+            "script": {
+              "script": {
+                "lang": "painless",
+                "source": """
+                def flag = true;
+                return flag;
+                """,
+                "params": {
+                  "limit": 50
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+GET /users/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match_all": {}
+      },
+      "filter": {
+        "bool": {
+          "must": {
+            "script": {
+              "script": {
+                "lang": "painless",
+                "source": """
+                if (doc['age'].size() > 0 && doc['age'].value > 24) { return true;} return false;
+"""
+                         }
+                     }       
+                   }
+                  }
+                }
+              }
+           }
+}
+================================================
+GET /users/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match_all": {}
+      },
+      "filter": {
+        "bool": {
+          "must": {
+            "script": {
+              "script": {
+                "lang": "painless",
+                "source": """
+                    if (doc['age'].size() > 0 && doc['age'].value > 24) { return true;} return false;
+                """
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+================================================
+POST _scripts/check-age
+{
+  "script" : {
+    "lang": "painless",
+    "source" : "if (params.age > 24) { return true;} return false;"
+  }
+
+}
+
+GET /users/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match_all": {}
+      },
+      "filter": {
+        "bool": {
+          "must": {
+            "script": {
+              "script": {
+                "id" : "check-age",
+                "params": {
+                  "age": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+====================Filter By Script==========================
+POST _scripts/check-age4
+{
+    "script" : {
+      "lang": "painless",
+      "source" : "if (doc['age'].size() > 0 && doc['age'].value > params.checked_value) { return true;} return false;"
+    }
+}
+GET /users/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match": { "name" : "Chiwa Kantawong"}
+      },
+      "filter": {
+        "bool": {
+          "must": {
+            "script": {
+              "script": {
+                "id" : "check-age4",
+                "params" : { "checked_value" : 24}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+=====================Multiple Filter=============
+POST _scripts/check-fullName
+{
+    "script" : {
+      "lang": "painless",
+      "source" : "if (doc['full_name.keyword'].size() > 0) { return true;} return false;"
+    }
+}
+GET /users/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match": { "name" : "Chiwa"}
+      },
+      "filter": {
+        "bool": {
+          "must":[ 
+                    {
+                    "script": {
+                      "script": {
+                        "id" : "check-age5",
+                        "params" : { "checked_value" : 24}
+                                }
+                            }
+                    },
+                    {
+                    "script": {
+                      "script": {
+                        "id" : "check-fullName"
+                                }
+                            }
+                    }
+          ]
+        }
+      }
+    }
+  }
+}
+======================================
+GET /users/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match": { "name" : "Chiwa"}
+      },
+      "filter": {
+        "bool": {
+          "must":[ 
+                    {
+                    "script": {
+                      "script": {
+                        "id" : "check-age5",
+                        "params" : { "checked_value" : 24}
+                                }
+                            }
+                    },
+                    {
+                    "script": {
+                      "script": {
+                        "id" : "check-fullName"
+                                }
+                            }
+                    },
+                    {
+                      "match" : {
+                        "new_full_name.en" : "abc"
+                      }
+                    }
+          ]
+        }
+      }
+    }
+  }
+}
+https://www.elastic.co/blog/lost-in-translation-boolean-operations-and-filters-in-the-bool-query

@@ -17,6 +17,13 @@ The value of this setting MUST match the value of node.name
 https://kifarunix.com/how-to-enable-basic-authentication-on-elk-stack/
 
 
+InputStream input = this.getClass()
+    .getResourceAsStream("some-index.json"); 
+CreateIndexRequest req = CreateIndexRequest.of(b -> b
+    .index("some-index")
+    .withJson(input) 
+);
+boolean created = client.indices().create(req).acknowledged();
 
 
 
@@ -125,6 +132,29 @@ GROUP BY Customers.CustomerID, Customers.Name
 HAVING Count(Sales.SalesID) > 5
 
 
+
+
+WITH salaries_ranks AS (
+ SELECT e.first_name,
+ e.last_name,
+ d.department_name,
+ salary,
+ ROW_NUMBER() OVER (PARTITION BY d.id ORDER BY salary DESC) AS salary_rank
+ FROM department d JOIN employee e ON d.id = e.department_id
+)
+ 
+SELECT *
+FROM salaries_ranks
+WHERE salary_rank = 3;
+
+select * FROM (
+  select EmployeeID, Salary
+  ,rank() over (partition by deptno order by Salary DESC) ranking
+  from Employee
+)
+WHERE ranking = N;
+
+
 Match Query = will get analyzed into terms first
 Term Query = will not get analyzed into terms first
  
@@ -134,8 +164,8 @@ Use text field data type if:
 You want to create an autocomplete
 You want to create a search system
 
-“keyword” : exact-value search for sorting, aggregation and filtering documents ex : email addresses, hostnames, status codes, zip codes, or tags.
 
+“keyword” : exact-value search for sorting, aggregation and filtering documents ex : email addresses, hostnames, status codes, zip codes, or tags.
 Use keyword field data type if:
 ----------------------------------
 You want an exact match query
@@ -143,10 +173,9 @@ You want to make Elasticsearch function like other databases
 You want to use it for wildcard query
 
 
-VALUES('Category 1')
-VALUES('Category 2')
-VALUES('Category 3')
-VALUES('Category 4')
+VALUES('Hardware') Computers, Mobile phones, Laptop
+VALUES('Software')  software like Word, Excel, PowerPoint,//operating systems like linux and Windows
+
 
 VALUES('Laptop 2', '1000.00', 2, 'good', 1, '2016-06-10', 1);
 VALUES('Laptop 3', '200.00', 5, 'good', 1, '2015-06-15', 1);
@@ -162,21 +191,21 @@ VALUES('Mobile 3', '1000.00', 4, 'good', 1, '2015-06-27', 3);
 
 public class Category{
   private Long categoryId;
-	private String name;
-  private Set<Product> products
+	private String categoryName;
+  private Set<Product> products;
 }
 
 public class Product{
   private Long productId;
-	private String name;
+	private String productName;
 	private BigDecimal price;
 	private int quantity;
 	private String description;
 	private boolean active;
-	private Date creationDate;
+	private Date createdAt;
+  private Date updatedAt;
   private GeoLocation location;
 }
-
 
 class GeoLocation {  //https://www.bytefish.de/blog/elasticsearch_java.html
   private double lat;
@@ -196,40 +225,67 @@ class GeoLocation {  //https://www.bytefish.de/blog/elasticsearch_java.html
 }
 
 
-  "mappings": {
-    "blog": {
-      "properties": {
-        "categoryId": { "type": "long" },
-        "name":       { "type": "text" },
-        "products": {
-          "type": "nested",
+    "mappings": {
+        "category": {
+            "properties": {
+                "categoryId":  { "type": "long" },
+                "categoryName":{ "type": "text" },
+                "products": {
+                    "type": "nested",
+                    "properties": {
+                        "productId":    { "type": "long"  },
+                        "productName":  { "type": "text"  },
+                        "price":        { "type": "float" },
+                        "stocks":       { "type": "integer" },
+                        "description":  { "type": "text" },
+                        "active":       { "type": "boolean" },
+                        "createdAt":    { "type": "date" },
+                        "updatedAt":    { "type": "date" },
+                        "location":     { "type" : "geo_point" },
+                        "productName": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+ "mappings": {
+      "product": {
           "properties": {
             "productId":    { "type": "long"  },
-            "name":         { "type": "text"  },
-            "price":        { "type": "double"   },
-            "quantity":     { "type": "integer" },
+            "productName":  { "type": "text"  },
+            "price":        { "type": "float" },
+            "stocks":     { "type": "integer" },
             "description":  { "type": "text" },
             "active":       { "type": "boolean" },
-            "creationDate": { "type": "date" },
-             "location":    { "type" : "geo_point"  },
-
-             "name": {
+            "createdAt":    { "type": "date" },
+            "updatedAt":    { "type": "date" },
+            "location":    { "type" : "geo_point" },
+            "productName": {
               "type": "text",
               "fields": {
-                "keyword": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                }
+                "keyword": { "type": "keyword", "ignore_above": 256 }
               }
+            },
+            "category": {
+                "type": "nested",
+                "properties": {
+                    "categoryId":  { "type": "long" },
+                    "categoryName":{ "type": "text" },
+                }
             }
-
           }
-        }
       }
-    }
   }
-
-
 
 
 "location": {
@@ -571,3 +627,875 @@ xpack.security.enabled: false
 After changing in configuration file you need to restart so run the below command:
 ------------------------------------------
 sudo systemctl restart elasticsearch
+
+
+
+-> Elasticsearch security features have been automatically configured!
+-> Authentication is enabled and cluster connections are encrypted.
+
+->  Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
+  odEvwWHdBK3yN+4EdIpU  == ayushman
+
+->  HTTP CA certificate SHA-256 fingerprint:
+  84490b5a69d6e31cf3b74b404b41b454567a51150d0ed3f91535312064663dd0
+
+->  Configure Kibana to use this cluster: 
+* Run Kibana and click the configuration link in the terminal when Kibana starts.
+* Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes):
+  eyJ2ZXIiOiI4LjMuMyIsImFkciI6WyIxOTIuMTY4LjEuMjg6OTIwMCJdLCJmZ3IiOiI4NDQ5MGI1YTY5ZDZlMzFjZjNiNzRiNDA0YjQxYjQ1NDU2N2E1MTE1MGQwZWQzZjkxNTM1MzEyMDY0NjYzZGQwIiwia2V5IjoicW44UjZvWUJKcVM2c2tWMngxd3c6akZHYU9NaGFUUk9xUWp3Y21aLVZqZyJ9
+
+bin/elasticsearch-create-enrollment-token -s kibana
+new = eyJ2ZXIiOiI4LjMuMyIsImFkciI6WyIxOTIuMTY4LjEuMjg6OTIwMCJdLCJmZ3IiOiI4NDQ5MGI1YTY5ZDZlMzFjZjNiNzRiNDA0YjQxYjQ1NDU2N2E1MTE1MGQwZWQzZjkxNTM1MzEyMDY0NjYzZGQwIiwia2V5IjoiUFppcjZvWUIzbWVFSWw2N2pwdjM6aFZYY2lzZGdTZHlMOEtlRjNjU0hyQSJ9
+
+->  Configure other nodes to join this cluster:
+* On this node:
+  - Create an enrollment token with `bin/elasticsearch-create-enrollment-token -s node`.
+  - Uncomment the transport.host setting at the end of config/elasticsearch.yml.
+  - Restart Elasticsearch.
+* On other nodes:
+  - Start Elasticsearch with `bin/elasticsearch --enrollment-token <token>`, using the enrollment token that you generated.
+
+
+
+
+
+Set user and password in Kibana.yml
+---------------------------------------
+#elasticsearch.username: "kibana_system"  //Change before
+elasticsearch.username: "elastic"         //After change
+#elasticsearch.password: "pass"           //Change before
+elasticsearch.password: "*********"       //After change
+
+
+
+install elk 8.x ===== 
+------------------------------
+https://www.securitynik.com/2022/04/installing-configuring-elasticsearch-8.html
+
+
+imp setup certificate
+--------------------------------------
+https://techexpert.tips/elasticsearch/elasticsearch-enable-tls-https/
+https://xie.infoq.cn/article/3f6ba28bddad16a92f8101de0
+https://levelup.gitconnected.com/elasticsearch-kibana-security-authentication-and-network-encryption-enabled-with-docker-e6747a989766
+https://quachtd.com/configure-https-for-elasticsearch/
+https://alexmarquardt.com/tag/kibana/    ===============          https://blog.clairvoyantsoft.com/secure-elasticsearch-communication-bdee1bbe37e
+https://dotblogs.com.tw/Lin/2022/10/18/191449
+https://www.rondochen.com/ELK9/
+
+
+
+
+bin/elasticsearch-certutil ca
+ENTER ENTER
+bin/elasticsearch-certutil cert --ca elastic-stack-ca.p12
+ENTER ENTER ENTER
+--------The newly created certificates should be copied into a sub-directory called certs located within the config directory. ----------
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate
+xpack.security.transport.ssl.keystore.path: certs/elastic-certificates.p12
+xpack.security.transport.ssl.truststore.path: certs/elastic-certificates.p12
+
+
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate
+xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
+xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
+
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.keystore.path: http.p12
+
+
+
+
+
+
+
+
+
+bin/elasticsearch-certutil http
+
+
+
+
+
+
+@Configuration
+public class ElasticsearchConfig {
+    @Value("${elasticsearch.host}")
+    private String host;
+
+    @Value("${elasticsearch.port}")
+    private int port;
+
+    @Value("${elasticsearch.username}")
+    private String userName;
+
+    @Value("${elasticsearch.password}")
+    private String password;
+
+    @Bean(destroyMethod = "close")
+    public RestHighLevelClient restClient() {
+
+        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY,
+                new UsernamePasswordCredentials(userName, password));
+
+        RestClientBuilder builder = RestClient.builder(new HttpHost(host, port))
+                .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+
+        RestHighLevelClient client = new RestHighLevelClient(builder);
+
+        return client;
+    }
+}
+
+@Data
+public class Technologies {
+    private String name;
+    private  String yearsOfExperience;
+}
+
+
+@Data
+public class Location {
+    private String lat;
+    private String lon;
+}
+
+
+@Data
+public class ProfileDocument {
+    private String id;
+    private String firstName; text
+    private String lastName; text
+    private List<Technologies> technologies; //@Field(type=FieldType.Nested)
+    private Location location;
+    private List<String> emails;
+}
+
+https://github.com/spati-java/spring-boot-java-highlevel-rest-client-elasticsearch/blob/develop/src/main/java/com/example/aws/elasticsearch/demo/service/ProfileService.java
+@Service
+@Slf4j
+public class ProfileService {
+
+
+    private RestHighLevelClient client;
+
+
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    public ProfileService(RestHighLevelClient client, ObjectMapper objectMapper) {
+        this.client = client;
+        this.objectMapper = objectMapper;
+    }
+
+    public String createProfileDocument(ProfileDocument document) throws Exception {
+
+        UUID uuid = UUID.randomUUID();
+        document.setId(uuid.toString());
+
+        IndexRequest indexRequest = new IndexRequest(INDEX, TYPE, document.getId())
+                .source(convertProfileDocumentToMap(document), XContentType.JSON);
+
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+        return indexResponse.getResult().name();
+    }
+
+    public ProfileDocument findById(String id) throws Exception {
+
+            GetRequest getRequest = new GetRequest(INDEX, TYPE, id);
+
+            GetResponse getResponse = client.get(getRequest, RequestOptions.DEFAULT);
+            Map<String, Object> resultMap = getResponse.getSource();
+
+            return convertMapToProfileDocument(resultMap);
+
+    }
+
+
+
+    public String updateProfile(ProfileDocument document) throws Exception {
+
+            ProfileDocument resultDocument = findById(document.getId());
+
+            UpdateRequest updateRequest = new UpdateRequest(
+                    INDEX,
+                    TYPE,
+                    resultDocument.getId());
+
+            updateRequest.doc(convertProfileDocumentToMap(document));
+            UpdateResponse updateResponse = client.update(updateRequest, RequestOptions.DEFAULT);
+
+            return updateResponse
+                    .getResult()
+                    .name();
+
+    }
+
+    public List<ProfileDocument> findAll() throws Exception {
+
+
+        SearchRequest searchRequest = buildSearchRequest(INDEX,TYPE);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        searchRequest.source(searchSourceBuilder);
+
+        SearchResponse searchResponse =
+                client.search(searchRequest, RequestOptions.DEFAULT);
+
+        return getSearchResult(searchResponse);
+    }
+
+
+    public List<ProfileDocument> findProfileByName(String name) throws Exception{
+
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices(INDEX);
+        searchRequest.types(TYPE);
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+        MatchQueryBuilder matchQueryBuilder = QueryBuilders
+                .matchQuery("name",name)
+                .operator(Operator.AND);
+
+        searchSourceBuilder.query(matchQueryBuilder);
+
+        searchRequest.source(searchSourceBuilder);
+
+        SearchResponse searchResponse =
+                client.search(searchRequest, RequestOptions.DEFAULT);
+
+        return getSearchResult(searchResponse);
+
+    }
+
+
+    public String deleteProfileDocument(String id) throws Exception {
+
+        DeleteRequest deleteRequest = new DeleteRequest(INDEX, TYPE, id);
+        DeleteResponse response = client.delete(deleteRequest,RequestOptions.DEFAULT);
+
+        return response
+                .getResult()
+                .name();
+
+    }
+
+    private Map<String, Object> convertProfileDocumentToMap(ProfileDocument profileDocument) {
+        return objectMapper.convertValue(profileDocument, Map.class);
+    }
+
+    private ProfileDocument convertMapToProfileDocument(Map<String, Object> map){
+        return objectMapper.convertValue(map,ProfileDocument.class);
+    }
+
+
+    public List<ProfileDocument> searchByTechnology(String technology) throws Exception{
+
+        SearchRequest searchRequest = buildSearchRequest(INDEX,TYPE);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+        QueryBuilder queryBuilder = QueryBuilders
+                .boolQuery()
+                .must(QueryBuilders
+                        .matchQuery("technologies.name",technology));
+
+        searchSourceBuilder.query(QueryBuilders.nestedQuery("technologies",queryBuilder,ScoreMode.Avg));
+
+        searchRequest.source(searchSourceBuilder);
+
+        SearchResponse response = client.search(searchRequest,RequestOptions.DEFAULT);
+
+        return getSearchResult(response);
+    }
+
+    private List<ProfileDocument> getSearchResult(SearchResponse response) {
+
+        SearchHit[] searchHit = response.getHits().getHits();
+
+        List<ProfileDocument> profileDocuments = new ArrayList<>();
+
+        for (SearchHit hit : searchHit){
+            profileDocuments
+                    .add(objectMapper
+                            .convertValue(hit
+                                    .getSourceAsMap(), ProfileDocument.class));
+        }
+
+        return profileDocuments;
+    }
+
+    private SearchRequest buildSearchRequest(String index, String type) {
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices(index);
+        searchRequest.types(type);
+
+        return searchRequest;
+    }
+}
+
+
+Parameters such as the number of shards and refresh time are no longer declared ​@Docement​in , indicating that they have been deprecated Instead, declare ​@Setting ​in
+@Data 
+@Document(indexName = "user") 
+@Setting(replicas = 0,shards = 1) 
+public class User implements Serializable { 
+
+    @Id 
+    private String id ; 
+
+    @Field(type = FieldType.Text, name = "name",analyzer = "standard") 
+    private String name; 
+
+    @Field(type = FieldType.Keyword, name = "password") 
+    private String password; 
+
+    @Field(type = FieldType.Integer, name = "sex") 
+    private Integer sex; 
+
+    @Field(type = FieldType.Text, name = "address", analyzer = "ik_smart") 
+    private String address;
+
+    @Field(type = FieldType.Date, name = "create_date", pattern="yyyy-MM-dd HH:mm:ss||strict_date_optional_time||epoch_millis") private Date createDate; @Field(type = FieldType.Long 
+    , 
+
+    name = "role_ids") 
+    private List<Long> roleIds; 
+
+    @Field(type = FieldType.Nested, name = "department_list") 
+    private List<Department> departmentList; 
+
+} 
+
+@Data 
+public class Department implements Serializable { 
+
+    @Field(type = FieldType. Long, name = "id") 
+    private Long id; 
+
+    @Field(type = FieldType. Keyword, name = "name") 
+    private String name; 
+}
+-----------------------------------
+
+
+
+
+
+
+
+
+
+
+https://juejin.cn/post/7120587835358314504
+@Data
+@Document(indexName = "order_test")
+@Setting(replicas = 0)
+public class Order {
+
+    @Id
+    private String id;
+
+    // 订单状态 0未付款 1未发货 2运输中 3待签收 4已签收
+    @Field(type = FieldType.Integer, name = "status")
+    private Integer status;
+
+    @Field(type = FieldType.Keyword, name = "no")
+    private String no;
+
+    @Field(type = FieldType.Date, name = "create_time", pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createTime;
+
+    @Field(type = FieldType.Double, name = "amount")
+    private Double amount;
+
+    @Field(type = FieldType.Keyword, name = "creator")
+    private String creator;
+
+    @GeoPointField
+    @Field(name = "point")
+    private GeoPoint point;
+
+    @Field(type = FieldType.Text, name = "address", analyzer = "ik_max_word")//@Field(type = FieldType.Text, name = "address", analyzer = "ik_smart") 
+    private String address;
+    
+    @Field(type = FieldType.Nested, name = "creator")
+    private List<Product> product;
+
+}
+
+@Data
+public class Product implements Serializable {
+
+    @Field(type = FieldType.Long, name = "id")
+    private Long id;
+
+    @Field(type = FieldType.Keyword, name = "name")
+    private String name;
+
+    @Field(type = FieldType.Double, name = "price")
+    private Double price;
+
+    @Field(type = FieldType.Integer, name = "quantity")
+    private Double quantity;
+
+}
+
+
+
+
+
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Document(indexName = "products", type = "managedproducts", shards = 1, replicas = 0, refreshInterval = "5s", createIndex = true)
+//@Document(indexName = "person" , type = "user")
+//@Setting(shards = 1, replicas = 0)
+public class Product {
+    @Id
+    @Field(type = FieldType.Keyword, store = true)
+    private String id = null;
+
+    @Field(type = FieldType.Text)
+    private String name = null ;
+
+    @Field(type = FieldType.Keyword)
+    private Category category;
+
+    @Field(type = FieldType.Integer)
+    private Integer quantity;
+
+    @Field(type = FieldType.Double)
+    private BigDecimal price;
+
+    @Field(type = FieldType.Long)
+    private double price;
+
+    public enum Category {
+        CLOTHES,
+        ELECTRONICS,
+        GAMES;
+    }
+
+    @Field(type = FieldType.Text, name = "address", analyzer = "ik_max_word")
+    private String address;
+
+    @Field(type=FieldType.Boolean)
+    private Boolean active = null;
+
+    @Field(type = FieldType.Date, format = DateFormat.date_time)
+    private Instant createdDate = null;
+
+    @Field(type = FieldType.Date, name = "create_time", pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createTime;
+
+    @Field(type = FieldType.Double, name = "price")
+    private double price;
+
+    @Field(analyzer = "ik_max_word", searchAnalyzer = "ik_smart", type = FieldType.Text, store = true)
+    private String spuName;
+
+    @Field(type = FieldType.Long)
+    private long sCateId;
+
+    @Field(type = FieldType.Date, format = DateFormat.custom, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
+    private LocalDateTime createTime = LocalDateTime.now();
+}
+
+
+{
+  "hotel": {
+    "hotel_id": 1,
+    "email": "hotel-1@trvb.com",
+    "city_name_en": "Warsaw",
+    "name": "Golden star hotel",
+    "stars": 5,
+    "rating": 4.85,
+    "age": 7,
+    "free_places_at_now": true,
+    "location": {
+      "lat": "52.21",
+      "lon": "21.01"
+    },
+    "comments": [
+      {
+        "hotel_id": 1,
+        "content": "Some comment",
+        "stars": 5,
+        "created_at": "2021/08/01"
+      },
+      {
+        "hotel_id": 1,
+        "content": "Some comment",
+        "created_at": "2021/08/01",
+        "stars": 5
+      }
+    ]
+  }
+}
+
+
+
+
+
+
+
+
+
+@Data
+@Document(indexName = "operation_log")
+public class OperationLog {
+    @Id
+    private String id;
+
+    @Field(type = FieldType.Keyword)
+    private String ip;
+
+    @Field(value = "trace_id", type = FieldType.Keyword)
+    private String traceId;
+
+    // format={} 不能少
+    @Field(value = "operation_time", type = FieldType.Date, format = {}, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy.MM.dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime operationTime;
+
+    @Field(type = FieldType.Keyword)
+    private String module;
+
+    @Field(value = "action_code", type = FieldType.Keyword)
+    private String actionCode;
+
+    @Field(type = FieldType.Text, analyzer = "ik_max_word")
+    private String location;
+
+    @Field(value = "object_id", type = FieldType.Keyword)
+    private String objectId;
+
+    @Field(value = "object_name", type = FieldType.Text, analyzer = "ik_max_word")
+    private String objectName;
+
+    @Field(value = "operator_id", type = FieldType.Keyword)
+    private String operatorId;
+
+    @Field(value = "operator_name", type = FieldType.Keyword)
+    private String operatorName;
+
+    @Field(value = "operator_dept_id", type = FieldType.Keyword)
+    private String operatorDeptId;
+
+    @Field(value = "operator_dept_name", type = FieldType.Text, analyzer = "ik_max_word")
+    private String operatorDeptName;
+
+    @Field(type = FieldType.Nested)
+    private List<OperationLogChange> changes;
+
+}
+
+@Data
+public class OperationLogChange {
+    @Field(value = "field_name", type = FieldType.Keyword)
+    private String fieldName;
+
+    @Field(value = "old_value", type = FieldType.Keyword)
+    private String oldValue;
+
+    @Field(value = "new_value", type = FieldType.Keyword)
+    private String newValue;
+}
+
+https://segmentfault.com/a/1190000042672215
+https://segmentfault.com/a/1190000042853722
+PUT /operation_log/_mapping
+{
+  "properties": {
+    "ip": {
+      "type": "keyword"
+    },
+    "trace_id": {
+      "type": "keyword"
+    },
+    "operation_time": {
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss"
+    },
+    "module": {
+      "type": "keyword"
+    },
+    "action_code": {
+      "type": "keyword"
+    },
+    "location": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "object_id": {
+      "type": "keyword"
+    },
+    "object_name": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "operator_id": {
+      "type": "keyword"
+    },
+    "operator_name": {
+      "type": "keyword"
+    },
+    "operator_dept_id": {
+      "type": "keyword"
+    },
+    "operator_dept_name": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "changes": {
+      "type": "nested",
+      "properties": {
+        "field_name": {
+          "type": "keyword"
+        },
+        "old_value": {
+          "type": "keyword"
+        },
+        "new_value": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
+
+
+POST /operation_log/_doc
+{
+  "ip": "10.1.11.1",
+  "trace_id": "670021ff9a2dc6b7",
+  "operation_time": "2022-05-02 09:31:18",
+  "module": "企业组织",
+  "action_code": "UPDATE",
+  "location": "企业组织->员工管理->身份管理",
+  "object_id": "xxxxx-1",
+  "object_name": "成德善",
+  "operator_id": "operator_id-1",
+  "operator_name": "张三",
+  "operator_dept_id": "operator_dept_id-1",
+  "operator_dept_name": "研发中心-后端一部",
+  "changes": [
+    {
+      "field_name": "手机号码",
+      "old_value": "13055660000",
+      "new_value": "13055770001"
+    },
+    {
+      "field_name": "姓名",
+      "old_value": "成德善",
+      "new_value": "成秀妍"
+    }
+  ]
+}
+
+// 同样的调用方式，再插入下面6个文档
+
+// data-2
+
+{
+  "ip": "22.1.11.0",
+  "trace_id": "990821e89a2dc653",
+  "operation_time": "2022-09-05 11:31:10",
+  "module": "资源中心",
+  "action_code": "UPDATE",
+  "location": "资源中心->文件管理->文件权限",
+  "object_id": "fffff-1",
+  "object_name": "《2022员工绩效打分细则》",
+  "operator_id": "operator_id-2",
+  "operator_name": "李四",
+  "operator_dept_id": "operator_dept_id-2",
+  "operator_dept_name": "人力资源部",
+  "changes": [
+    {
+      "field_name": "查看权限",
+      "old_value": "仅李四可查看",
+      "new_value": "全员可查看"
+    },
+    {
+      "field_name": "编辑权限",
+      "old_value": "仅李四可查看",
+      "new_value": "人力资源部可查看"
+    }
+  ]
+}
+
+// data-3
+
+{
+  "ip": "22.1.11.0",
+  "trace_id": "780821e89b2dc653",
+  "operation_time": "2022-10-02 12:31:10",
+  "module": "资源中心",
+  "action_code": "DELETE",
+  "location": "资源中心->文件管理",
+  "object_id": "fffff-1",
+  "object_name": "《2022员工绩效打分细则》",
+  "operator_id": "operator_id-3",
+  "operator_name": "王五",
+  "operator_dept_id": "operator_dept_id-2",
+  "operator_dept_name": "人力资源部",
+  "changes": []
+}
+
+// data-4
+
+{
+  "ip": "10.1.11.1",
+  "trace_id": "670021e89a2dc7b6",
+  "operation_time": "2022-05-03 09:35:10",
+  "module": "企业组织",
+  "action_code": "ADD",
+  "location": "企业组织->员工管理->身份管理",
+  "object_id": "xxxxx-2",
+  "object_name": "成宝拉",
+  "operator_id": "operator_id-1",
+  "operator_name": "张三",
+  "operator_dept_id": "operator_dept_id-1",
+  "operator_dept_name": "研发中心-后端一部",
+  "changes": [
+    {
+      "field_name": "姓名",
+      "new_value": "成宝拉"
+    },
+    {
+      "field_name": "性别",
+      "new_value": "女"
+    },
+    {
+      "field_name": "手机号码",
+      "new_value": "13055770002"
+    },
+    {
+      "field_name": "邮箱",
+      "new_value": "baola@qq.com"
+    }
+  ]
+}
+
+// data-5
+
+{
+  "ip": "10.1.11.5",
+  "trace_id": "670021e89a2dc655",
+  "operation_time": "2022-05-05 10:35:12",
+  "module": "企业组织",
+  "action_code": "DELETE",
+  "location": "企业组织->员工管理->身份管理",
+  "object_id": "xxxxx-1",
+  "object_name": "成德善",
+  "operator_id": "operator_id-2",
+  "operator_name": "李四",
+  "operator_dept_id": "operator_dept_id-2",
+  "operator_dept_name": "人力资源部",
+  "changes": []
+}
+
+// data-6
+
+{
+  "ip": "10.0.0.0",
+  "trace_id": "670021ff9a28ei6",
+  "operation_time": "2022-10-02 09:31:00",
+  "module": "资源中心",
+  "action_code": "DELETE",
+  "location": "资源中心->文件管理",
+  "object_id": "fffff-a",
+  "object_name": "《有空字符串的文档》",
+  "operator_id": "operator_id-a",
+  "operator_dept_id": "",
+  "operator_dept_name": "",
+  "operator_name": "路人A",
+  "changes": []
+}
+
+// data-7
+
+{
+  "ip": "10.0.0.0",
+  "trace_id": "670021ff9a28768",
+  "operation_time": "2022-10-02 09:32:00",
+  "module": "资源中心",
+  "action_code": "DELETE",
+  "location": "资源中心->文件管理",
+  "object_id": "fffff-b",
+  "object_name": "《有NULL的文档》",
+  "operator_id": "operator_id-b",
+  "operator_name": "路人B",
+  "changes": []
+}
+
+
+
+
+    @Field(type= FieldType.Nested, index = FieldIndex.not_analyzed)
+    private List<Stock> relatedStocks;
+    @Field(type= FieldType.String, index = FieldIndex.not_analyzed)
+    private List<String> relatedIndustries;
+
+
+a.	SFTP_CONFIG(sftp_config)sftpConfig
+====================
+2.	partnerId
+3.	ownerType(SftpConfigOwnerType) => PARTNER
+4.	ownerId =>Owner ID of Partner
+5.	sftpAlias
+6.	sftpPath
+7.	portNo
+8.	username
+9.	password
+10.	uploadAttempts
+11.	remarks
+12.	status(SftpConfigStatus) => ACTIVE,INACTIVE
+13.	Created Date
+14.	Last Modified Date
+
+
+b.	SFTP_FILE_UPLOAD_LIST(sftpFileUploadList)
+==================================
+2.	partnerId   M2O Partner
+6.	sftpConfigId => Reference to SFTP Config   M2O  SftpConfig
+
+3.	ownerType
+4.	ownerId
+5.	filePath
+7.	sftpPath => to be populated from SFTP Config ID
+8.	portNo => to be populated from SFTP Config ID
+9.	sftpUploadStatus     SftpFileUploadStatus	SUCCESS,FAIL,PENDING
+10.	sftpUploadMessage
+11.	sftpUploadAttempts
+12.	Created Date
+13.	Last Modified Date
+
+
+sftpDetails
+

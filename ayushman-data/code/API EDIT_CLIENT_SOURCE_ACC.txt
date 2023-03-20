@@ -1,0 +1,63 @@
+
+YPP-14769 API EDIT_CLIENT_SOURCE_ACC
+====================================
+
+private PartnerApisResponse editSourceAccount(PartnerApisRequest partnerApisRequest, Partner partner) {
+        log.info("request to edit source account: {}");
+        try {
+            //Check for client  program
+            List<PartnerProgram> partnerPrograms = this.partnerProgramRepository.findByPartnerIdAndStatus(partner.getId(), Status.ACTIVE);
+            boolean access = partnerPrograms.stream()
+                .anyMatch(partnerProgram -> "CLIENT_PROGRAM".equals(partnerProgram.getYpHubProgram().getName()));
+            if (!access) {
+                log.info("client  program is not enabled for the partner {}", partner.getId());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT_SOURCE_ACC, "YPP", "", "P005")));
+            }
+            //Check for missing parameter
+            if (StringUtils.isAnyBlank(partnerApisRequest.getRequestId(), partnerApisRequest.getP1(), partnerApisRequest.getP2(), partnerApisRequest.getP3())) {
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT_SOURCE_ACC, "YPP", "", "P006")));
+            }
+            //Check for client identifier presence
+            Optional<PartnerClient> partnerClient = this.partnerClientRepository.findByClientIdentifierAndPartnerId(partnerApisRequest.getP1(), partner.getId());
+            if (!partnerClient.isPresent()) {
+                log.info("Invalid client identifier {}", partnerApisRequest.getP1());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT_SOURCE_ACC, "YPP", "", "DCA005")));
+            }
+            if(partnerClient.get().getIsSuspended() == Boolean.TRUE) {
+              	 log.info("Client is suspended {}", partnerClient.get().getIsSuspended());
+              	 return new PartnerApisResponse(DAErrorCode.CLIENT_IS_SUSPENDED);
+              }
+            //Check for source account map to this client
+            Optional<PartnerClientSourceAccount> partnerClientSourceAccount = this.partnerClientSourceAccountRepository.findByPartnerClientIdAndAccountNumber(partnerClient.get().getId(), partnerApisRequest.getP2());
+            if (!partnerClientSourceAccount.isPresent()) {
+                log.info(" Invalid Source account {}", partnerApisRequest.getP2());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT_SOURCE_ACC, "YPP", "", "DCA011")));
+            }
+            PartnerClientSourceAccount sourceAccountObj = partnerClientSourceAccount.get();
+            //Check for status
+            if (!("ACTIVE".equals(partnerApisRequest.getP3()) || "INACTIVE".equals(partnerApisRequest.getP3()))) {
+                log.info("Invalid status {}", partnerApisRequest.getP3());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT_SOURCE_ACC, "YPP", "", "DCA016")));
+            }
+            if (partnerApisRequest.getP3().equals(sourceAccountObj.getStatus().name())) {
+                log.info("Source Account is already " + partnerApisRequest.getP3());
+                PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT_SOURCE_ACC, "YPP", "", "DCA021")));
+                partnerApisResponse.setResponseMessage(partnerApisResponse.getResponseMessage() + partnerApisRequest.getP3());
+                return partnerApisResponse;
+            }
+            sourceAccountObj.setStatus(Status.valueOf(partnerApisRequest.getP3()));
+            sourceAccountObj = this.partnerClientSourceAccountRepository.save(sourceAccountObj);
+            //Success response
+            PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT_SOURCE_ACC, "YPP", "", "00")));
+            partnerApisResponse.setRequestId(partnerApisRequest.getRequestId());
+            partnerApisResponse.setStatus("SUCCESS");
+            partnerApisResponse.setResponseCode("00");
+            partnerApisResponse.setClientIdentifier(partnerClient.get().getClientIdentifier());
+            partnerApisResponse.setResponseMessage("Source account status has been modified successfully.");
+            return partnerApisResponse;
+        } catch (Exception ex) {
+            log.info("Exception in edit source account : {}" + ex.getLocalizedMessage());
+            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT_SOURCE_ACC, "YPP", "", "DCA022")));
+        }
+    }
+

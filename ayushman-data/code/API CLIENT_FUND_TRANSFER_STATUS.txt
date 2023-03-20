@@ -1,0 +1,59 @@
+
+YPP-14771 API CLIENT_FUND_TRANSFER_STATUS
+============================================
+
+private PartnerApisResponse fundTransferStatus(PartnerApisRequest partnerApisRequest, Partner partner) {
+    	log.info("request to check fund transfer status {} partnerId {} ",partnerApisRequest,partner.getId() );
+    	try {
+    		//Check for missing parameter
+	    	if(StringUtils.isAnyBlank(partnerApisRequest.getP1(),partnerApisRequest.getRequestId())) {
+	     		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_CLIENT_FUND_TRANSFER_STATUS, "YPP", "", "P006")));
+	    	}
+			if (!partnerApisRequest.getP1().matches("[a-zA-Z0-9]+")) {
+				log.info("Invalid Partner Reference Number {}", partnerApisRequest.getP1());
+	     		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_CLIENT_FUND_TRANSFER_STATUS, "YPP", "", "DCA068")));
+			}
+	    	//Check for partner reference number
+	    	Optional<LimitReconTransactions> limitReconTransaction = this.limitReconTransactionsRepository.findByPartnerReferenceNumberAndPartnerId(partnerApisRequest.getP1(),partner.getId());
+	    	if(!limitReconTransaction.isPresent()) {
+	    		log.info("Partner reference no does not exist {}",partnerApisRequest.getP1() );
+	     		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_CLIENT_FUND_TRANSFER_STATUS, "YPP", "", "DCA045")));
+	    	}
+	    	LimitReconTransactions limitReconTransactionObj = limitReconTransaction.get();
+	    	String paymentMode = "";
+	    	switch(limitReconTransactionObj.getLimitSystemAccount().getAccountType()) {
+	    		case "upi_payable_pool":
+	    			paymentMode = "UPI";
+	    			break;
+	    		case "imps_payable_pool":
+	    			paymentMode = "IMPS";
+	    			break;
+	    		case "neft_payable_pool":
+	    			paymentMode = "NEFT";
+	    			break;
+	    		case "rtgs_payable_pool":
+	    			paymentMode = "RTGS";
+	    			break;
+	    	}
+
+	    	//Success response
+	    	PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_CLIENT_FUND_TRANSFER_STATUS, "YPP", "", "00")));
+	    	partnerApisResponse.setStatus("SUCCESS");
+			if (SettlementStatus.PENDING.equals(limitReconTransactionObj.getSettlementStatus()))
+				partnerApisResponse.setTxnStatus(SettlementStatus.PENDING.name());
+			else if (SettlementStatus.REVERSED.equals(limitReconTransactionObj.getSettlementStatus()))
+				partnerApisResponse.setTxnStatus(TransactionStatus.FAIL.name());
+			else if (SettlementStatus.SETTLED.equals(limitReconTransactionObj.getSettlementStatus()))
+				partnerApisResponse.setTxnStatus(TransactionStatus.SUCCESS.name());
+			else
+	     		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_CLIENT_FUND_TRANSFER_STATUS, "YPP", "", "DCA045")));
+	    	partnerApisResponse.setPartnerReferenceNumber(partnerApisRequest.getP1());
+	    	partnerApisResponse.setPaymentMode(paymentMode);
+	        partnerApisResponse.setChannelReferenceNo(((null == limitReconTransactionObj.getMerchantReferenceNumber()) ?"" : limitReconTransactionObj.getMerchantReferenceNumber()));
+	    	partnerApisResponse.setYppTxnReferenceNumber(limitReconTransactionObj.getTxnReferenceNumber());
+	    	return partnerApisResponse;
+    	} catch(Exception ex) {
+    		log.info("Exception in beneficiary fund transfer status: ", ex);
+    		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_CLIENT_FUND_TRANSFER_STATUS, "YPP", "", "DCA046")));
+    	}
+    }

@@ -1,0 +1,680 @@
+YPP-14766 API ADD_CLIENT
+=======================
+  
+  public PartnerApisResponse addClient(PartnerApisRequest request, Partner partner) {
+        log.info("Request to add client {} for partner {}", request, partner.getId());
+        try {
+            //Check for DCA program
+            List<PartnerProgram> partnerPrograms = this.partnerProgramRepository.findByPartnerIdAndStatus(partner.getId(), Status.ACTIVE);
+            boolean access = partnerPrograms.stream()
+                .anyMatch(partnerProgram -> "CLIENT_PROGRAM".equals(partnerProgram.getYpHubProgram().getName()));
+            if (!access) {
+                log.info("DCA progaram is not enabled for the partner {}", partner.getId());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "P005")));
+            }
+            if (StringUtils.isAnyBlank(request.getRequestId(), request.getP1(), request.getP2(),
+                request.getP3(), request.getP4(), request.getP5(), request.getP6(), request.getP7(), request.getP9())) {
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "P006")));
+            }
+            String pan = request.getP1().toUpperCase();
+            Long partnerId = partner.getId();
+            PartnerClient partnerClient = new PartnerClient();
+			partnerClient.setDueDiligenceStatus(DueDiligenceStatusEnum.FDD);
+            if (pan.length() != 10 || !fourthLetter.contains(pan.charAt(3))) {
+            	log.info("Invalid pan while adding client through YPHub : {} and pan charAt(3): {} and length of Pan : {} ", pan, pan.charAt(3), pan.length());
+                log.info("Invalid pan {}", pan);
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA002")));
+            } else if (!request.getP2().matches("^[a-zA-Z0-9./ ]+$")) {
+                log.info("Invalid Name {}", request.getP2());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA075")));
+            } else if (!request.getP3().matches("^[A-Za-z0-9]{3}$")) {
+                log.info("Invalid Client Id {}", request.getP3());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA005")));
+            } else if (!request.getP4().matches("^[0-9]{10}$")) {
+                log.info("Invalid Mobile No {}", request.getP4());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA007")));
+            } else if (!request.getP5().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,50}$")) {
+                log.info("Invalid Email Id {}", request.getP5());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA009")));
+            } else if (!request.getP6().matches("^[A-Za-z0-9]*$")) {
+                log.info("Invalid Source Account {}", request.getP6());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA011")));
+            } else if (!RandomUtil.isValidIFSCode(request.getP7())) {
+                log.info("Invalid Source IFSC code {}", request.getP7());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA012")));
+            } else if (StringUtils.isNotBlank(request.getP8()) && !request.getP8().toUpperCase().matches("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$")) {
+                log.info("Invalid GST Number {}", request.getP8());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA013")));
+            } else if (StringUtils.isNotBlank(request.getP8()) && !request.getP8().substring(2, 12).equalsIgnoreCase(pan)) {
+                log.info("Invalid GST Number {}", request.getP8());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA013")));
+            }
+			List<String> programTypeList = Arrays.asList(PartnerClientPurposeEnum.DC_AGGREGATOR.name(),
+					PartnerClientPurposeEnum.TRADE.name(),PartnerClientPurposeEnum.GIFT_CARD.name(), PartnerClientPurposeEnum.CONSUMER_MGMT.name(), PartnerClientPurposeEnum.MSVD.name());
+			if (!programTypeList.contains(request.getP9())) {
+				log.info("Invalid program type {}", request.getP9());
+				return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA066")));
+			}
+
+			Optional<ClientValidationConfig> clientValidationConfigOptional = clientValidationConfigRepository.findByPartnerIdAndPurpose(partnerId, PurposeClientValidationConfigEnum.valueOf(request.getP9()));
+			if(!clientValidationConfigOptional.isPresent()) {
+				log.info("Client validation config is missing for partner {}", partner.getId());
+				return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA112")));
+			}
+            log.info("client validation config logs : {} and custom ecolect number : {}", clientValidationConfigOptional.isPresent(),clientValidationConfigOptional.get().getCustomECollectNumber());
+			if(clientValidationConfigOptional.isPresent() && null != clientValidationConfigOptional.get().getCustomECollectNumber() && clientValidationConfigOptional.get().getCustomECollectNumber()){
+				log.info("request param 10 is : {}", request);
+            if (StringUtils.isAnyBlank(request.getP10())) {
+            	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "P006")));
+            }
+                // Invalid E Collect Number
+                if (!request.getP10().matches("[a-zA-Z0-9]+")) {
+                    log.info("Invalid E Collect Number, {}", request.getP10());
+                    return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "PD042")));
+                }
+                if (request.getP10().length()<6) {
+                	log.info("E collect code Number should be atleast 6, {},", request.getP5());
+                	//invalid e collect account no
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "PD042")));
+                }
+                if (request.getP10().length()>25 || !request.getP10().substring(0, 6).equals(clientValidationConfigOptional.get().geteCollectAccountCode())) {
+                    log.info("Invalid e collect code Number, {}, request.getP5()");
+                    //invalid e collect account no
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "PD042")));
+                }
+
+                if(eCollectAccountRepository.existsByAccountNo(request.getP10())) {
+                    log.info("E Collect Number already taken, {}", request.getP10());
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "PD060")));
+                }
+            }
+
+            if (partnerClientRepository.existsByPanAndPartnerId(pan, partnerId)) {
+                log.info("Pan {} already exists", pan);
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA003")));
+            } else if (partnerClientRepository.existsByClientIdentifierAndPartnerId(request.getP3(), partnerId)) {
+                log.info("Client Id {} already exists", request.getP3());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA006")));
+            } else if (partnerClientRepository.existsByMobileNumberAndPartnerId(request.getP4(), partnerId)) {
+                log.info("Mobile No {} already exists", request.getP4());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA008")));
+            } else if (partnerClientRepository.existsByEmailAndPartnerId(request.getP5(), partnerId)) {
+                log.info("Email {} already exists", request.getP5());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA010")));
+			}
+
+			if (PartnerClientPurposeEnum.DC_AGGREGATOR.name().equals(request.getP9())) {
+				if (!partnerPrograms.stream().anyMatch(
+						partnerProgram -> "DC_AGGREGATOR".equals(partnerProgram.getYpHubProgram().getName()))) {
+					log.info("Invalid program type {} with partner program", request.getP9());
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA066")));
+				}
+			} else if (PartnerClientPurposeEnum.TRADE.name().equals(request.getP9())) {
+				if (!partnerPrograms.stream()
+						.anyMatch(partnerProgram -> "TRADE".equals(partnerProgram.getYpHubProgram().getName()))) {
+					log.info("Invalid program type {} with partner program", request.getP9());
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA066")));
+				}
+			} else if (PartnerClientPurposeEnum.GIFT_CARD.name().equals(request.getP9())) {
+				if (!partnerPrograms.stream()
+						.anyMatch(partnerProgram -> "GIFT_CARD".equals(partnerProgram.getYpHubProgram().getName()))) {
+					log.info("Invalid program type {} with partner program", request.getP9());
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA066")));
+				}
+			} else if (PartnerClientPurposeEnum.CONSUMER_MGMT.name().equals(request.getP9())) {
+				if (!partnerPrograms.stream()
+						.anyMatch(partnerProgram -> "CONSUMER_PROGRAM".equals(partnerProgram.getYpHubProgram().getName()))) {
+					log.info("Invalid program type {} with partner program and yphub prgm {}", request.getP9(), partnerPrograms.get(0).getYpHubProgram().getName());
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA066")));
+				}
+			} else if (PartnerClientPurposeEnum.MSVD.name().equals(request.getP9())) {
+				if (!partnerPrograms.stream().anyMatch(
+						partnerProgram -> "PAYMENT_DISBURSEMENT".equals(partnerProgram.getYpHubProgram().getName()))) {
+					log.info("Invalid program type {} with partner program", request.getP9());
+					return new PartnerApisResponse(DAErrorCode.CLIENT_BEING_ONBOARDED_WITH_INVALID_PURPOSE);
+				}
+			} 
+			//check count on purpose level
+			boolean gstVerified = false;
+			//Optional<PartnerDASetup> daSetupOpt = Optional.empty();
+			Optional<ClientValidationConfig> clientValidationConfigOpt = Optional.empty();
+			if (PartnerClientPurposeEnum.DC_AGGREGATOR.name().equals(request.getP9())) {
+				//daSetupOpt = partnerDASetupRepository.findByPartnerId(partnerId);
+                 clientValidationConfigOpt =  clientValidationConfigRepository.findByPartnerIdAndPurpose(partnerId, PurposeClientValidationConfigEnum.valueOf(request.getP9()));
+				//if(!daSetupOpt.isPresent()) {
+                if(!clientValidationConfigOpt.isPresent()){
+					log.info("DC Aggregator configuration missing for purpose {}", request.getP9());
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA099")));				}
+				Integer clientByPartnerCount = partnerClientRepository.countByPartnerIdAndPurpose(partnerId, PartnerClientPurposeEnum.valueOf(request.getP9()));
+				//if (clientByPartnerCount >= daSetupOpt.get().getMaximumClients()) {
+                if (clientByPartnerCount >= clientValidationConfigOpt.get().getMaximumClients()) {
+					//log.info("Client Count {} and Max client for partner {}", clientByPartnerCount, daSetupOpt.get().getMaximumClients());
+                    log.info("Client Count {} and Max client for partner {}", clientByPartnerCount, clientValidationConfigOpt.get().getMaximumClients());
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA014")));				}
+				if(clientValidationConfigOpt.isPresent()) {
+					gstVerified = clientValidationConfigOpt.get().isGstValidation();
+				}
+			} else if(PartnerClientPurposeEnum.GIFT_CARD.name().equals(request.getP9())) {
+				clientValidationConfigOpt = clientValidationConfigRepository.findByPartnerIdAndPurpose(partnerId, PurposeClientValidationConfigEnum.valueOf(request.getP9()));
+				if(!clientValidationConfigOpt.isPresent()) {
+					log.info("clientValidation configuration missing for purpose {]", request.getP9());
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA099")));
+				}
+				Integer gcClientCount = partnerClientRepository.countByPartnerIdAndPurpose(partnerId,PartnerClientPurposeEnum.GIFT_CARD);
+				if (gcClientCount >= clientValidationConfigOpt.get().getMaximumClients()) {
+					log.info("Client Count {} and Max client for partner {}", gcClientCount, clientValidationConfigOpt.get().getMaximumClients());
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA014")));
+				}
+				if(clientValidationConfigOpt.isPresent()) {
+					gstVerified = clientValidationConfigOpt.get().isGstValidation();
+				}
+			} else if(PartnerClientPurposeEnum.CONSUMER_MGMT.name().equals(request.getP9())) {
+                clientValidationConfigOpt = clientValidationConfigRepository.findByPartnerIdAndPurpose(partnerId, PurposeClientValidationConfigEnum.valueOf(request.getP9()));
+                if(!clientValidationConfigOpt.isPresent()) {
+    					log.info("clientValidation configuration missing for purpose {]", request.getP9());
+    					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA099")));
+                }
+                Integer consumerClientCount = partnerClientRepository.countByPartnerIdAndPurpose(partnerId, PartnerClientPurposeEnum.CONSUMER_MGMT);
+                if (consumerClientCount >= clientValidationConfigOpt.get().getMaximumClients()) {
+                    log.info("Client Count {} and Max client for partner {}", consumerClientCount, clientValidationConfigOpt.get().getMaximumClients());
+                    return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA014")));
+                }
+			} else if (PartnerClientPurposeEnum.MSVD.name().equals(request.getP9())) {
+				Optional<PartnerPDSetup> partnerPDSetupInfo = partnerPDSetupRepository.findByPartnerId(partnerId);
+				if (!partnerPDSetupInfo.isPresent() || null == partnerPDSetupInfo.get().getMsvdChannel() || null == partnerPDSetupInfo.get().getMsvdFundSource()
+						|| !MSVDFundSourceEnum.CLIENT_LIMIT.equals(partnerPDSetupInfo.get().getMsvdFundSource())) {
+					log.info("DC Aggregator configuration missing for purpose {}", request.getP9());
+					return new PartnerApisResponse(DAErrorCode.PARTNER_CONFIGURATION);
+				}   	
+				clientValidationConfigOpt =  clientValidationConfigRepository.findByPartnerIdAndPurpose(partnerId, PurposeClientValidationConfigEnum.valueOf(request.getP9()));		
+				if(!clientValidationConfigOpt.isPresent()){
+					log.info("DC Aggregator configuration missing for purpose {}", request.getP9());
+					return new PartnerApisResponse(DAErrorCode.PARTNER_CONFIGURATION);
+				}
+				Integer clientByPartnerCount = partnerClientRepository.countByPartnerIdAndPurpose(partnerId, PartnerClientPurposeEnum.valueOf(request.getP9()));		
+				if (clientByPartnerCount >= clientValidationConfigOpt.get().getMaximumClients()) {
+					log.info("Client Count {} and Max client for partner {}", clientByPartnerCount, clientValidationConfigOpt.get().getMaximumClients());
+					return new PartnerApisResponse(DAErrorCode.MAXIMUM_NO_CLIENT_ADDITION_REACHED);
+				}
+				if(clientValidationConfigOpt.isPresent()) {
+					gstVerified = clientValidationConfigOpt.get().isGstValidation();
+				}
+			} 
+			//gst validation with purpose base
+			if(gstVerified && StringUtils.isBlank(request.getP8())) {
+				if("YPHUB".equals(request.getChannel()))
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA075")));
+				else
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "P006")));
+			}
+			// pan verification
+			log.debug("PAN Verification process start: {}", pan);
+			PanVerificationDetails panVerificationDetails = createPanVerification(pan);
+			try {
+				String responseObj = null;
+				if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
+					responseObj = getPanCardData.getPanCardData(pan); // Call to NSDL api
+				} else {
+					responseObj = dummyApiResponseRepository.findByKeyAndApiNameAndValue("Pan", ApiNameEnum.NSDL, pan).orElse(new DummyApiResponse()).getApiResponse();
+					if (StringUtils.isBlank(responseObj))
+						responseObj = getPanCardData.getPanCardData(pan); // Call to NSDL api
+				}
+				JSONObject responseJson = new JSONObject(responseObj);
+				PanCardDataDto panCardDataDto = new ObjectMapper().readValue(responseJson.getJSONObject("PANRes").toString(), PanCardDataDto.class);
+				if (null != panCardDataDto && !panCardDataDto.getErrorCode().equals("01") && "E".equals(panCardDataDto.getExist())) {
+					String clientName = request.getP2().toLowerCase();
+					panVerificationDetails.panData(responseObj).firstName(panCardDataDto.getFirstname()).lastName(panCardDataDto.getLastname()).middleName(panCardDataDto.getMiddlename()).issueDate(panCardDataDto.getIssueDate());
+					panVerificationDetails.setPanDisplayName(panCardDataDto.getNameOnCard());
+					panVerificationDetailsRepository.save(panVerificationDetails);
+					if(!(clientName.contains(panCardDataDto.getFirstname().toLowerCase()) && clientName.contains(panCardDataDto.getLastname().toLowerCase()))) {
+						log.info("PAN details mismatch clientName: {} , panCardDataDto: {}", clientName, panCardDataDto);
+						return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA004")));
+					}
+				} else {
+					log.info("Pan {} is invalid", pan);
+					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA002")));
+				}
+				log.debug("PAN Verification process end: {}", pan);
+			} catch (IOException e) {
+				log.error("Unable to verify Pan, please try again later for IOException: {}", e);
+				return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA002")));
+			}
+			// updating client details
+			partnerClient.setDueDiligenceStatus(DueDiligenceStatusEnum.PAN_VERIFIED);
+            partnerClient.clientIdentifier(request.getP3()).clientName(request.getP2()).pan(pan).mobileNumber(request.getP4()).email(request.getP5()).partner(partner).status(Status.ACTIVE);
+            partnerClient.setChannel(ChannelEnum.valueOf(request.getChannel()));
+            if (!StringUtils.isBlank(request.getP8())) {
+                partnerClient.gstn(request.getP8().toUpperCase());
+            }
+            if ("YPHUB".equals(request.getChannel())) {
+                Optional<YPHubUser> yphubUserOptional = this.getLoginUser();
+                if (yphubUserOptional.isPresent()) {
+                    partnerClient.setOnBoardedBy(yphubUserOptional.get().getId());
+                }
+            } else {
+                Optional<YPHubUser> yphubUserOptional = this.ypHubUserRepository.findByOwnerIdAndOwnerTypeAndStatus(partner.getId(), OwnerTypeEnum.PARTNER, Status.ACTIVE);
+                if (yphubUserOptional.isPresent()) {
+                    partnerClient.setOnBoardedBy(yphubUserOptional.get().getId());
+                }
+            }
+            //gst verification
+            KarzaGstVerificationInfo gstVerificationInfo = null;
+            GstMaster gstMaster = null;
+            if (StringUtils.isNotBlank(request.getP8()) && gstVerified) {
+            	log.debug("Gst Verification process start: {}", request.getP8());
+            	gstVerificationInfo = createGstVerificationInfoForAddClient(request.getP8(), partner);
+                try {
+                    String response = null;
+                    if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
+                        response = gstService.commonGstVerification(request.getP8());
+                    } else {
+                        response = dummyApiResponseRepository.findByKeyAndApiNameAndValue("GST", ApiNameEnum.GST_VERIFICATION, request.getP8()).orElse(new DummyApiResponse()).getApiResponse();
+                        if (StringUtils.isBlank(response))
+                            response = gstService.commonGstVerification(request.getP8());
+                    }
+                    GstVerificationResponse verificationResponse = new ObjectMapper().readValue(response, GstVerificationResponse.class);
+                    log.info("Karza GST verification response {}", verificationResponse);
+                    if(null != verificationResponse)
+                        gstVerificationInfo.requestId(verificationResponse.getRequestId()).statusCode(verificationResponse.getStatusCode());
+                    if (StringUtils.isNotBlank(verificationResponse.getStatusCode()) && verificationResponse.getStatusCode().equalsIgnoreCase("101")
+                            && null != verificationResponse.getResult() && "Active".equalsIgnoreCase(verificationResponse.getResult().getSts()) ) {
+                        log.info("Gst Verified successfully");
+                        GstResult result = verificationResponse.getResult();
+                        gstVerificationInfo.legalName(result.getLgnm()).registrationStatus(result.getSts()).registrationDate(result.getRgdt()).natureOfBusiness(new JSONArray(result.getNba()).toString())
+                                .address(result.getPradr().getAdr()).ownershipType(result.getCtb());
+                        partnerClient.setDueDiligenceStatus(DueDiligenceStatusEnum.GST_VERIFIED);
+                        karzaGstVerificationInfoRepository.save(gstVerificationInfo);
+                        gstMaster = createGSTMaster(partner, gstVerificationInfo, request, verificationResponse);
+                        //gstMasterRepository.save(gstMaster);
+                    } else if (StringUtils.isNotBlank(verificationResponse.getStatusCode()) && verificationResponse.getStatusCode().equalsIgnoreCase("101")
+                            && null != verificationResponse.getResult() && !"Active".equalsIgnoreCase(verificationResponse.getResult().getSts()) ) {
+                        log.info("Gst Verification Failed : Gst not active");
+                        GstResult result = verificationResponse.getResult();
+                        gstVerificationInfo.legalName(result.getLgnm()).registrationStatus(result.getSts()).registrationDate(result.getRgdt()).natureOfBusiness(null != result.getNba() ? new JSONArray(result.getNba()).toString() : null)
+                        .address(null != result.getPradr() ? result.getPradr().getAdr() : null).ownershipType(result.getCtb());
+                        persistKarzaDetails(gstVerificationInfo);
+                        return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA113")));
+                    } else if (StringUtils.isNotBlank(verificationResponse.getStatusCode()) && !verificationResponse.getStatusCode().equalsIgnoreCase("101")) {
+                        log.info("Gst Verification Failed: Invalid Gst Number");
+                        persistKarzaDetails(gstVerificationInfo);
+                        return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA013")));
+                    } else {
+                        log.error("Unable to verify GST, please try again later for other failure and timeout cases: {}");
+                        persistKarzaDetails(gstVerificationInfo);
+                        return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA089")));
+                    }
+                } catch (IOException e) {
+                    log.error("Unable to verify GST, please try again later for IOException: {}", e);
+                    gstVerificationInfo.setStatusCode("timeout");
+                    persistKarzaDetails(gstVerificationInfo);
+                    return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA089")));
+                }
+                log.debug("Gst Verification process ends: {}", request.getP8());
+            }
+            //source account verification
+            PartnerClientSourceAccount sourceAccount = new PartnerClientSourceAccount().accountNumber(request.getP6()).ifscCode(request.getP7()).status(Status.ACTIVE);
+            String partnerCode = partner.getPartnerCode();
+            YPHubUser user = new YPHubUser().ownerType(OwnerTypeEnum.PARTNER_CLIENT).communicationMode(CommunicationModeEnum.E)
+                .userName(partnerCode + "C." + partnerClient.getClientIdentifier()).name(partnerClient.getClientName()).status(Status.ACTIVE);
+            ECollectAccount eCollectAccount = new ECollectAccount().ownerType(ECollectOwnerEnum.PARTNER_CLIENT).partner(partnerClient.getPartner())
+                .accountNo((null != clientValidationConfigOptional.get().getCustomECollectNumber() && clientValidationConfigOptional.get().getCustomECollectNumber()) ? request.getP10(): getEcollectAccountNumber());
+            partnerClient.setEcollectNumber(eCollectAccount.getAccountNo());
+            partnerClient.setPurpose(PartnerClientPurposeEnum.valueOf(request.getP9()));
+
+            Boolean sourceAccountVerification = Boolean.FALSE;
+
+            Long accountVerificationRecordId = null;
+            Boolean isAccVerified = Boolean.FALSE;
+            if (clientValidationConfigOpt.isPresent() && clientValidationConfigOpt.get().isSourceAccountVerification()) {
+            	log.debug("Account Verification process start");
+            	//call common account verfication method
+            	String karzaType = "individual";
+            	Boolean manualSourceAccVerification = clientValidationConfigOpt.get().getManualSourceAccVerification();
+            	try {
+//            		AccountVerificationResponseDto verificationResponseDto = accountVerificationService.accountVerificationProcess(
+//            				request.getP6(), request.getP7(), Boolean.FALSE, request.getP2(), request.getP1(), null, ChannelEnum.INTERNAL, partner,
+//            				AccountOwnerType.CLIENT_SOURCE_ACCOUNT.name(), null, karzaType, null);
+            		
+            		AccountVerificationResponseDto verificationResponseDto = commonAccountVerfService
+        					.accountVerificationProcess(request.getP6(), request.getP7(), Boolean.FALSE, request.getP2(), request.getP1(), null, ChannelEnum.INTERNAL, partner,
+                    				AccountOwnerType.CLIENT_SOURCE_ACCOUNT.name(), null, karzaType, null);
+                    
+            		log.info("verificationResponse: {}", verificationResponseDto);
+            		if (null != verificationResponseDto && null != verificationResponseDto.getAccountVerificationStatus() && AccountVerificationStatusEnum.SUCCESS.equals(verificationResponseDto.getAccountVerificationStatus())) {
+            			accountVerificationRecordId = verificationResponseDto.getAccountVerificationRecord().getId();
+            			Boolean isAccVerifiedWithTable = Boolean.FALSE;
+            			if (AccountVerificationModeEnum.ACC_VER_TABLE.equals(verificationResponseDto.getAccountVerificationMode())) {
+            				AccountVerificationRecord accountVerificationRecord = verificationResponseDto.getAccountVerificationRecord();
+            				log.debug("AccountVerificationMode: {}, for accountVerificationRecord Id: {} and ActualAccVerificationRecord's Id: {}", verificationResponseDto.getAccountVerificationMode(), accountVerificationRecordId, accountVerificationRecord.getAccountVerificationId());	
+            				Optional<AccountVerificationRecord> actualAccVerificationRecordInfo = accountVerificationRecordRepository.findById(accountVerificationRecord.getAccountVerificationId());
+            				if (actualAccVerificationRecordInfo.isPresent() && !AccountVerificationModeEnum.PAN_ACCOUNT_API.equals(actualAccVerificationRecordInfo.get().getAccountVerificationMode())) {
+            					isAccVerifiedWithTable = Boolean.TRUE;
+            					log.debug("ActualAccVerificationRecords AccountVerificationMode: {} and isAccVerifiedWithTable: {}", actualAccVerificationRecordInfo.get().getAccountVerificationMode(), isAccVerifiedWithTable);	
+            				}
+            			}	
+						if (null != panVerificationDetails && null != verificationResponseDto.getAccountVerificationMode()
+								&& (Arrays.asList(AccountVerificationModeEnum.UNIVERSAL_VPA_VALIDATION, AccountVerificationModeEnum.PENNY_DROP_IMPS).contains(verificationResponseDto.getAccountVerificationMode())
+									|| isAccVerifiedWithTable)) {
+            				log.info("Nsdl Request panFirstName : {}, panLastName: {}, nameOnCard: {}, nameToCompare: {}, partner: {}, ownerType: {}, ownerId: {}, isNameToCompareVerified: {}, type:{}",panVerificationDetails.getFirstName(), panVerificationDetails.getLastName(), request.getP2(), verificationResponseDto.getVerifiedAccountName(), partner, KycOwnerType.PARTNER_CLIENT.name(), partnerClient.getId(), Boolean.FALSE, karzaType);
+            				NsdlNameMatchResponse response = nsdlNameMatchService.nsdlNameMatchProcess(panVerificationDetails.getFirstName(), panVerificationDetails.getLastName(), panVerificationDetails.getPanDisplayName(), verificationResponseDto.getVerifiedAccountName(), partner, KycOwnerType.PARTNER_CLIENT.name(), partnerClient.getId(), Boolean.FALSE, karzaType);
+            				log.info("NsdlNameResponse : {}", response);
+            			    if (null != response && null != response.getStatus() && response.getStatus().equalsIgnoreCase(AccountVerificationStatusEnum.TIMEOUT.name())) {
+            					log.info("Exception in name matching method : {}" + response.getStatus());
+            					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA114")));
+            				} else if (null != response && null != response.getMatch() && !response.getMatch()) {
+            					log.info("Agent details doesn’t match with PAN details: {}", panVerificationDetails);
+            					return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA082")));
+            				}
+            			}
+            			isAccVerified = Boolean.TRUE;
+            		} else {
+            			if (!manualSourceAccVerification && AccountVerificationStatusEnum.FAILED.equals(verificationResponseDto.getAccountVerificationStatus())) {
+            				log.info("Account verification failed for partner client pan {} account no {} , ifscCode {} ", pan, request.getP6(), request.getP7());
+            				return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA084")));
+            			} else if (!manualSourceAccVerification && AccountVerificationStatusEnum.TIMEOUT.equals(verificationResponseDto.getAccountVerificationStatus())) {
+            				log.info("Account verification timed out for partner client pan {} account no {} , ifscCode {} ", pan, request.getP6(), request.getP7());
+            				return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA083")));
+            			}
+            		}
+            	} catch (Exception e) {
+            		log.error("Exception in AccountVerification, {}", e);
+            		return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA001")));
+            	}
+            	log.debug("Account Verification process ends");
+            }
+            
+            // onboard client
+			partnerClient = partnerClientService.create(partnerClient, sourceAccount, panVerificationDetails, user, eCollectAccount, accountVerificationRecordId, gstVerificationInfo, gstMaster, isAccVerified);
+			log.info("Async call to amlockApiCall");
+		    amlockListCheck(partnerClient);
+		    PartnerApisResponse response = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "00")));         
+		    response.setRequestId(request.getRequestId());
+            response.setClientIdentifier(partnerClient.getClientIdentifier());
+            response.setECollectAccountNumber(eCollectAccount.getAccountNo());
+            response.setYpHubUsername(user.getUserName());
+            response.setStatus("SUCCESS");
+            return response;
+        } catch (Exception e) {
+            log.error("Exception ", e);
+            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_ADD_CLIENT, "YPP", "", "DCA001")));
+        }
+    }
+
+
+    public String getPanCardData(String panNo) throws Exception {
+        String requestJson = getRequestJson(panNo);
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", authorization);
+        headers.put("Content-Type", "application/json");
+        log.info("Request To getPanCardData with Request {}", requestJson);
+        String response = dataPowerUtil.postWithDataPower(url, headers, requestJson, Integer.parseInt(timeout),true);
+        log.info("Response from getPanCardData with Response {}", response);
+		return response;
+    }
+
+    private String getRequestJson(String panNo) throws JSONException {
+        return new JSONObject().put("pannumber", panNo).toString();
+    }
+
+    private KarzaGstVerificationInfo createGstVerificationInfoForAddClient(String gstn, Partner partner) {
+		KarzaGstVerificationInfo gstVerificationInfo = new KarzaGstVerificationInfo().ownerType(KarzaGstOwnerType.PARTNER_CLIENT).partner(partner).gstn(gstn);
+		return karzaGstVerificationInfoRepository.save(gstVerificationInfo);
+	}
+
+    public String commonGstVerification(String gstn) throws ClientProtocolException, IOException {
+        String response = restTemplate.getForObject(
+                commonGstVerificationUrl, String.class, gstn);
+        return response;
+    }
+
+    public AccountVerificationResponseDto accountVerificationProcess(String accountNumber, String ifscCode, Boolean isNameVerification, String nameToBeVerify, String panNumber, List<AccVerModeEnum> verificationModeList, ChannelEnum channel, Partner partner, String ownerType, Long ownerId, String entityType, BigDecimal fees) throws IOException {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		Map<String, Object> request = new HashMap<>();
+		request.put("accountNumber", accountNumber);
+		request.put("ifscCode", ifscCode);
+		request.put("isNameVerification", isNameVerification);
+		request.put("nameToBeVerify", nameToBeVerify);
+		request.put("isNameVerification", isNameVerification);
+		request.put("nameToBeVerify", nameToBeVerify);
+		request.put("panNumber", panNumber);
+		request.put("verificationModeList", verificationModeList);
+		request.put("channel", channel);
+		request.put("partnerId", partner.getId());
+		request.put("ownerType", ownerType);
+		request.put("ownerId", ownerId);
+		request.put("entityType", entityType);
+		request.put("fees", fees);
+		String json = new ObjectMapper().writeValueAsString(request);
+		log.info("JSON {} and headers {} for common account verification through seller", json, headers);
+		HttpEntity<String> httpEntity = new HttpEntity<String>(json, headers);
+		ResponseEntity<AccountVerificationResponseDto> resp =this.restTemplate.postForEntity(sellerServiceUrl , httpEntity, AccountVerificationResponseDto.class);
+		log.debug("Response  in json {}", resp);
+		AccountVerificationResponseDto body = resp.getBody();
+		log.info("Account Verifcation response body : {} {} {}", body, resp.getStatusCode(), resp.getHeaders());
+		//AccountVerificationResponseDto accountVerificationResponseDto = new ObjectMapper().readValue(body, AccountVerificationResponseDto.class);
+		return body;
+	}
+
+    public NsdlNameMatchResponse nsdlNameMatchProcess(String panFirstName, String panLastName, String nameOnCard, String nameToCompare, Partner partner, String ownerType, Long ownerId, Boolean isNameToCompareVerified, String type) throws Exception  {
+		log.info("Nsdl Name Match Process Starts With panFirstName: {}, panLastName: {}, nameOnCard: {}, nameToCompare: {}", panFirstName, panLastName, nameOnCard, nameToCompare);
+		nameToCompare = nameToCompare.toLowerCase();
+
+		String[] nameToCompareArray = nameToCompare.split(" ");
+		String nameToCompareTrimmed = nameToCompare.replaceAll("[., ]", "");
+		if (StringUtils.isNotBlank(nameOnCard)) {
+			nameOnCard = nameOnCard.toLowerCase();
+			String nameOnCardTrimmed = nameOnCard.replaceAll("[., ]", "");
+			if (nameToCompareTrimmed.contains(nameOnCardTrimmed)) {
+				log.info("Match Case 1");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+			if (isNameToCompareVerified) {
+				if (StringUtils.isNotBlank(nameToCompareTrimmed) && nameOnCardTrimmed.contains(nameToCompareTrimmed)) {
+					log.info("Match Case 2");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+			}
+			String[] nameOnCardArray = nameOnCard.split(" ");
+			Arrays.sort(nameToCompareArray);
+			Arrays.sort(nameOnCardArray);
+			if (Arrays.equals(nameToCompareArray, nameOnCardArray)) {
+				log.info("Match Case 3");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+		}
+		if (StringUtils.isNoneBlank(panFirstName, panLastName)) {
+			if (nameToCompare.contains(panFirstName.toLowerCase()) && Arrays.stream(nameToCompareArray).anyMatch(panLastName.substring(0,1)::equalsIgnoreCase)) {
+				log.info("Match Case 4");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+			if (nameToCompare.contains(panLastName.toLowerCase()) && Arrays.stream(nameToCompareArray).anyMatch(panFirstName.substring(0,1)::equalsIgnoreCase)) {
+				log.info("Match Case 5");
+				return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+			}
+		}
+		if (null != panFirstName && null != panLastName) {
+			String panFirstNameTrimmed = panFirstName.replaceAll("[., ]", "").toLowerCase();
+			String panLastNameTrimmed = panLastName.replaceAll("[., ]", "").toLowerCase();
+			if (!StringUtils.isAllBlank(panFirstNameTrimmed,panLastNameTrimmed)) {
+				if (nameToCompareTrimmed.contains(panFirstNameTrimmed) && nameToCompareTrimmed.contains(panLastNameTrimmed)) {
+					log.info("Match Case 6");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+				if (isNameToCompareVerified && StringUtils.isNotBlank(nameToCompareTrimmed) && panFirstNameTrimmed.concat(panLastNameTrimmed).contains(nameToCompareTrimmed)) {
+					log.info("Match Case 7");
+					return new NsdlNameMatchResponse(Boolean.TRUE, null,null);
+				}
+			}
+		}
+		KarzaNameMatchRequest karzaNameMatchRequest = null;
+		if (StringUtils.isNotBlank(nameOnCard)) {
+			karzaNameMatchRequest = createKarzaNameMatchRequest(nameOnCard, nameToCompare, partner, ownerType, ownerId);
+		} else {
+			karzaNameMatchRequest = createKarzaNameMatchRequest(panFirstName + " " + panLastName, nameToCompare, partner, ownerType, ownerId);
+		}
+		try {
+		String response = karzaApiService.callKarzaApi(karzaNameMatchRequest, type);
+		if (null != response) {
+			KarzaResponseDto dmtResponseDTO = new ObjectMapper().readValue(response, KarzaResponseDto.class);
+			if (null != dmtResponseDTO) {
+				karzaNameMatchRequest.setStatusCode(StringUtils.isNotBlank(dmtResponseDTO.getStatusCode()) ? Integer.valueOf(dmtResponseDTO.getStatusCode())
+						: (StringUtils.isNotBlank(dmtResponseDTO.getStatus()) ? Integer.valueOf(dmtResponseDTO.getStatus()) : null));
+				karzaNameMatchRequest.setResponseData(response);
+				karzaNameMatchRequest.setRequestId(dmtResponseDTO.getRequestId());
+				karzaNameMatchRequest.setEntityType(type);
+				karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+				if (null != dmtResponseDTO.getResult()) {
+					karzaNameMatchRequest.setScore(new BigDecimal(dmtResponseDTO.getResult().getScore()));
+					karzaNameMatchRequest.setResult(Boolean.valueOf(dmtResponseDTO.getResult().getResult()));
+					karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+					if (dmtResponseDTO.getResult().getResult().equalsIgnoreCase("True")
+							&& new BigDecimal(dmtResponseDTO.getResult().getScore()).compareTo(new BigDecimal(0.65)) > 0) {
+						return new NsdlNameMatchResponse(Boolean.TRUE, new BigDecimal(dmtResponseDTO.getResult().getScore()),null);
+					} else {
+						return new NsdlNameMatchResponse(Boolean.FALSE, new BigDecimal(dmtResponseDTO.getResult().getScore()),null);
+					}
+				}
+			}
+		}} catch (org.apache.http.conn.ConnectTimeoutException r) {
+			log.info("ConnectTimeoutException cought {}", r.getMessage());
+			karzaNameMatchRequest.setStatusCode(999);
+			karzaNameMatchRequest.setResponseData("Timeout");
+			karzaNameMatchRequest.setEntityType(type);
+			karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+//			return new NsdlNameMatchResponse(Boolean.FALSE, null);
+            return new NsdlNameMatchResponse(Boolean.FALSE, null, karzaNameMatchRequest.getResponseData());
+		} catch (ClientProtocolException p) {
+			log.info("ClientProtocolException cought {}", p.getMessage());
+			String statusCode = p.getMessage().substring(p.getMessage().length() - 3);
+			karzaNameMatchRequest.setStatusCode(Integer.valueOf(statusCode));
+			karzaNameMatchRequest.setEntityType(type);
+			karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+			return new NsdlNameMatchResponse(Boolean.FALSE, null,null);
+		}
+		return new NsdlNameMatchResponse(Boolean.FALSE, null,null);
+	}
+
+    private KarzaNameMatchRequest createKarzaNameMatchRequest(String nameOnCard, String nameToCompare, Partner partner, String ownerType, Long ownerId) {
+		KarzaNameMatchRequest karzaNameMatchRequest = new KarzaNameMatchRequest();
+		karzaNameMatchRequest.setName1(nameOnCard);
+		karzaNameMatchRequest.setName2(nameToCompare);
+		karzaNameMatchRequest.setOwnerType(OwnerTypeEnum.valueOf(ownerType));
+		karzaNameMatchRequest.setOwnerId(ownerId);
+		karzaNameMatchRequest.setPartner(partner);
+		return karzaNameMatchRequestRepository.save(karzaNameMatchRequest);
+	}
+
+
+    public String callKarzaApi(KarzaNameMatchRequest karzaNameMatchRequest, String type) throws Exception {
+        String requestJson = getRequestJson(karzaNameMatchRequest, type);
+        Map<String, String> headers = new HashMap<>();
+        headers.put("x-karza-key", xKarzaKey);
+        headers.put("Content-Type", "application/json");
+        log.info("Request To karza with Request {}", requestJson);
+        String response = httpServiceUtil.post(url, headers, requestJson, 30);
+        log.info("Response from karza with Response {}", response);
+		return response;
+    }
+
+	private String getRequestJson(KarzaNameMatchRequest karzaNameMatchRequest, String type) throws JSONException {
+		return new JSONObject().put("name1", karzaNameMatchRequest.getName1()).put("name2", karzaNameMatchRequest.getName2()).put("type", type).put("preset", "G")
+				.put("allowPartialMatch", true).toString();
+	}
+
+    public PartnerClient create(PartnerClient partnerClient, PartnerClientSourceAccount partnerClientSourceAccount, PanVerificationDetails panDetails, YPHubUser user, ECollectAccount eCollectAccount, Long accountVerificationRecordId, KarzaGstVerificationInfo gstVerificationInfo, GstMaster gstMaster, Boolean isAccVerified) throws Exception{
+    	log.info("Request to save PartnerClient {}, Source Account {}, PanVerification Details {} ", partnerClient, partnerClientSourceAccount, panDetails);
+    	// PartnerClient account creation
+    	PartnerClient result = partnerClientRepository.save(partnerClient);
+    	log.info("PartnerClient {}", result);
+    	// Limit account creation
+    	LimitAccount account = new LimitAccount().ownerType(AccountOwnerType.PARTNER_CLIENT).ownerId(result.getId()).currentBalance(BigDecimal.ZERO);
+    	limitAccountRepository.save(account);
+    	partnerClient.setLimitAccount(account);
+    	partnerClientRepository.save(partnerClient);   
+    	// partnerClientSourceAccount creation
+    	partnerClientSourceAccount.setPartnerClient(result);
+    	partnerClientSourceAccount = partnerClientSourceAccountRepository.save(partnerClientSourceAccount);
+    	if (null != accountVerificationRecordId) {
+    		AccountVerificationRecord accountVerificationRecord = accountVerificationRecordRepository.findById(accountVerificationRecordId).get();
+    		log.info("Account Verification Record fetch by id: {}", accountVerificationRecord);
+    		partnerClientSourceAccount.setAccountVerificationReferenceId(accountVerificationRecord.getId());
+    		partnerClientSourceAccount.setIsAccountVerified(isAccVerified);
+    		partnerClientSourceAccount.setAccountVerificationMode(accountVerificationRecord.getAccountVerificationMode().toString());
+    		partnerClientSourceAccount = partnerClientSourceAccountRepository.save(partnerClientSourceAccount);
+    		log.info("saving owner id as source account id : {}", partnerClientSourceAccount.getId());
+    		accountVerificationRecord.setOwnerId(partnerClientSourceAccount.getId());
+    		accountVerificationRecordRepository.save(accountVerificationRecord);
+    		log.info("saving accountVerificationRecord id : {}", accountVerificationRecord.getId());
+    	}
+    	// Pan update
+    	if (null != panDetails) {
+    		panDetails.setOwnerId(result.getId());
+    		panVerificationDetailsRepository.save(panDetails);
+    	}
+    	// Gst update
+    	if (null != gstVerificationInfo && null != gstMaster) {
+    		gstVerificationInfo.setOwnerId(partnerClient.getId());
+    		karzaGstVerificationInfoRepository.save(gstVerificationInfo);
+    		gstMaster.setOwnerId(partnerClient.getId().toString());
+    		gstMasterRepository.save(gstMaster);
+    	}
+    	String encryptedPassword = passwordEncoder.encode(RandomUtil.generatePassword());
+    	user.ownerId(result.getId()).password(encryptedPassword).lastPasswordSetAt(Instant.now());
+    	YPHubUser ypHubUser = ypHubUserRepository.save(user);
+    	partnerClient.setYpHubUserId(ypHubUser.getId());
+    	result = partnerClientRepository.save(partnerClient);
+    	eCollectAccount.ownerId(result.getId());
+    	eCollectAccountRepository.save(eCollectAccount);
+    	YpHubRole ypHubRole = ypHubRoleRepository.findByName("PARTNER_CLIENT_ROLE").get();
+    	YpHubRole ypHubRolePurpose = null;
+    	if(PartnerClientPurposeEnum.DC_AGGREGATOR.equals(partnerClient.getPurpose())) {
+    		ypHubRolePurpose = ypHubRoleRepository.findByName("CLIENT_DCA_ROLE").get();
+    	} else if(PartnerClientPurposeEnum.TRADE.equals(partnerClient.getPurpose())) {
+    		ypHubRolePurpose = ypHubRoleRepository.findByName("CLIENT_TRADE_ROLE").get();//not confirm
+    	} else if(PartnerClientPurposeEnum.GIFT_CARD.equals(partnerClient.getPurpose())) {
+    		ypHubRolePurpose = ypHubRoleRepository.findByName("CLIENT_GC_ROLE").get();
+    	}
+    	YpHubUserRole userRole = new YpHubUserRole().ypHubRole(ypHubRole).ypHubUser(user);
+    	ypHubUserRoleRepository.save(userRole);
+
+    	//Assign MISC_PROGRAM_ADMIN role to partner client
+    	YpHubRole ypHubMiscProgramAdminRole = ypHubRoleRepository.findByName("MISC_PROGRAM_ADMIN").get();
+    	YpHubUserRole userMiscProgramAdminRole = new YpHubUserRole().ypHubRole(ypHubMiscProgramAdminRole).ypHubUser(user);
+    	ypHubUserRoleRepository.save(userMiscProgramAdminRole);
+
+    	if (null != ypHubRolePurpose) {
+    		//add purpose role to partner client
+    		YpHubUserRole purposeProgramAdminRole = new YpHubUserRole().ypHubRole(ypHubRolePurpose).ypHubUser(user);
+    		ypHubUserRoleRepository.save(purposeProgramAdminRole);
+    	}
+
+    	if(PartnerClientPurposeEnum.GIFT_CARD.equals(result.getPurpose())){
+    		if(!giftCardPurchaserRepository.existsByPanAndPartner(result.getPan(), result.getPartner())) {
+    			GiftCardPurchaser purchaser = new GiftCardPurchaser().gstn(result.getGstn()).pan(result.getPan())
+    					.partner(result.getPartner()).partnerReferenceNumber("").purchaserName(result.getClientName()) // TODO partner ref no
+    					.purchaserType(PurchaserTypeEnum.ENTERPRISE).status(Status.ACTIVE);
+    			purchaser.setCreatedBy(partnerClient.getOnBoardedBy());
+    			giftCardPurchaserRepository.save(purchaser);
+    		}
+    	}
+    	generateVpa(result);
+    	return result;
+    }
+
+    private void generateVpa(PartnerClient client) { 
+    	String vpa = Arrays.asList(env.getActiveProfiles()).contains("prod")
+    			? "yespay." + client.getPartner().getPartnerCode() + "c" + client.getClientIdentifier() + "@yesbankltd"
+    			: "yespay." + client.getPartner().getPartnerCode() + "c" + client.getClientIdentifier() + "@yestransact";
+    	DynamicVpa dynamicVpa = new DynamicVpa().partner(client.getPartner()).ownerType(VpaOwnerType.PARTNER_CLIENT)
+    			.ownerId(client .getId()).status(VpaStatus.ACTIVE).vpa(vpa.toLowerCase());
+    	dynamicVpaRepository.save(dynamicVpa);	
+    }
+
+    private PanVerificationDetails createPanVerification(String pan) {
+        PanVerificationDetails details = new PanVerificationDetails();
+        details.setPanNo(pan);
+        details.setOwnerType(KycOwnerType.PARTNER_CLIENT);
+        panVerificationDetailsRepository.save(details);
+        return details;
+    }

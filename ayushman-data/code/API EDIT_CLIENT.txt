@@ -1,0 +1,103 @@
+YPP-14767 API EDIT_CLIENT
+=========================
+
+public PartnerApisResponse editClient(PartnerApisRequest partnerApisRequest, Partner partner) {
+        log.info("request to edit partner client {} for partner {}", partnerApisRequest, partner.getId());
+        try {
+            //Check for client  program
+            List<PartnerProgram> partnerPrograms = this.partnerProgramRepository.findByPartnerIdAndStatus(partner.getId(), Status.ACTIVE);
+            boolean access = partnerPrograms.stream()
+                .anyMatch(partnerProgram -> "CLIENT_PROGRAM".equals(partnerProgram.getYpHubProgram().getName()));
+            if (!access) {
+                log.info("client  program is not enabled for the partner {}", partner.getId());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "P005")));
+            }
+            //Check for missing parameter
+            if (StringUtils.isAnyBlank(partnerApisRequest.getRequestId(), partnerApisRequest.getP1(), partnerApisRequest.getP5())) {
+            	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "P006")));
+            }
+            //Check for client identifier presence
+            Optional<PartnerClient> partnerClient = this.partnerClientRepository.findByClientIdentifierAndPartnerId(partnerApisRequest.getP1(), partner.getId());
+            if (!partnerClient.isPresent()) {
+                log.info("Invalid client identifier {}", partnerApisRequest.getP1());
+            	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA005")));
+            }
+
+            PartnerClient partnerClientObj = partnerClient.get();
+            if (!StringUtils.isEmpty(partnerApisRequest.getP2())) {
+                if (!RandomUtil.validateMobileNo(partnerApisRequest.getP2())) {
+                    log.info("Invalid mobile no {}", partnerApisRequest.getP2());
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA007")));
+                }
+                Optional<PartnerClient> partnerClientMobile = this.partnerClientRepository.findByMobileNumberAndPartnerIdAndIdIsNot(partnerApisRequest.getP2(), partner.getId(), partnerClientObj.getId());
+                if (partnerClientMobile.isPresent()) {
+                    log.info("Mobile no already exist {}", partnerApisRequest.getP2());
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA008")));
+                }
+                partnerClientObj.setMobileNumber(partnerApisRequest.getP2());
+            }
+
+            if (!StringUtils.isEmpty(partnerApisRequest.getP3())) {
+                if (!RandomUtil.validateEmail(partnerApisRequest.getP3())) {
+                    log.info("Invalid email {}", partnerApisRequest.getP3());
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA009")));
+                }
+                Optional<PartnerClient> partnerClientEmail = this.partnerClientRepository.findByEmailAndPartnerIdAndIdIsNot(partnerApisRequest.getP3(), partner.getId(), partnerClientObj.getId());
+                if (partnerClientEmail.isPresent()) {
+                    log.info("Email already exist {}", partnerApisRequest.getP3());
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA010")));
+                }
+                partnerClientObj.setEmail(partnerApisRequest.getP3());
+            }
+
+            //GST no validation
+            if ((!StringUtils.isEmpty(partnerClientObj.getGstn())) && (!StringUtils.isEmpty(partnerApisRequest.getP4())) &&
+                (!partnerClientObj.getGstn().equals(partnerApisRequest.getP4()))) {
+                log.info("Differenr gst {}", partnerApisRequest.getP4());
+            	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA017")));
+            }
+            if (StringUtils.isNotBlank(partnerApisRequest.getP4())) {
+                if (!RandomUtil.validateGSTNo(partnerApisRequest.getP4().toUpperCase())) {
+                    log.info("Invalid GST {}");
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA013")));
+                }
+                if (!partnerApisRequest.getP4().substring(2, 12).equalsIgnoreCase(partnerClientObj.getPan())) {
+                    log.info("Invalid GST {}");
+                	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA013")));
+                }
+                partnerClientObj.setGstn(partnerApisRequest.getP4().toUpperCase());
+            }
+
+            if (!("ACTIVE".equals(partnerApisRequest.getP5()) || "INACTIVE".equals(partnerApisRequest.getP5()))) {
+                log.info("Invalid status {}", partnerApisRequest.getP5());
+//            	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA016")));
+                throw new NullPointerException();
+            }
+
+            if ("YPHUB".equals(partnerApisRequest.getChannel())) {
+                Optional<YPHubUser> yphubUserOptional = this.getLoginUser();
+                if (yphubUserOptional.isPresent()) {
+                    partnerClientObj.setUpdatedBy(yphubUserOptional.get().getId());
+                }
+            } else {
+                Optional<YPHubUser> yphubUserOptional = this.ypHubUserRepository.findByOwnerIdAndOwnerTypeAndStatus(partner.getId(), OwnerTypeEnum.PARTNER, Status.ACTIVE);
+                if (yphubUserOptional.isPresent()) {
+                    partnerClientObj.setUpdatedBy(yphubUserOptional.get().getId());
+                }
+            }
+
+            partnerClientObj.setStatus(Status.valueOf(partnerApisRequest.getP5()));
+            partnerClientObj = partnerClientRepository.save(partnerClientObj);
+
+            //Success response
+            PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "00")));
+            partnerApisResponse.setRequestId(partnerApisRequest.getRequestId());
+            partnerApisResponse.setStatus("SUCCESS");
+            partnerApisResponse.setClientIdentifier(partnerClientObj.getClientIdentifier());
+            return partnerApisResponse;
+        } catch (Exception ex) {
+            log.info("Exception in edit partner client : {}" + ex.getLocalizedMessage());
+        	return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(CP_EDIT_CLIENT, "YPP", "", "DCA015")));
+        }
+    }
+
