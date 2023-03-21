@@ -1,0 +1,174 @@
+
+YPP-14778 API DCA_EDIT_COLL_SETTLEMENT_DTLS
+===========================================
+
+public PartnerApisResponse editCollectionSettlementAccount(PartnerApisRequest partnerApisRequest,
+			Partner partner) {
+		log.info("request to edit partner client beneficiary {} , partnerId {}", partnerApisRequest, partner.getId());
+		try {
+
+			// Check for missing parameter
+			if (StringUtils.isAnyBlank(partnerApisRequest.getP1(), partnerApisRequest.getP2(),
+					partnerApisRequest.getP3())) {
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_COLL_SETTLEMENT_DTLS, "YPP", "", "P006")));
+			}
+
+			// Check for client identifier presence
+			Optional<PartnerClient> clientOptional = this.partnerClientRepository
+					.findByClientIdentifierAndPartnerId(partnerApisRequest.getP1(), partner.getId());
+			if (!clientOptional.isPresent()) {
+				log.info("Invalid client identifier {}", partnerApisRequest.getP1());
+				 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_COLL_SETTLEMENT_DTLS, "YPP", "", "DCA005")));	
+			}
+			PartnerClient partnerClient = clientOptional.get();
+			if(PartnerClientPurposeEnum.TRADE.equals(partnerClient.getPurpose())){
+				log.info("client is onboarded for {}", partnerClient.getPurpose());
+				 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_COLL_SETTLEMENT_DTLS, "YPP", "", "DCA057")));			
+			}
+			
+			if (!partnerApisRequest.getP2().matches("[a-zA-Z0-9]+")) {
+				log.info("Invalid Partner Reference Number {}", partnerApisRequest.getP2());
+				 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_COLL_SETTLEMENT_DTLS, "YPP", "", "DCA064")));			
+			}
+			if (!RandomUtil.isValidIFSCode(partnerApisRequest.getP3())) {
+				log.info("Invalid Collection Settlement IFSC {}", partnerApisRequest.getP3());
+				 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_COLL_SETTLEMENT_DTLS, "YPP", "", "DCA065")));			
+			}
+			if("YPHUB".equals(partnerApisRequest.getChannel())) {
+	            Optional<YPHubUser> yphubUserOptional = this.getLoginUser();
+                if(yphubUserOptional.isPresent()) {
+                	partnerClient.setUpdatedBy(yphubUserOptional.get().getId());
+                }
+            } else {
+            	Optional<YPHubUser> yphubUserOptional = this.ypHubUserRepository.findByOwnerIdAndOwnerTypeAndStatus(partner.getId(),OwnerTypeEnum.PARTNER,Status.ACTIVE);
+                if(yphubUserOptional.isPresent()) {
+                	partnerClient.setUpdatedBy(yphubUserOptional.get().getId());
+                }
+            }
+			if(partnerClient.getIsSuspended() == Boolean.TRUE) {
+           	 log.info("Client is suspended {}", partnerClient.getIsSuspended());
+           	 return new PartnerApisResponse(DAErrorCode.CLIENT_IS_SUSPENDED);
+           }
+			partnerClient.collectionSettlementAccount(partnerApisRequest.getP2())
+					.collectionSettlementIFSCCode(partnerApisRequest.getP3());
+			
+			Optional<PartnerDASetup> daSetupOpt = partnerDASetupRepository.findByPartnerId(partner.getId());
+			if(daSetupOpt.isPresent() && daSetupOpt.get().getCollectionSettlementAccountVerification()) {
+	            PANAccountApiRequest panAccountApiRequest = partnerClientService.panAccountVerificationProcess(partnerClient, partnerClient.getCollectionSettlementAccount(), partnerClient.getCollectionSettlementIFSCCode(), OwnerTypeEnum.PARTNER_CLIENT, partnerClient.getId());
+	            if (ResponseStatusEnum.S.equals(panAccountApiRequest.getResponseStatus())) {
+	            	partnerClient.setIsAccountVerified(Boolean.TRUE);
+            	} else {
+            		log.info("Account verification failed for partner client pan {} account no {} , ifscCode {} ", partnerClient.getPan(), partnerClient.getCollectionSettlementAccount(), partnerClient.getCollectionSettlementIFSCCode());
+   				 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_COLL_SETTLEMENT_DTLS, "YPP", "", "DCA077")));			
+            	}
+	        }else{
+            	partnerClient.setIsAccountVerified(Boolean.FALSE);
+	        }
+			PartnerClient result = partnerClientRepository.save(partnerClient);
+
+			// Response object
+			PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_COLL_SETTLEMENT_DTLS, "YPP", "", "00")));
+			partnerApisResponse.setClientIdentifier(result.getClientIdentifier());
+			partnerApisResponse.setStatus("SUCCESS");
+			return partnerApisResponse;
+			
+		
+		}catch (Exception ex) {
+			log.info("Exception in add partner client beneficiary : {}" + ex.getLocalizedMessage());
+				 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_COLL_SETTLEMENT_DTLS, "YPP", "", "DCA055")));			
+		}
+	
+	}
+
+    public PANAccountApiRequest panAccountVerificationProcess(PartnerClient partnerClient, String accountNo, String ifscCode, OwnerTypeEnum ownerType, Long ownerId) {
+    	PANAccountApiRequest panAccountApiRequest = createPanApiRequest(partnerClient, ownerType,ownerId);
+    	try {
+    		String response = partAccountApiService.panAccountApiCallWithoutAuthHeader(accountNo, ifscCode, partnerClient.getPan(), panAccountApiRequest);
+    		PanAccountApiResponsePayloadDto panAccountApiResponseDto = new ObjectMapper().readValue(response, PanAccountApiResponsePayloadDto.class);
+    		updatePanAccountApiRequest(panAccountApiRequest, panAccountApiResponseDto);
+    	} catch (org.apache.http.conn.ConnectTimeoutException r) {
+			log.info("ConnectTimeoutException cought {}", r.getMessage());
+			panAccountApiRequest.setStatusDescription("Timeout");
+			panAccountApiRequest.setErrorCode("999");
+			panAccountApiRequestRepository.save(panAccountApiRequest);
+		} catch (Exception e) {
+    		String[] exceptionMessage = e.getMessage().split(":");
+    		if (exceptionMessage.length == 2) {
+    			panAccountApiRequest.setStatusDescription(exceptionMessage[0]);
+    			panAccountApiRequest.setErrorCode(exceptionMessage[1]);
+    			panAccountApiRequestRepository.save(panAccountApiRequest);
+    		}
+    		log.info("Exception: {} in Pan Account Verification for partner client:", e, partnerClient);
+    	}
+    	return panAccountApiRequest;
+    }
+
+ private PANAccountApiRequest createPanApiRequest(PartnerClient partnerClient, OwnerTypeEnum ownerType, Long ownerId) {
+    	PANAccountApiRequest request = new PANAccountApiRequest().ownerType(ownerType).ownerId(ownerId).partner(partnerClient.getPartner());
+		return request;
+	}
+
+	public String panAccountApiCallWithoutAuthHeader(String accNo, String ifsc, String pan, PANAccountApiRequest panAccountApiRequest) throws IOException, Exception {
+		String requestJson = getPanRequestJson(accNo, ifsc, pan, panAccountApiRequest);
+		Map<String, String> headers = new HashMap<String, String>();
+		headers.put("Content-Type", "application/json");
+		String response = dataPowerUtil.postWithDataPowerWithoutAuthHeader(url, headers, requestJson);
+		log.info("response for panAccountApi: {}", response);
+		PanAccountApiResponseDto panAccountApiResponseDto = new ObjectMapper().readValue(response, PanAccountApiResponseDto.class);
+		String responsePayloadJson = aes.decrypt(panAccountApiResponseDto.getPayload(), cipherKey);
+		log.info("decrypted response payload for panAccountApi: {}", responsePayloadJson);
+		return responsePayloadJson;
+	}
+
+	private String getPanRequestJson(String accNo, String ifsc, String pan, PANAccountApiRequest panAccountApiRequest) throws Exception {
+		PspRefNumbers pspRefNumber = new PspRefNumbers().action(PspRefNumberActionEnum.PAN_ACCOUNT.name());
+		pspRefNumberRepository.save(pspRefNumber);
+		panAccountApiRequest.setPspReferenceNumber("YPP" + pspRefNumber.getId().toString());
+		panAccountApiRequestRepository.save(panAccountApiRequest);
+		PanAccountApiRequestDto panAccountApiRequestDto = new PanAccountApiRequestDto();
+		PanAccountApiRequestInfoDto accountApiRequestInfoDto = new PanAccountApiRequestInfoDto();
+		accountApiRequestInfoDto.setPgMerchantId(pgMerchantId);
+		accountApiRequestInfoDto.setPspRefNo("YPP" + pspRefNumber.getId().toString());
+
+		PanAccountApiPayerTypeDto panAccountApiPayerTypeDto = new PanAccountApiPayerTypeDto();
+		panAccountApiPayerTypeDto.setAddrType("VPA");
+		panAccountApiPayerTypeDto.setAddrValue(accNo + "@" + ifsc + ".ifsc.npci");
+		panAccountApiPayerTypeDto.setIdentityType("PAN");
+		panAccountApiPayerTypeDto.setIdentityValue(pan);
+
+		panAccountApiRequestDto.setRequestInfo(accountApiRequestInfoDto);
+		panAccountApiRequestDto.setPayerType(panAccountApiPayerTypeDto);
+
+		ObjectMapper mapper = new ObjectMapper();
+		String rawBodyValue = mapper.writeValueAsString(panAccountApiRequestDto);
+		log.info("raw body request for account list: {}", rawBodyValue);
+		String encryptRequestValue = aes.encrypt(rawBodyValue, cipherKey);
+		JSONObject requestJson = new JSONObject().put("payload", encryptRequestValue).put("pgMerchantId", pgMerchantId);
+		return requestJson.toString();
+	}
+
+    public String encrypt(String message, String enc_key) throws Exception {
+        try {
+            SecretKeySpec skeySpec = new SecretKeySpec(AES.HexfromString(enc_key), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
+            byte encstr[] = cipher.doFinal(message.getBytes());
+            return AES.HextoString(encstr);
+        } catch (BadPaddingException nse) {
+            throw new Exception("Invalid input String");
+        }
+    }
+
+    public String decrypt(String message, String dec_key) throws Exception {
+        try {
+            SecretKeySpec skeySpec = new SecretKeySpec(AES.HexfromString(dec_key), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, skeySpec);
+
+            byte encstr[] = cipher.doFinal(AES.HexfromString(message));
+            return new String(encstr);
+        } catch (BadPaddingException nse) {
+            throw new Exception("Invalid input String");
+        }
+    }
+

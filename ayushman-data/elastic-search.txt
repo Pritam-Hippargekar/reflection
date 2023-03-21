@@ -123,6 +123,37 @@ public class IndexTestServiceImpl implements IndexTestService {
     }
 }  
 
+
+
+@Document(indexName = "sample", type = "employee")
+public class Employee {
+
+    @Id
+    private Long id;
+    @Field(type = FieldType.Object)
+    private Organization organization;
+    @Field(type = FieldType.Object)
+    private Department department;
+    private String name;
+    private int age;
+    private String position;
+	
+    // Getters and Setters ...
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 SELECT Customers.CustomerID, Customers.Name, Count(Sales.SalesID)
 FROM Customers
    INNER JOIN Sales
@@ -720,6 +751,40 @@ bin/elasticsearch-certutil http
 
 
 
+
+@Document(indexName = "blog", type = "article")
+public class Article {
+
+    @Id
+    private String id;
+    
+    private String title;
+    
+    @Field(type = FieldType.Nested, includeInParent = true)
+    private List<Author> authors;
+    
+    // standard getters and setters
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @Configuration
 public class ElasticsearchConfig {
     @Value("${elasticsearch.host}")
@@ -961,10 +1026,10 @@ public class User implements Serializable {
     @Field(type = FieldType.Text, name = "address", analyzer = "ik_smart") 
     private String address;
 
-    @Field(type = FieldType.Date, name = "create_date", pattern="yyyy-MM-dd HH:mm:ss||strict_date_optional_time||epoch_millis") private Date createDate; @Field(type = FieldType.Long 
-    , 
-
-    name = "role_ids") 
+    @Field(type = FieldType.Date, name = "create_date", pattern="yyyy-MM-dd HH:mm:ss||strict_date_optional_time||epoch_millis") 
+    private Date createDate; 
+    
+    @Field(type = FieldType.Long , name = "role_ids") 
     private List<Long> roleIds; 
 
     @Field(type = FieldType.Nested, name = "department_list") 
@@ -984,10 +1049,51 @@ public class Department implements Serializable {
 -----------------------------------
 
 
+ 
+@Document(indexName="productindex")
+@Data
+public class Product {
+ 
+    @Id
+    private String id;
+ 
+    @Field(type= FieldType.Text, name="productName")
+    private String productName;
+ 
+    @Field(type= FieldType.Text, name="productDescription")
+    private String productDescription;
+ 
+    @Field(type= FieldType.Double, name="productPrice")
+    private BigDecimal productPrice;
+ 
+    @Field(type= FieldType.Integer, name="quantity")
+    private Integer quantity;
+ 
+    @Field(type= FieldType.Text, name="sportsCategory")
+    private String sportsCategory;
+ 
+    @Field(type= FieldType.Text, name="manufacturer")
+    private String manufacturer;
+}
 
 
+   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+    @Field(type= FieldType.Date, format= DateFormat.custom, pattern="yyyy-MM-dd HH:mm:ss.SSS")
+    private Date createTime;
 
-
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+    @Field(type=FieldType.Date, format=DateFormat.custom, pattern="yyyy-MM-dd HH:mm:ss.SSS")
+    private Date updateTime;
+-----------------------------------
+   @Field(type= FieldType.Nested, index = FieldIndex.not_analyzed)
+    private List<Stock> relatedStocks;
+    @Field(type= FieldType.String, index = FieldIndex.not_analyzed)
+    private List<String> relatedIndustries;
+    
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd'T'HHmmss.SSS'Z'")
+    @Field(type = FieldType.Date, format = DateFormat.basic_date_time, index = FieldIndex.not_analyzed)
+    @CreatedDate
+    private Date createdDateTime;
 
 
 
