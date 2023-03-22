@@ -1,0 +1,640 @@
+
+YPP-14776 API DCA_FUND_TRANSFER_TO_BENE
+=======================================
+
+private PartnerApisResponse beneFundTransfer(PartnerApisRequest partnerApisRequest, Partner partner) {
+        log.info("request to beneficiary fund transfer {} partnerId {}", partnerApisRequest, partner);
+        try {
+            //Check for missing parameter
+            if (StringUtils.isAnyBlank(partnerApisRequest.getPartnerReferenceNo(), partnerApisRequest.getP1(), partnerApisRequest.getP2(), partnerApisRequest.getP3(), partnerApisRequest.getP4())) {
+       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "P006")));
+            }
+            //Check for client identifier presence
+            Optional<PartnerClient> partnerClientOpt = this.partnerClientRepository.findByClientIdentifierAndPartnerId(partnerApisRequest.getP1(), partner.getId());
+            if (!partnerClientOpt.isPresent()) {
+                log.info("Invalid client identifier {}", partnerApisRequest.getP1());
+          		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA005")));
+            }
+
+            PartnerClient partnerClient = partnerClientOpt.get();
+            if (PartnerClientPurposeEnum.TRADE.equals(partnerClient.getPurpose())) {
+                log.info("client is onboarded for {}", partnerClient.getPurpose());
+         		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA057")));
+			}
+
+	    	if (!partnerApisRequest.getPartnerReferenceNo().matches("[a-zA-Z0-9]+")) {
+				log.info("Invalid Partner Reference Number {}",partnerApisRequest.getPartnerReferenceNo() );
+        		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA068")));
+			}
+	    	if (StringUtils.isNotBlank(partnerApisRequest.getP5()) && !partnerApisRequest.getP5().matches("[a-zA-Z0-9 ]{1,50}")) {
+				log.info("Invalid remarks: {}",partnerApisRequest.getP5());
+       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA074")));
+			}
+	    	partnerApisRequest.setP4(partnerApisRequest.getP4().toUpperCase());
+	    	//Check for payment mode exist or not
+	    	if(!Arrays.asList(paymentMode).contains(partnerApisRequest.getP4())) {
+	    		log.info("Invalid payment mode {}", partnerApisRequest.getP4());
+	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA036")));
+            }
+            if (!partnerApisRequest.getPartnerReferenceNo().matches("[a-zA-Z0-9]+")) {
+                log.info("Invalid Partner Reference Number {}", partnerApisRequest.getPartnerReferenceNo());
+                return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA023")));
+            }
+            if(!Status.ACTIVE.equals(partnerClient.getStatus())) {
+	    		log.info("Client inactive {}", partnerClient.getStatus());
+	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA029")));
+	    	}
+            if(partnerClient.getIsSuspended() == Boolean.TRUE) {
+            	log.info("Client is suspended {}", partnerClient.getIsSuspended());
+            	return new PartnerApisResponse(DAErrorCode.CLIENT_IS_SUSPENDED);
+            }
+
+	    	//Check for partner reference number already exist
+	    	Optional<LimitReconTransactions> limitReconTransaction = this.limitReconTransactionsRepository.findByPartnerReferenceNumberAndPartnerId(partnerApisRequest.getPartnerReferenceNo(),partner.getId());
+	    	if(limitReconTransaction.isPresent()) {
+	    		log.info("Invalid partner reference no {}",partnerApisRequest.getPartnerReferenceNo() );
+	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA023")));
+	    	}
+	    	//Check for beneficiary id present or not
+	    	Optional<PartnerClientBeneficiary> partnerClientBeneficiaryOpt = this.partnerClientBeneficiaryRepository.findByBeneficiaryIdAndPartnerClientId(partnerApisRequest.getP2(), partnerClient.getId());
+	    	if(!partnerClientBeneficiaryOpt.isPresent()) {
+	    		log.info("Invalid beneficiary id {}" , partnerApisRequest.getP2());
+	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA031")));
+	    	}
+            PartnerClientBeneficiary partnerClientBeneficiary = partnerClientBeneficiaryOpt.get();
+            //Check for inactive beneficiary
+            if (!Status.ACTIVE.equals(partnerClientBeneficiary.getStatus())) {
+                log.info("Beneneficiary is inactive {}", partnerClientBeneficiary.getBeneficiaryId());
+	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA037")));
+            }
+
+            //Check for Account No or IFSC code present or not
+            if ("NEFT".equals(partnerApisRequest.getP4()) || "IMPS".equals(partnerApisRequest.getP4())) {
+                if (StringUtils.isAnyEmpty(partnerClientBeneficiary.getAccountNumber(), partnerClientBeneficiary.getIfscCode())) {
+                    log.info("Account no {} or IFSc not exist {}", partnerClientBeneficiary.getAccountNumber(), partnerClientBeneficiary.getIfscCode());
+   	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA034")));
+                }
+            }
+            if ("IMPS".equalsIgnoreCase(partnerApisRequest.getP4())) {
+				String bankCode = partnerClientBeneficiary.getIfscCode().substring(0, 4);
+				Optional<BankList> bankListInfo = bankListRepository.findByBankCodeAndIsImpsAccepted(bankCode, Boolean.TRUE);
+				if(!bankListInfo.isPresent()) {
+					log.info("BankList with IsImpsAccepted not present with bank code: {}", bankCode);
+					return new PartnerApisResponse(DAErrorCode.IMPS_NOT_SUPPORTED_FOR_BENEFICIARY_BANK);
+				}
+			}
+            PartnerDASetup partnerDASetup = partnerDASetupRepository.findByPartnerId(partner.getId()).get();
+            //Check for amount greater than 0
+            BigDecimal amount;
+            try {
+                amount = new BigDecimal(partnerApisRequest.getP3());
+                if (!RandomUtil.validateAmount(amount)) {
+                    log.info("Invalid amount {}", partnerApisRequest.getP3());
+      	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA038")));
+                }
+            } catch (Exception e) {
+                log.info("Invalid amount {}", partnerApisRequest.getP3());
+ 	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA038")));
+            }
+
+            if(partnerApisRequest.getP4().equals("RTGS") && !partnerDASetup.getEnableRtgsMode()) {
+	    		log.info("RTGS mode not allowed for partner setup :{}", partnerDASetup.getId());
+	    		return new PartnerApisResponse(DAErrorCode.RTGS_MODE_NOT_ALLOWED);
+	    	}
+            
+            Optional<UpiSubMerchantDetails> upiSubMerchantDetailsInfo = upiSubMerchantDetailsRepository.findByOwnerIdAndOwnerTypeAndUpiOnboardingStatus(partnerClient.getId(),UpiSubMerchantDetailsOwnerTypeEnum.PARTNER_CLIENT,UpiSubMerchantDetailsUpiOnboardingStatusEnum.SUCCESS);
+            if ("UPI".equals(partnerApisRequest.getP4())) {
+            	if (!upiSubMerchantDetailsInfo.isPresent()) {
+            		log.info("Merchant not created at switch {}", partner.getId());
+            		return new PartnerApisResponse(DAErrorCode.MERCHANT_NOT_CREATED_AT_SWITCH);
+            	}
+            }
+            //Check for valid amount
+            boolean inValidAmount = false;
+            switch (partnerApisRequest.getP4()) {
+                case "UPI":
+                    if (amount.compareTo(new BigDecimal(100000)) > 0) {
+                        inValidAmount = true;
+                    }
+                    break;
+                case "IMPS":
+                    ParameterManagement parameterManagement = parameterManagementRepository.findByName(ParameterManagementEnum.IMPS_TXN_AMT_LIMIT.name());
+                    BigDecimal impsTxnAmtLimit = new BigDecimal(parameterManagement.getValue());
+                    if (amount.compareTo(impsTxnAmtLimit) > 0) {
+                        inValidAmount = true;
+                    }
+                    break;
+                case "RTGS":
+                    if (amount.compareTo(new BigDecimal(200000)) <= 0) {
+                        inValidAmount = true;
+                    }
+                    break;
+                default:
+                    inValidAmount = false;
+            }
+
+            if (inValidAmount) {
+                log.info("Invalid amount for payment mode {}", partnerApisRequest.getP4());
+	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA039")));
+            }
+            //Check for sufficient balance present or not
+            if (amount.compareTo(partnerClient.getActualBalance()) > 0) {
+                log.info("Insufficient balance amount {} actual balance {}", amount, partnerClient.getActualBalance());
+	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA040")));
+            }
+            LimitSystemAccount systemAccounts = null;
+            String field3 = null;
+            BigDecimal fee = BigDecimal.ZERO;
+            BigDecimal serviceCharge = BigDecimal.ZERO;
+            switch (partnerApisRequest.getP4()) {
+                case "IMPS":
+                    if (ImpsPayoutsChannelEnum.MOBILEWARE.equals(partnerDASetup.getImpsChannel())) {
+                        systemAccounts = limitSystemAccountRepository.findByAccountType(AccountTypeEnum.MW_IMPS_PAYABLE_POOL.getName());
+                        serviceCharge = accountUtil.getServiceCharge(ServiceTypeEnum.IMPS, ChannelEnum.MOBILEWARE, amount);
+                    } else {
+                        systemAccounts = limitSystemAccountRepository.findByAccountType(AccountTypeEnum.IMPS_PAYABLE_POOL.getName());
+                        serviceCharge = accountUtil.getServiceCharge(ServiceTypeEnum.IMPS, ChannelEnum.FT3, amount);
+                    }
+                    field3 = partnerClientBeneficiary.getIfscCode() + "|" + partnerClientBeneficiary.getAccountNumber() + "|" + partnerClientBeneficiary.getBeneficiaryName();
+                    fee = partnerDASetup.getImpsFee(amount);
+                    break;
+                case "NEFT":
+                    systemAccounts = limitSystemAccountRepository.findByAccountType(AccountTypeEnum.NEFT_PAYABLE_POOL.getName());
+                    field3 = partnerClientBeneficiary.getIfscCode() + "|" + partnerClientBeneficiary.getAccountNumber() + "|" + partnerClientBeneficiary.getBeneficiaryName();
+                    fee = partnerDASetup.getNeftFlatFee();
+                    serviceCharge = accountUtil.getServiceCharge(ServiceTypeEnum.NEFT, ChannelEnum.FT3, amount);
+                    break;
+                case "RTGS":
+                    systemAccounts = limitSystemAccountRepository.findByAccountType(AccountTypeEnum.RTGS_PAYABLE_POOL.getName());
+                    field3 = partnerClientBeneficiary.getIfscCode() + "|" + partnerClientBeneficiary.getAccountNumber() + "|" + partnerClientBeneficiary.getBeneficiaryName();
+                    fee = partnerDASetup.getRtgsFlatFee();
+                    serviceCharge = accountUtil.getServiceCharge(ServiceTypeEnum.RTGS, ChannelEnum.FT3, amount);
+                    break;
+                case "UPI":
+                	systemAccounts = limitSystemAccountRepository.findByAccountType(AccountTypeEnum.MG_UPI_PAYABLE_POOL.getName());
+                	field3 = partnerClientBeneficiary.getIfscCode() + "|" + partnerClientBeneficiary.getAccountNumber() + "|" + partnerClientBeneficiary.getBeneficiaryName();
+                	fee = partnerDASetup.getUpiFee(amount);
+                	serviceCharge = accountUtil.getServiceCharge(ServiceTypeEnum.UPI, ChannelEnum.MINDGATE, amount);
+                	break;
+            }
+            
+            LimitReconTransactions transaction = new LimitReconTransactions().limitSystemAccount(systemAccounts).amount(amount)
+                                .txnStatus(TransactionStatus.SUCCESS).settlementStatus(SettlementStatus.PENDING).field3(field3)
+                                .partnerReferenceNumber(partnerApisRequest.getPartnerReferenceNo()).fees(fee).feesGst(accountUtil.getGst(fee))
+                                .txnRefNo(accountUtil.getTxnCounter("PARTNER_CLIENT")).partner(partner).transactionType(TransactionableTypeEnum.FUND_TRANSFER)
+                                .ownerType(LimitOwnerType.PARTNER_CLIENT).ownerId(partnerClient.getId()).mobileNumber(partnerClient.getMobileNumber())
+                                .field5(partnerApisRequest.getP5());
+            transaction.setServiceCharge(serviceCharge);
+	    	// Accounting
+            limitAccountEntryService.fundTransfer(transaction, partnerClient);
+            // Api Call
+            Boolean isPartnerDrivenNarration = (null != partnerDASetup.getPartnerDrivenNarration() && partnerDASetup.getPartnerDrivenNarration());
+	    	if("IMPS".equals(partnerApisRequest.getP4()) && null != partnerDASetup.getImpsChannel() && ImpsPayoutsChannelEnum.MOBILEWARE.equals(partnerDASetup.getImpsChannel())) {
+	    		String narration = isPartnerDrivenNarration ? (StringUtils.isNotBlank(transaction.getField5()) ? transaction.getField5() : partnerClient.getClientName()) : partnerClient.getClientName();
+	    		log.info("narration: {}", narration);
+	    		MobilewareApisResponse mobilewareApisResponse = mobileWareService.synchronousP2A(transaction, narration, partnerClientBeneficiary.getAccountNumber(), partnerClientBeneficiary.getIfscCode(),partnerClient.getClientName(), partnerClient.getMobileNumber());
+	    		if(null != mobilewareApisResponse && null != mobilewareApisResponse.getStatus() && "SUCCESS".equals(mobilewareApisResponse.getStatus())) {
+	    			transaction.setField1(mobilewareApisResponse.getStatus() + "|" + mobilewareApisResponse.getResponseCode() + "|" + mobilewareApisResponse.getResponseMsg());
+	    			transaction.setMerchantReferenceNumber(mobilewareApisResponse.getRrn());
+	    			transaction.setSettlementStatus(SettlementStatus.SETTLED);
+	    		} else if(null != mobilewareApisResponse && null != mobilewareApisResponse.getStatus() && "FAILURE".equals(mobilewareApisResponse.getStatus())) {
+	    			limitAccountEntryService.reversal(transaction, TransactionableTypeEnum.AUTO_REVERSAL);
+	    			transaction.setField1(mobilewareApisResponse.getStatus() + "|" + mobilewareApisResponse.getResponseCode() + "|" + mobilewareApisResponse.getResponseMsg());
+	    			transaction.setSettlementStatus(SettlementStatus.REVERSED);
+	    			transaction.isIgnored(Boolean.TRUE);
+	    			transaction.failureCode(mobilewareApisResponse.getResponseCode()).failureMessage(mobilewareApisResponse.getResponseMsg());
+	    		} else if(null != mobilewareApisResponse && null != mobilewareApisResponse.getStatus() && "PENDING".equals(mobilewareApisResponse.getStatus())) {
+                    transaction.setField1(mobilewareApisResponse.getStatus() 
+                            + "|" + (StringUtils.isNotBlank(mobilewareApisResponse.getResponseCode()) ? mobilewareApisResponse.getResponseCode() : "")
+                            + "|" + (StringUtils.isNotBlank(mobilewareApisResponse.getResponseMsg()) ? mobilewareApisResponse.getResponseMsg() : ""));
+                }
+	    		limitReconTransactionsRepository.save(transaction);
+	    	} else if("UPI".equals(partnerApisRequest.getP4())){
+	    		try {
+		    		MgApiRequestDto mgApiRequestDto = new MgApiRequestDto(Constants.DCA, getPayRequest(partnerClientBeneficiary, partnerApisRequest, upiSubMerchantDetailsInfo.get(), transaction, partnerClient), upiSubMerchantDetailsInfo.get().getSubMerchantId());
+		    		String apiResponse = null;
+					if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
+						apiResponse = commonApiService.commonMGApi(new JSONObject(mgApiRequestDto).toString(), payUrl);
+					} else {
+						apiResponse = dummyApiResponseRepository.findByKeyAndApiNameAndValue("Upi", ApiNameEnum.UPI_DEBIT, partnerApisRequest.getPartnerReferenceNo()).orElse(new DummyApiResponse()).getApiResponse();
+						if (StringUtils.isBlank(apiResponse))
+							apiResponse = commonApiService.commonMGApi(new JSONObject(mgApiRequestDto).toString(), payUrl);
+					}
+		    		MgPayResponseParameterDto responseDto = new ObjectMapper().readValue(apiResponse, MgPayResponseParameterDto.class);
+		    		if (responseDto != null) {
+		                if (null != responseDto.getStatus() && (responseDto.getStatus().equalsIgnoreCase("S") || responseDto.getStatus().equalsIgnoreCase("SUCCESS"))) {
+		                	transaction.settlementStatus(SettlementStatus.SETTLED).merchantReferenceNumber(responseDto.getRrn());
+		                	transaction.setField1(responseDto.getStatus() + "|" + (StringUtils.isNotBlank(responseDto.getStatusDesc()) ? responseDto.getStatusDesc() : "") + "|" + (StringUtils.isNotBlank(responseDto.getResponseCode()) ? responseDto.getResponseCode() : ""));
+		                	transaction.setField4(responseDto.getPyAccName());
+		                	transaction.setTransactionRemarks(responseDto.getTxnId());
+		                	limitReconTransactionsRepository.save(transaction);
+		                } else if (null != responseDto.getStatus() && (responseDto.getStatus().equalsIgnoreCase("F") || responseDto.getStatus().equalsIgnoreCase("FAILURE"))) {
+		                	limitAccountEntryService.reversal(transaction, TransactionableTypeEnum.AUTO_REVERSAL);
+		                	transaction.settlementStatus(SettlementStatus.REVERSED).isIgnored(Boolean.TRUE).merchantReferenceNumber(responseDto.getRrn());
+		                	String field1 = responseDto.getStatus() + "|" + (StringUtils.isNotBlank(responseDto.getErrorCode()) ? responseDto.getErrorCode() : "") + "|" + (StringUtils.isNotBlank(responseDto.getStatusDesc()) ? responseDto.getStatusDesc() : "");
+		                	transaction.setField1(StringUtils.substring(field1, 0, 254));
+		                	transaction.failureCode(responseDto.getErrorCode()).failureMessage(responseDto.getStatusDesc());
+		                	transaction.setTransactionRemarks(responseDto.getTxnId());
+		                	limitReconTransactionsRepository.save(transaction);
+		                } else if (null != responseDto.getStatus() && (responseDto.getStatus().equalsIgnoreCase("P") || responseDto.getStatus().equalsIgnoreCase("T"))) {
+		                	transaction.setField1(responseDto.getStatus() + "|" + (StringUtils.isNotBlank(responseDto.getStatusDesc()) ? responseDto.getStatusDesc() : "") + "|" + (StringUtils.isNotBlank(responseDto.getResponseCode()) ? responseDto.getResponseCode() : ""));
+		                	limitReconTransactionsRepository.save(transaction);
+		                }
+		            }
+		    	} catch (Exception e) {
+		    		log.error("Exception in daUpiDebit: {}", e.getMessage(), e);
+		    		transaction.setField1("999|Timeout");
+		    		limitReconTransactionsRepository.save(transaction);
+		    	}
+	    	} else {
+	    		neftImpsService.bankTransfer(transaction, partnerApisRequest.getP4(), partnerClientBeneficiary.getBeneficiaryName(), isPartnerDrivenNarration);
+	    	}
+
+	    	//Success Response
+	    	if (Arrays.asList(SettlementStatus.PENDING, SettlementStatus.SETTLED).contains(transaction.getSettlementStatus())) {
+                PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "00")));
+                partnerApisResponse.setStatus("SUCCESS");
+                partnerApisResponse.setResponseCode("00");
+                partnerApisResponse.setTxnStatus(RandomUtil.TxnStatus(transaction));
+                partnerApisResponse.setPartnerReferenceNumber(partnerApisRequest.getPartnerReferenceNo());
+                partnerApisResponse.setYppTxnReferenceNumber(transaction.getTxnReferenceNumber());
+                return partnerApisResponse;
+            } else {
+	       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA035"))).downStreamErrorDetails(RandomUtil.getDownStreamAPIErrorDetailsJSON(transaction.getFailureCode(), transaction.getFailureMessage())).txnStatus(RandomUtil.TxnStatus(transaction));
+            }
+        } catch (Exception ex) {
+            log.info("Exception in beneficiary fund transfer: {}" + ex.getLocalizedMessage());
+      		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_FUND_TRANSFER_TO_BENE, "YPP", "", "DCA035")));
+        }
+    }
+
+   public BigDecimal getServiceCharge(ServiceTypeEnum serviceType, ChannelEnum channel, BigDecimal txnAmount) {
+    	log.debug("Fetching ServiceCharge for serviceType: {}, channel: {}, txnAmount: {}", serviceType, channel, txnAmount);
+    	BigDecimal serviceCharge = BigDecimal.ZERO;
+    	if (null != serviceType && null != channel && null != txnAmount) {
+    		Optional<ServiceChargesDetails> serviceChargesDetailsInfo = serviceChargesDetailsRepository.findTopByServiceTypeAndChannelAndStatusAndLowerSlabLessThanAndUpperSlabGreaterThanEqual(serviceType, channel, ServiceChargesDetailsStatusEnum.ACTIVE, txnAmount, txnAmount);
+    	    if (serviceChargesDetailsInfo.isPresent()) {
+    	    	ServiceChargesDetails serviceChargesDetails = serviceChargesDetailsInfo.get();
+    	    	log.debug("Found ServiceChargesDetails with id: {} and chargeType: {}", serviceChargesDetails.getId(), serviceChargesDetails.getChargeType());
+    	        if (ChargeTypeEnum.PERCENTAGE.equals(serviceChargesDetails.getChargeType())) {
+    	        	serviceCharge = serviceChargesDetails.getServiceCharge().divide(new BigDecimal(100)).multiply(txnAmount).setScale(4, BigDecimal.ROUND_HALF_UP);
+    	        } else {
+    	        	serviceCharge = serviceChargesDetails.getServiceCharge();
+    	        }
+    	    }
+    	}
+    	log.debug("returning from serviceCharge method with serviceCharge: {}", serviceCharge);
+    	return serviceCharge;
+    }
+
+    public BigDecimal getGst(BigDecimal amt) {
+        log.info("Amount {}", amt);
+        if (amt.compareTo(BigDecimal.ZERO) > 0) {
+            ParameterManagement parameterManagement = parameterManagementRepository.findByName(ParameterManagementEnum.GST_RATE.name());
+            BigDecimal gstPercentage = new BigDecimal(parameterManagement.getValue());
+            return gstPercentage.divide(new BigDecimal(100)).multiply(amt).setScale(4, BigDecimal.ROUND_HALF_UP);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public String getTxnCounter(String txnType) {
+        DATxnCounter tc = new DATxnCounter();
+        tc.setTxnType(txnType);
+        tc.setTimestamp(RandomUtil.dateFormat(Instant.now(), "yyMMddHH"));
+        DATxnCounter daTxnCounter = daTxnCounterRepository.save(tc);
+        log.info("{}", daTxnCounter);
+        return daTxnCounter.getId().toString();
+    }
+
+    public void fundTransfer(LimitReconTransactions transaction, PartnerClient partnerClient) {
+    	transaction = limitReconTransactionsRepository.save(transaction);
+    	String txnSubType = getTxnSubType(transaction);
+        String result = limitAccountEntryRepository.limitFundTransfer(transaction.getAmount(), TransactionableTypeEnum.FUND_TRANSFER.toString(), transaction.getId(), partnerClient.getLimitAccount().getId(), transaction.getLimitSystemAccount().getLimitAccount().getId(), transaction.getOwnerId(), transaction.getOwnerType().name(), txnSubType, transaction.getOwnerId().toString(), null, null);
+        if ("Insufficient Balance".equals(result)) {
+            throw new InsufficientBalanceException("No balance");
+        } else if (!"success".equals(result)) {
+            throw new StoredProcedureException("Fund Transfer Exception");
+        }
+    }
+
+	private String getTxnSubType(LimitReconTransactions transaction) {
+		String txnSubType = null;
+		switch (transaction.getLimitSystemAccount().getAccountType()) {
+		case "upi_payable_pool":
+			txnSubType = TransactionSubTypeEnum.UPI.name();
+			break;
+		case "imps_payable_pool":
+			txnSubType = TransactionSubTypeEnum.IMPS.name();
+			break;
+		case "neft_payable_pool":
+			txnSubType = TransactionSubTypeEnum.NEFT.name();
+			break;
+		case "rtgs_payable_pool":
+			txnSubType = TransactionSubTypeEnum.RTGS.name();
+			break;
+		case "ecollect_load_pool":
+			txnSubType = TransactionSubTypeEnum.E_COLLECT.name();
+			break;
+		case "upi_load_pool":
+			txnSubType = TransactionSubTypeEnum.UPI.name();
+			break;
+		case "mw_imps_payable_pool":
+			txnSubType = TransactionSubTypeEnum.IMPS.name();
+			break;
+		case "mg_upi_payable_pool":
+			txnSubType = TransactionSubTypeEnum.UPI.name();
+			break;
+		case "prepaid_wallet_load":
+			txnSubType = TransactionSubTypeEnum.PREPAID_WALLET_LOAD.name();
+			break;
+		}
+		return txnSubType;
+	}
+
+public MobilewareApisResponse synchronousP2A(LimitReconTransactions transaction, String narration, String accountNo,
+			String ifscCode, String remName, String remMob) {
+		log.info("Inside LimitReconTransactions synchronousP2A mobileWare api");
+		MobilewareApisResponse mobilewareApisResponse = new MobilewareApisResponse();
+		MobileWareRequestDTO mobileWareRequestDTO = new MobileWareRequestDTO();
+		try {
+			mobileWareRequestDTO = this.getMobileWareRequest(transaction.getAmount(), transaction.getTxnReferenceNumber(), narration, accountNo, ifscCode, remName, remMob);
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			String jsonRequest = mapper.writeValueAsString(mobileWareRequestDTO);
+			log.info("encrypted request for mobileWare api: {}", jsonRequest);
+			Map<String, String> headers = new HashMap<String, String>();
+			headers.put("Content-Type", "application/json");
+			String url = baseUrl + "/imps-ws/transaction/sync/" + channelId +"/"+ "p2a";
+			String response = httpServiceUtil.post(url, headers, jsonRequest, timeout);
+			log.info("response for mobileWare api: {}", response);
+			MobileWareResponseDTO mobileWareResponseDTO  = new ObjectMapper().readValue(response, MobileWareResponseDTO.class);
+			String responsePayloadJson = mobileWare.decrypt(mobileWareResponseDTO.geteResp());
+			log.info("decrypted response for mobileWare api: {} , and transaction referance number : {}", responsePayloadJson, transaction.getTxnReferenceNumber());
+			mobilewareApisResponse = new ObjectMapper().readValue(responsePayloadJson, MobilewareApisResponse.class);
+
+		} catch(ConnectTimeoutException cte) {
+			log.error("Timeout exception in LimitReconTransactions SynchronousP2A:", cte);
+			transaction.setField1("999|Timeout");
+			limitReconTransactionsRepository.save(transaction);
+		} catch(Exception ex) {
+			log.error("Exception in LimitReconTransactions SynchronousP2A:", ex);
+		}
+		return mobilewareApisResponse;
+	}
+
+	private MobileWareRequestDTO getMobileWareRequest(BigDecimal amount, String txnReferenceNumber, String narration, String accountNo, String ifscCode,String remName, String remMob) throws Exception {
+		log.info("Inside mobile ware request generation txnRefernceNo {}", txnReferenceNumber);;
+		MobileWareRequestDTO mobileWareRequestDTO = new MobileWareRequestDTO();
+		MobilewareApisRequest mobilewareApisRequest = new MobilewareApisRequest(); 
+		mobilewareApisRequest.setAmount(String.format("%.2f", amount));
+		mobilewareApisRequest.setClientRefId(txnReferenceNumber);
+		mobilewareApisRequest.setNarration(narration);
+		mobilewareApisRequest.setToAccountNo(accountNo);
+		mobilewareApisRequest.setToIFSC(ifscCode);
+		mobilewareApisRequest.setRemitterName(remName);
+		mobilewareApisRequest.setRemMobNo(remMob);
+		String hashKey = mobileWare.generateHaskKey(String.format("%.2f", amount) + txnReferenceNumber + accountNo + ifscCode);
+		log.info("hashkey {}", hashKey);
+		mobilewareApisRequest.setHashKey(hashKey);
+		log.info("request for mobileWare api: {}", mobilewareApisRequest);
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		String json = mapper.writeValueAsString(mobilewareApisRequest);
+		String encryptedString =  mobileWare.encrypt(json);
+		mobileWareRequestDTO.seteReq(encryptedString);
+		return mobileWareRequestDTO;
+	}
+
+	public String generateHaskKey(String key) {
+		log.info("key {}", key);
+		 StringBuilder lHashtext = new StringBuilder();
+		 try {
+			 MessageDigest md = MessageDigest.getInstance("SHA-256");
+			 byte[] messageDigest = md.digest(key.getBytes());
+			 BigInteger number = new BigInteger(1, messageDigest);
+			 String lHashtext1 = number.toString(16);
+			 lHashtext = lHashtext.append(lHashtext1);
+			 while (lHashtext.length() < 32) {
+			 lHashtext = lHashtext.insert(0, "0");
+		 }
+		 } catch (Exception ex) {
+			 System.out.println(ex);
+		 }
+		 return lHashtext.toString();
+	}
+
+	public String encrypt(String message) throws Exception {
+
+		String base64EncryptedString = "";
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			byte[] digestOfPassword = md.digest(sercretKey.getBytes(StandardCharsets.UTF_8));
+			byte[] keyBytes = Arrays.copyOf(digestOfPassword, 24);
+			byte[] iv = Arrays.copyOf(digestOfPassword, 16);
+			SecretKey key = new SecretKeySpec(keyBytes, "AES");
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+
+			// For Encrypt
+			cipher.init(Cipher.ENCRYPT_MODE, key,ivParameterSpec);
+
+			byte[] plainTextBytes = message.getBytes(StandardCharsets.UTF_8);
+			byte[] buf = cipher.doFinal(plainTextBytes);
+			byte[] base64Bytes = Base64.encodeBase64(buf);
+			base64EncryptedString = new String(base64Bytes);
+		} catch (Exception nse) {
+			throw new Exception("Invalid input String");
+		}
+		return base64EncryptedString;
+	}
+
+	public String decrypt(String message) throws Exception {
+		String base64EncryptedString = "";
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			byte[] digestOfPassword = md.digest(sercretKey.getBytes(StandardCharsets.UTF_8));
+			byte[] keyBytes = Arrays.copyOf(digestOfPassword, 24);
+			byte[] iv = Arrays.copyOf(digestOfPassword, 16);
+			SecretKey key = new SecretKeySpec(keyBytes, "AES");
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+
+			// For Decrypt
+			cipher.init(Cipher.DECRYPT_MODE, key, ivParameterSpec);
+			byte[] decordedValue = new Base64().decode(message.getBytes());
+			byte[] buf = cipher.doFinal(decordedValue);
+			base64EncryptedString = new String(buf);
+		} catch (Exception nse) {
+			throw new Exception("Invalid input String");
+		}
+		return base64EncryptedString;
+	}
+
+   public LimitReconTransactions reversal(LimitReconTransactions transactions, TransactionableTypeEnum transactionType) {
+        List<LimitAccountEntry> lAccountEntryList = limitAccountEntryRepository.findByLimitReconTransactionsId(transactions.getId());
+        log.info("LAE List size {} for txn id {}", lAccountEntryList.size(), transactions.getId());
+        for (LimitAccountEntry accountEntry : lAccountEntryList) {
+            BigDecimal amount = accountEntry.getAmount();
+            List<LimitAccountTransactions> lAccountTransactionList = limitAccountTransactionsRepository.findByLimitAccountEntryId(accountEntry.getId());
+            log.info("Limit Account Transaction size {} for LAE id {}", lAccountTransactionList.size(), accountEntry.getId());
+            Long credit = null;
+            Long debit = null;
+            for (LimitAccountTransactions accountTransaction : lAccountTransactionList) {
+                log.info("LAT id {}", accountTransaction.getId());
+                if (AccountTransactionType.CREDIT.name().equals(accountTransaction.getAccountEntryType()))
+                    debit = accountTransaction.getLimitAccount().getId();
+                else
+                    credit = accountTransaction.getLimitAccount().getId();
+            }
+            log.info("Credit id {} and debit id {}", credit, debit);
+            boolean isSameMonth = transactions.getCreatedDate().atZone(ZoneId.of("Asia/Kolkata")).toLocalDateTime().getMonth().equals(accountEntry.getCreatedDate().atZone(ZoneId.of("Asia/Kolkata")).toLocalDateTime().getMonth());
+            String txnRefNumber = null;
+            String narration = null;
+            
+            if(LimitOwnerType.PARTNER_CONSUMER.equals(transactions.getOwnerType())) {
+        		String poolAlias = "";
+        		if (transactions != null && !StringUtils.isEmpty(transactions.getLimitSystemAccount().getPoolAlias())){
+        			poolAlias = StringUtils.defaultString(transactions.getLimitSystemAccount().getPoolAlias());
+        		}
+    			narration = "Reversal of Rs. " + amount +" credited against " + poolAlias + " transaction done on " + DateUtil.convertDateToIST(transactions.getTxnDate(), "dd-MM-yyyy HH:mm:ss")+".";
+    			txnRefNumber = transactions.getTxnReferenceNumber();
+            }
+            String result = limitAccountEntryRepository.daReversal(amount, transactionType.name(), transactions.getId(), credit, debit, transactions.getOwnerId(), transactions.getOwnerType().name(), isSameMonth, txnRefNumber, narration);
+            log.info("Stored Procedure result : {}", result);
+            if ("already reversed".equals(result)) {
+                throw new StoredProcedureException("Transaction already reversed");
+            } else if (!"success".equals(result)) {
+                throw new StoredProcedureException("Stored Procedure Failed");
+            }
+            if (accountEntry.getTransactionType().equals(TransactionableTypeEnum.LIMIT_SOURCE_TRANSFER.name())) {
+                String[] accountDetails = transactions.getField3().split("\\|");
+                PartnerClientSourceAccount sourceAccount = sourceAccountRepository.findByPartnerClientIdAndAccountNumberAndIfscCode(transactions.getOwnerId(), accountDetails[1], accountDetails[0]).get();
+                sourceAccount.setAmountTransferredBack(sourceAccount.getAmountTransferredBack().subtract(transactions.getAmount()));
+                sourceAccountRepository.save(sourceAccount);
+            }
+        }
+        transactions.settlementStatus(SettlementStatus.REVERSED).isIgnored(Boolean.TRUE).thirdPartyStatus(ThirdPartyStatus.FAIL);
+        return limitReconTransactionsRepository.save(transactions);
+    }
+
+    private String getPayRequest(PartnerClientBeneficiary partnerClientBeneficiary, PartnerApisRequest request, UpiSubMerchantDetails upiSubMerchantDetails, LimitReconTransactions transaction, PartnerClient partnerClient) {
+		String payeeVpaType = null;
+    	if (StringUtils.isNoneBlank(partnerClientBeneficiary.getAccountNumber(), partnerClientBeneficiary.getIfscCode(), partnerClientBeneficiary.getVpa()))
+    		payeeVpaType = "VPA";
+    	else if (StringUtils.isNoneBlank(partnerClientBeneficiary.getAccountNumber(), partnerClientBeneficiary.getIfscCode()))
+    		payeeVpaType = "Account";
+    	else if (StringUtils.isNoneBlank(partnerClientBeneficiary.getVpa()))
+    		payeeVpaType = "VPA";
+    	MgPayRequestParameterDto dto = new MgPayRequestParameterDto(upiSubMerchantDetails.getSubMerchantId(), transaction.getTxnReferenceNumber(), "UPI Payment for Partner Client",
+    			transaction.getAmount().toString(), "INR", "P2P", "PAY", "7399", null, partnerClientBeneficiary.getAccountNumber(), partnerClientBeneficiary.getIfscCode(), null, null, partnerClientBeneficiary.getVpa(), null, null, null, null,
+    			"UPI", partnerClientBeneficiary.getBeneficiaryName(), null, null, null, null, null, payeeVpaType);
+		dto.setAdd9("NA");
+		dto.setAdd10("NA");
+		log.info("rawBody json: {}", new JSONObject(dto));
+		String rawBodyValue = dto.getParameters();
+		return rawBodyValue;
+	}
+
+    public String commonMGApi(String apiRequestDto, String url) throws Exception {
+    	HttpHeaders headers = new HttpHeaders();
+    	headers.setContentType(MediaType.APPLICATION_JSON);
+    	log.info("Request {} ", apiRequestDto);
+    	HttpEntity<String> httpEntity = new HttpEntity<String>(apiRequestDto, headers);
+    	ResponseEntity<String> resp = this.restTemplate.postForEntity(url, httpEntity, String.class);
+    	log.info("Response {}", resp);
+    	return resp.getBody();
+    }
+
+
+public void bankTransfer(LimitReconTransactions transactions, String transferType, String creditorName, Boolean isPartnerDrivenNarration) {
+    	try {
+    	    DomesticPaymentsRequestDTO requestDTO = getDomesticPaymentsRequestDto(transactions, transactions.getPartner(), transactions.getAmount(), transferType, creditorName, isPartnerDrivenNarration);
+    		ObjectMapper mapper = new ObjectMapper();
+    		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    		String json = mapper.writeValueAsString(requestDTO);
+    		String response = dataPowerUtil.postJsonWithDataPower(domesticPaymenturl, json, Integer.parseInt(domesticPaymentsTimeout),true);
+    		JSONObject responseJson = new JSONObject(response);
+    		DomesticPaymentResponseDTO responseDTO = mapper.readValue(responseJson.toString(), DomesticPaymentResponseDTO.class);
+            DomesticPaymentsDataDTO paymentsDataDTO = responseDTO.getData();
+            if (paymentsDataDTO != null) {
+                if (null != paymentsDataDTO.getStatus() && paymentsDataDTO.getStatus().equalsIgnoreCase("Received")) {
+                    transactions.setField1(paymentsDataDTO.getStatus() + "|" + paymentsDataDTO.getTransactionIdentification());
+                    if(null != paymentsDataDTO.getInitiation()) {
+                        transactions.setMerchantReferenceNumber(paymentsDataDTO.getInitiation().getEndToEndIdentification());
+                     }
+                    limitReconTransactionsRepository.save(transactions);
+                } else if (null != paymentsDataDTO.getStatus() && paymentsDataDTO.getStatus().equalsIgnoreCase("Failed")) {
+                    limitAccountEntryService.reversal(transactions, TransactionableTypeEnum.AUTO_REVERSAL);
+                    transactions.settlementStatus(SettlementStatus.REVERSED).isIgnored(Boolean.TRUE).transactionRemarks("Transaction not accepted");
+                    if(null != paymentsDataDTO.getInitiation()) {
+                        transactions.setMerchantReferenceNumber(paymentsDataDTO.getInitiation().getEndToEndIdentification());
+                     }
+                    MetaResponseDTO metaDTO = responseDTO.getMeta();
+                    if (null != metaDTO) {
+                        String field1 = paymentsDataDTO.getStatus() + "|" + metaDTO.getErrorCode() + "|" + metaDTO.getErrorSeverity();
+                        transactions.setField1(StringUtils.substring(field1, 0, 254));
+                        transactions.failureCode(metaDTO.getErrorCode()).failureMessage(metaDTO.getErrorSeverity());
+                    }
+                    limitReconTransactionsRepository.save(transactions);
+                }
+            }
+    	} catch (InterruptedException | ConnectTimeoutException | SocketTimeoutException e) {
+    		log.error("Timeout Exception ", e);
+    		transactions.setField1("999|Timeout");
+    		limitReconTransactionsRepository.save(transactions);
+    	} catch (Exception ex) {
+    		log.error("Exception ", ex);
+    	}
+    }
+
+
+	private DomesticPaymentsRequestDTO getDomesticPaymentsRequestDto(LimitReconTransactions transactions, Partner partner, BigDecimal amount, String transferType, String creditorName, Boolean isPartnerDrivenNarration) {
+		LimitSystemAccount systemAccounts = transactions.getLimitSystemAccount();
+		String debtorName = "YPP "+partner.getPartnerCode()+ " "+transferType+" Payable Pool";
+        String[] accountDetails = transactions.getField3().split("\\|");
+
+        DomesticPaymentsRequestDTO requestDTO = new DomesticPaymentsRequestDTO();
+		DomesticPaymentsDataDTO dataDTO = new DomesticPaymentsDataDTO();
+		dataDTO.setConsentId(consentId); // TODO
+		DomesticPaymentsInitiationDTO initiationDTO = new DomesticPaymentsInitiationDTO();
+		initiationDTO.setInstructionIdentification(transactions.getTxnReferenceNumber());
+		initiationDTO.setInstructedAmount(new InstructedAmountDTO(amount.toString(), "INR"));
+
+		DebtorAccountDTO debtorAccountDTO = new DebtorAccountDTO(); // DebtorAccount
+		debtorAccountDTO.setIdentification(systemAccounts.getAccountNumber());
+		debtorAccountDTO.setSecondaryIdentification(systemAccounts.getCustomerId());
+		debtorAccountDTO.setName(debtorName);
+		initiationDTO.setDebtorAccount(debtorAccountDTO);
+
+		CreditorAccountDTO creditorAccountDTO = new CreditorAccountDTO();
+		creditorAccountDTO.setSchemeName(accountDetails[0]);
+		creditorAccountDTO.setIdentification(accountDetails[1]);
+		creditorAccountDTO.setName(creditorName.replaceAll("[^a-zA-Z0-9 ]", ""));
+		initiationDTO.setCreditorAccount(creditorAccountDTO);
+
+		RemittanceInformationDTO remittanceInformationDTO = new RemittanceInformationDTO();
+		String oldNarrationValue = "Fund Transfer /LM/ " + transactions.getTxnReferenceNumber();
+		//Optional<PartnerClient> partnerClientOpt = this.partnerClientRepository.findById(transactions.getOwnerId()); // TODO need to confirm
+        //String narration = partnerClientOpt.isPresent() ? RandomUtil.trimPartnerClientName(partnerClientOpt.get().getClientName()): oldNarrationValue;
+		remittanceInformationDTO.setUnstructured(new RemittanceInformationUnstructuredDTO(isPartnerDrivenNarration ? (StringUtils.isNotBlank(transactions.getField5()) ? transactions.getField5() : oldNarrationValue) : oldNarrationValue)); // TODO
+		initiationDTO.setRemittanceInformation(remittanceInformationDTO);
+		initiationDTO.setClearingSystemIdentification(transferType);
+
+		dataDTO.setInitiation(initiationDTO);
+		requestDTO.setData(dataDTO);
+
+		DomesticPaymentsRiskDTO paymentsRiskDTO = new DomesticPaymentsRiskDTO();
+		DeliveryAddressDTO addressDTO = new DeliveryAddressDTO();
+		PartnerAddress partnerAddress = partnerAddressRepository.findByPartner(partner).get();
+		List<String> addressList = Arrays.asList(partnerAddress.getCity());
+		addressList = addressList.stream()
+				.map(address -> address.replaceAll("[^a-zA-Z0-9 ]", ""))
+				.collect(Collectors.toList());
+		addressDTO.setAddressLine(addressList); // TODO
+		paymentsRiskDTO.setDeliveryAddress(addressDTO);
+
+		requestDTO.setData(dataDTO);
+		requestDTO.setRisk(paymentsRiskDTO);
+		return requestDTO;
+	}
+

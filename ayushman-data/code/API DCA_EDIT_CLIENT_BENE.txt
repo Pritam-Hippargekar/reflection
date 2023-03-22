@@ -1,0 +1,57 @@
+
+YPP-14775 API DCA_EDIT_CLIENT_BENE
+==================================
+
+private PartnerApisResponse editClientBene(PartnerApisRequest partnerApisRequest, Partner partner) {
+        log.info("request to edit partner client beneficiary {} , partnerId {}", partnerApisRequest, partner.getId());
+        try {
+            //Check for missing parameter
+            if (StringUtils.isAnyBlank(partnerApisRequest.getRequestId(), partnerApisRequest.getP1(), partnerApisRequest.getP2(), partnerApisRequest.getP3())) {
+          		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_CLIENT_BENE, "YPP", "", "P006")));
+            }
+
+            //Check for client identifier presence
+            Optional<PartnerClient> partnerClient = this.partnerClientRepository.findByClientIdentifierAndPartnerId(partnerApisRequest.getP1(), partner.getId());
+            if (!partnerClient.isPresent()) {
+                log.info("Invalid client identifier {}", partnerApisRequest.getP1());
+         		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_CLIENT_BENE, "YPP", "", "DCA005")));
+            }
+            if (PartnerClientPurposeEnum.TRADE.equals(partnerClient.get().getPurpose())) {
+                log.info("client is onboarded for {}", partnerClient.get().getPurpose());
+        		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_CLIENT_BENE, "YPP", "", "DCA057")));
+            }
+            if (!Status.ACTIVE.equals(partnerClient.get().getStatus())) {
+                log.info("Client inactive {}", partnerClient.get().getStatus());
+       		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_CLIENT_BENE, "YPP", "", "DCA029")));
+            }
+            if(partnerClient.get().getIsSuspended() == Boolean.TRUE) {
+           	 log.info("Client is suspended {}", partnerClient.get().getIsSuspended());
+           	 return new PartnerApisResponse(DAErrorCode.CLIENT_IS_SUSPENDED);
+           }            
+
+            //Check for beneficiary id present or not
+            Optional<PartnerClientBeneficiary> partnerClientBeneficiary = this.partnerClientBeneficiaryRepository.findByBeneficiaryIdAndPartnerClientId(partnerApisRequest.getP2(), partnerClient.get().getId());
+            if (!partnerClientBeneficiary.isPresent()) {
+                log.info("Invalid beneficiary id {} and client id {} combination", partnerApisRequest.getP2(), partnerClient.get().getId());
+          		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_CLIENT_BENE, "YPP", "", "DCA031")));
+            }
+
+            if (!StringUtils.equalsAny(partnerApisRequest.getP3(), "ACTIVE", "INACTIVE")) {
+                log.info("Invalid beneficiary status {}", partnerApisRequest.getP3());
+         		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_CLIENT_BENE, "YPP", "", "DCA032")));
+            }
+            PartnerClientBeneficiary partnerClientBeneficiaryObj = partnerClientBeneficiary.get();
+            partnerClientBeneficiaryObj.setStatus(Status.valueOf(partnerApisRequest.getP3()));
+            partnerClientBeneficiaryObj = partnerClientBeneficiaryRepository.save(partnerClientBeneficiaryObj);
+            //Success response object
+            PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_CLIENT_BENE, "YPP", "", "00")));
+            partnerApisResponse.setRequestId(partnerApisRequest.getRequestId());
+            partnerApisResponse.setStatus("SUCCESS");
+            partnerApisResponse.setBeneficiaryId(partnerClientBeneficiaryObj.getBeneficiaryId());
+            partnerApisResponse.setClientIdentifier(partnerClientBeneficiaryObj.getPartnerClient().getClientIdentifier());
+            return partnerApisResponse;
+        } catch (Exception ex) {
+            log.info("Exception in update partner client beneficiary : {}" + ex.getLocalizedMessage());
+    		 return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_EDIT_CLIENT_BENE, "YPP", "", "DCA033")));
+        }
+    }
