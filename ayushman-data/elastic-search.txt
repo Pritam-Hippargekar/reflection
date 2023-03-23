@@ -286,17 +286,240 @@ The Java client is implemented based on the builder pattern, and lamda expressio
         log.info("index create response for {}, acknowledged= {}, shardsAcknowledged= {}", resIndex, acknowledged, b);
     }
 
+keyword	Not analyzed text
+text		Analyzed text
+
+
+"mappings": {
+  "index_type_name": {
+    "properties": {
+        "description" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {"type" : "keyword", "ignore_above" : 256 }
+          }
+        }, 
+        "speciality": {
+          "type": "object",
+          "properties": {
+            "field_1": { "type": "text", "analyzer": "standard"},
+            "field_2": { "type": "keyword"}
+          }
+        },
+        "publisher": {
+          "type": "nested",
+          "include_in_root": true
+          "properties": {
+            "field_1": { "type": "text", "analyzer": "standard"},
+            "field_2": { "type": "keyword"}
+          }
+        },
+        "user" : { "type" : "keyword", "index":"no" },
+        "count": {"type": "long"},
+        "active": { "type": "boolean" },
+        "location": { "type": "geo_point" },
+        "post_date": { "type": "date", "format": "yyyy-MM-dd"},
+        "consultation_fee": { "type": "float" },
+        "message" : { "type" : "text" },
+    }
+  }
+}
+
+
+
+============================START OBJECT========================================
+
+{
+  "title": "Machine Learning",
+  "author": {
+    "age": 30,
+    "name": {
+      "first": "Elie",
+      "last": "John"
+    }
+  }
+}
+it become
+{
+  "title": "Machine Learning",
+  "author.age": 30,
+  "author.name.first": "Elie",
+  "author.name.last": "John"
+}
+
+=====As long as the root object and the inner object have a one-to-one relationship, the inner object mapping discussed above will work. 
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text"
+      },
+      "author": {
+        "type": "object",///Since the object is a default value, it is not necessary to explicitly assign the field type to the object.
+        "properties": {
+          "age": {
+            "type": "float"
+          },
+          "name": {
+            "type": "object",///Since the object is a default value, it is not necessary to explicitly assign the field type to the object.
+            "properties": {
+              "first": {
+                "type": "text"
+              },
+              "last": {
+                "type": "text"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+============================END OBJECT========================================
+
+
+============================START NESTED========================https://opster.com/guides/elasticsearch/data-architecture/how-to-model-relationships-between-elasticsearch-documents-using-object/================
+{
+  "title": "Machine Learning",
+  "author": [
+    {
+      "first_name": "John",
+      "last_name": "Stefan"
+    },
+    {
+      "first_name": "Sandy",
+      "last_name": "Naily"
+    }
+  ]
+}
+
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text"
+      },
+      "author": {
+        "type": "nested",
+ //       "include_in_root": true,
+        "properties": {
+          "age": {
+            "type": "float"
+          },
+          "name": {
+            "type": "nested",
+//            "include_in_parent": true,
+            "properties": {
+              "first": {
+                "type": "text"
+              },
+              "last": {
+                "type": "text"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+{
+  "title": "Machine Learning",
+  "author": {
+    "age": 30,
+    "name":[ 
+      {
+        "first": "Elie",
+        "last": "John"
+     }
+    ]
+  }
+}
+============================END NESTED========================================
+
+
+“BigDecimal”
+--------------------------
+When (this BigDecimal) == (BigDecimal ob), it returns 0.
+When (this BigDecimal) < (BigDecimal ob), it returns -1.
+When (this BigDecimal) > (BigDecimal ob), it returns 1.
+HashSet uses equals to check duplicates while TreeSet uses compareTo to check duplicates.
+CompareTo() must throw NullPointerException if current object get compared to null object as opposed to equals() which return false on such scenario.
+Use compareTo() instead of equals() to compare numeric values since equals() takes scale into consideration
+compares two objects of “BigDecimal” type and when both the objects are same in value but different in terms of the scale then it is treated to be equal.
+
+Example: Calculate 10% of 800.
+10/100 * 80 = X
+BigDecimal serviceCharge = serviceChargesDetails.getServiceCharge().divide(new BigDecimal(100)).multiply(txnAmount).setScale(4, BigDecimal.ROUND_HALF_UP);
+
+Example: Calculate 96.163 is what % of 3.7
+(96.163 * 100) / 3.7
+
+
+country
+state
+district
+postCode
+
+buildingNumber
+houseNumber
+streetName
 
 
 
 
 
-indicesCreateRequest
 
 
 
 
-
+my_index
+PUT x3/x4/_mapping
+{
+   "x4": {
+      "properties": {
+         "name": {
+            "type": "string"
+         },
+         "car": {
+            "type": "nested",
+            "properties": {
+               "make": {
+                  "type": "string",
+                  "index": "not_analyzed"
+               },
+               "model": {
+                  "type": "string",
+                  "index": "not_analyzed"
+               },
+               "colors": {
+                  "type": "string",
+                  "index": "not_analyzed"
+               }
+            }
+         }
+      }
+   }
+}
+PUT /x3/x4/1
+{
+  "name": "Zach",
+  "car": [
+    {
+      "make": "Saturn",
+      "model": "SL",
+      "colors": ["Red", "Blue","Green" ]
+    },
+    {
+      "make": "Saturn",
+      "model": "Imprezza",
+      "colors": ["Pink", "Green"]
+    }
+  ]
+}
 
 
 
