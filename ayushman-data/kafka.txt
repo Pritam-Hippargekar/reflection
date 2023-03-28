@@ -5,11 +5,103 @@ https://www.clairvoyant.ai/blog/unleash-kafka-producers-architecture-and-interna
 
 
 
+By default, the Spring Boot configuration will disable the following:
+-------------------------------------------------------------------------
+MapperFeature.DEFAULT_VIEW_INCLUSION
+DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
+SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
+
+    @Bean
+    @Primary
+    public ObjectMapper customJson(){
+        return new Jackson2ObjectMapperBuilder()
+                .indentOutput(true)
+                .serializationInclusion(JsonInclude.Include.NON_NULL)
+                .propertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE)
+                .build();
+    }
+
+PdFundManagementService
+va_Fund_tran  VA_FUND_TRANSFER
+
+public interface JsonMapperService {//https://octoperf.com/blog/2018/02/08/spring-autowiring/#collection-autowiring
+  String toJson(Object instance) throws IOException;
+  <T> T fromJson(String json, Class<T> clazz) throws IOException;
+}
+
+This service provides two methods:
+-------------------------------------------
+A) serializing an object instance to Json,
+B) deserializing a json to an object instance.
+
+    protected String toJson(Object obj) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(obj);
+    }
+
+    protected <T> T fromJson(String json, Class<T> clazz) throws JsonParseException, JsonMappingException, IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(json, clazz);
+    }
+
+
+@Component
+public class JacksonConfig implements Jackson2ObjectMapperBuilderCustomizer, Ordered {
+
+    /** Default Date Time Format */
+    private final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+    /** Default date format */
+    private final String dateFormat = "yyyy-MM-dd";
+    /** Default time format */
+    private final String timeFormat = "HH:mm:ss";
+
+    @Override
+    public void customize(Jackson2ObjectMapperBuilder builder) {
+        // Set the format of serialization and deserialization of the java.util.Date.
+        builder.simpleDateFormat(dateTimeFormat);
+
+        // JSR 310 Date Time Processing
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(dateTimeFormat);
+        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(dateTimeFormatter));
+        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(dateTimeFormatter));
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(dateFormat);
+        javaTimeModule.addSerializer(LocalDate.class, new LocalDateSerializer(dateFormatter));
+        javaTimeModule.addDeserializer(LocalDate.class, new LocalDateDeserializer(dateFormatter));
+
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern(timeFormat);
+        javaTimeModule.addSerializer(LocalTime.class, new LocalTimeSerializer(timeFormatter));
+        javaTimeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(timeFormatter));
+
+        builder.modules(javaTimeModule);
 
 transaction.setTitle("Paid towards"+" "+operatorName+" recharge - "+mobileNumber);
 
 transactionListView.setInfo1(operatorName+" Recharge of "+ mobileNumber);
 
+OUT-PUT
+----------------------------------
+{Task 1=In_Progress, Task 2=Done, Task 3=Planned}
+{
+  "Task 1" : "In_Progress",
+  "Task 2" : "Done",
+  "Task 3" : "Planned"
+}
+2) Global Pretty-Print Setting
+----------------------------------------
+ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+
+3) Pretty-Printing Jackson with Spring Boot
+----------------------------------------------
+spring.jackson.serialization.indent_output=true
+spring.jackson.default-property-inclusion=always, non_null, non_absent, non_default, non_empty
+OR 
+spring:
+  jackson:
+    serialization:
+      INDENT_OUTPUT: true
 
 
 
