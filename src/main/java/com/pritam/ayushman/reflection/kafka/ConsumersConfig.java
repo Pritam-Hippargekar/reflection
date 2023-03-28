@@ -13,6 +13,7 @@ import org.springframework.kafka.support.converter.StringJsonMessageConverter;
 import java.util.HashMap;
 import java.util.Map;
 //https://github.com/rahul-ghadge/spring-boot-kafka/blob/master/src/main/java/com/arya/kafka/service/ConsumerService.java
+//https://github.com/felixzero/messaging_microservice_kafka
 @Configuration
 public class ConsumersConfig {
 
@@ -27,11 +28,13 @@ public class ConsumersConfig {
         Map<String, Object> configProps = new HashMap<>();
 
         configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+
         configProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+
         return configProps;
     }
 
