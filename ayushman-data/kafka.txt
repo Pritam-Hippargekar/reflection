@@ -157,7 +157,36 @@ spring:
       INDENT_OUTPUT: true
 
 
+What’s the need
+-----------------
+A dead letter queue is like a graveyard of messages. All the messages that couldn’t be processed will be consumed by a dead letter queue. The advantage of having this queue is that it allows the developer to get the messages that could not be delivered and take fallback actions appropriately.
 
+Implementation
+-------------------------
+Implementation of a dead letter queue is pretty straight forward. Just having another Kafka consumer to a new topic where all dead messages will be sent. But the key concept is to understand when to push messages to the dead letter queue.
+
+The following cases will help us understand:
+-----------------------------------------------
+A) Runtime Exceptions: Catch the exception and push the message into the dead letter queue to understand why the exception occured.
+B) Retry Count Exhausted: If retryCount reaches 0, then manual processing of the message may be required by the operations team.
+C) Large processing time: If a message takes a very long time to be processed, incurring delays to other messages.
+
+
+
+Duplicate Messages:
+----------------------------
+Duplicate messages can occur in the scenario where:
+A Producer attempts to write a message to a topic partition.
+The broker does not acknowledge the write due to some transient failure scenario.
+The Producer should retry as it does not know whether the write succeeded or not.
+If the Producer is not idempotent and the original write did succeed then the message would be duplicated.
+
+
+// create safe Producer
+properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
+properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
+properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5"); // kafka 2.0 >= 1.1 so we can keep this as 5. Use 1 otherwise.
 
 
 https://thepracticaldeveloper.com/spring-boot-kafka-config/

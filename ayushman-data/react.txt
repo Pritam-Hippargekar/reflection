@@ -1,0 +1,3 @@
+How to Build a Multi-Step Registration App with Animated Transitions Using the MERN Stack
+https://www.freecodecamp.org/news/build-a-multi-step-registration-app-with-animated-transitions-using-mern-stack/
+https://blog.devgenius.io/create-a-multi-step-form-with-reactjs-322aa97a2968

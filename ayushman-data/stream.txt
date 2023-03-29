@@ -1,0 +1,158 @@
+Charset cs = StandardCharsets.US_ASCII;// Charset cs = StandardCharsets.UTF_8;
+  try(Stream<String> linesStream = Files.lines(filePath, cs)){
+      linesStream.forEach(System.out::println);
+  } catch (Exception ex){
+      ex.printStackTrace();
+  }
+OR -------
+var filePath = System.getProperty("user.dir") + "/resources/airquality.csv";
+Files.lines(Paths.get(filePath))
+        .skip(0) // ignore the first entry
+        .filter(line -> line.startsWith("India,Bihar"))
+        .forEach(System.out::println);
+
+
+
+Collectors.counting() vs Stream.count() operation
+-------------------------------------------------:https://nicksamoylov.medium.com/java-streams-28-collect-4-counting-stream-elements-11572122b8a3
+long c3 = Stream.of("cat", "fish", "dog")
+        .peek(s -> System.out.print(s))   //is not called
+        .count();
+System.out.print(c3);                   //prints: 3
+long c4 = Stream.of("cat", "fish", "dog")
+    .peek(s -> System.out.print(s))   //prints: catfishdog
+    .collect(Collectors.counting());
+System.out.print(c4);                   //prints: 3
+
+
+
+
+
+ConcurrentMap<String, List<String>> map1 = 
+                 Stream.of("cat", "fish", "cat", "dog")
+      .collect(Collectors.
+            groupingByConcurrent(Function.identity()));
+  System.out.print(map1);    //prints: {fish=[fish], cat=[cat, cat], dog=[dog]}
+  ConcurrentMap<Integer, List<String>> map2 = 
+                 Stream.of("cat", "fish", "cat", "dog")
+      .collect(Collectors.
+                 groupingByConcurrent(String::length));
+  System.out.print(map2);    //prints: {3=[cat, cat, dog], 4=[fish]}
+  ConcurrentMap<Integer, Set<String>> map3 = 
+                   Stream.of("cat", "fish", "cat", "dog")
+      .collect(Collectors.
+                groupingByConcurrent(String::length, 
+                                    Collectors.toSet()));
+  System.out.print(map3);    //prints: {3=[cat, dog], 4=[fish]}
+  ConcurrentMap<String, Long> map4 = 
+                   Stream.of("cat", "fish", "cat", "dog")
+      .collect(Collectors.
+          groupingByConcurrent(Function.identity(), 
+                                 Collectors.counting()));
+  System.out.print(map4);    //prints: {fish=1, cat=2, dog=1}
+  ConcurrentMap<Integer, Map<String, List<String>>> map5 = 
+                      Stream.of("cat", "fish", "cat", "dog")
+       .collect(Collectors.
+               groupingByConcurrent(String::length, 
+              Collectors.groupingBy(Function.identity())));
+  System.out.print(map5);        
+    //prints: {3={cat=[cat, cat], dog=[dog]}, 4={fish=[fish]}}
+  ConcurrentMap<Integer, Map<String, Long>> map6 = 
+                 Stream.of("cat", "fish", "cat", "dog")
+        .collect(Collectors.
+               groupingByConcurrent(String::length,
+             Collectors.groupingBy(Function.identity(), 
+                                 Collectors.counting())));
+  System.out.print(map6);  //prints: {3={cat=2, dog=1}, 4={fish=1}}
+  ConcurrentSkipListMap<Integer, Map<String, Long>> map7 = 
+                     Stream.of("cat", "fish", "cat", "dog")
+        .collect(Collectors.            
+                 groupingByConcurrent(String::length, 
+                             ConcurrentSkipListMap::new,
+                Collectors.groupingBy(Function.identity(), 
+                                   Collectors.counting())));
+  System.out.print(map7);  //prints: {3={cat=2, dog=1}, 4={fish=1}}
+
+
+
+
+  The following are the examples of the Collectors.toConcurrentMap() usage:
+------------------------------------------------------------------------------
+    ConcurrentMap<String, Integer> map1 = 
+                              Stream.of("cat", "fish", "dog")
+      .parallel()
+      .collect(Collectors.toConcurrentMap(Function.identity(), 
+                                               String::length));
+  System.out.print(map1);   //prints: {fish=4, cat=3, dog=3}
+  try {
+    ConcurrentMap<String, Integer> map2 = 
+                                 Stream.of("cat", "fish", "cat")
+        .parallel()
+        .collect(Collectors.toConcurrentMap(Function.identity(),
+                                                String::length));
+  } catch (Exception ex){
+    System.out.print(ex.getMessage()); 
+      //prints: Duplicate key cat (attempted merging values 3 and 3)
+  } 
+  //First key wins
+  ConcurrentMap<String, Integer> map3 = 
+                               Stream.of("cat", "fish", "cat")
+      .parallel()
+      .collect(Collectors
+          .toConcurrentMap(Function.identity(), 
+                           String::length, 
+                           (oldValue, nextValue) -> oldValue));
+  System.out.print(map3);   //prints: {fish=4, cat=3}
+  //Combines the values
+  ConcurrentMap<String, Integer> map4 = 
+                               Stream.of("cat", "fish", "cat")
+    .parallel()
+    .collect(Collectors
+        .toConcurrentMap(Function.identity(), 
+                         String::length, 
+                         (oldValue, nextValue) -> oldValue + 100));
+  System.out.print(map4);   //prints: {fish=4, cat=103}
+  ConcurrentSkipListMap<String, Integer> map6 = 
+                        Stream.of("cat", "fish", "cat", "cat")
+      .parallel()
+      .collect(Collectors
+           .toConcurrentMap(Function.identity(), 
+                            String::length, 
+                            (oldValue, nextValue) -> oldValue + 100, 
+                            ConcurrentSkipListMap::new));
+  System.out.print(map6);   //prints: {cat=203, fish=4}
+
+
+
+
+  Now let us add to the stream a duplicate element:
+-----------------------------------------------------------
+try {
+    Map<String, Integer> map = Stream.of("cat", "fish", "cat")
+         .collect(Collectors.toMap(Function.identity(), 
+                                               String::length));
+} catch (Exception ex){
+    System.out.print(ex.getMessage()); 
+    //prints: Duplicate key cat (attempted merging values 3 and 3)
+}
+We can avoid exception by providing the mergeFunction (and using the second overloaded version of the toMap() factory method):
+
+Map<String, Integer> map = Stream.of("cat", "fish", "cat")
+    .collect(Collectors.toMap(Function.identity(), 
+                              String::length, 
+                              (oldValue, nextValue) -> oldValue));
+System.out.print(map);   //prints: {fish=4, cat=3}
+
+
+
+
+Finally, we can provide mapSupplier to return a specific Map implementation we need. For example, if we need the keys to be always sorted, we will request to put them in a TreeMap:
+-------------------------------------------------------------------------------------
+TreeMap<String, Integer> map = 
+                          Stream.of("cat", "fish", "cat", "cat")
+    .collect(Collectors.toMap(Function.identity(), 
+                              String::length, 
+                        (oldValue, nextValue) -> oldValue + 100,    
+                              TreeMap::new));
+  
+System.out.print(map);  //prints: {cat=203, fish=4}

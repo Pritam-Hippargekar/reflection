@@ -4,7 +4,9 @@ uploadedBy binlistrecord  ==  should come emailId
 
 
 
-
+catch (Exception e) {
+                   log.error("Exception in transfer funds to: {}",e.getMessage(), e);
+               }
 
 
 
@@ -22,7 +24,14 @@ admin
 UAT :
 ronak.n@sodelsolutions.com
 Sodel@#123
+-------------------------
+ashish.gode@sodelsolutions.com
+admin
 
+
+
+pritam.h@sodelsolutions.com
+admin
 
 
 

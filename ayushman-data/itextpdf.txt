@@ -1,0 +1,5 @@
+https://memorynotfound.com/adding-header-footer-pdf-using-itext-java/
+https://www.c-sharpcorner.com/blogs/programmatically-create-pdf-header-and-footer-in-java
+https://www.javamadesoeasy.com/2016/06/how-to-set-header-and-footer-in-pdf-in.html
+https://andrewwil.medium.com/add-header-and-footer-to-pdf-in-java-9d2b5bcf4878
+https://www.codeguru.com/dotnet/generating-a-pdf-document-using-c-net-and-itext-7/
