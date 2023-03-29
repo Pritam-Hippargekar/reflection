@@ -77,62 +77,9 @@ public class JacksonConfig implements Jackson2ObjectMapperBuilderCustomizer, Ord
 
         builder.modules(javaTimeModule);
 
-        // global configuration for serializing Long types to String, which solves the problem of lost precision of JSs numeric types in the browser client.
-        builder.serializerByType(BigInteger.class, ToStringSerializer.instance);
-        builder.serializerByType(Long.class,ToStringSerializer.instance);
-    }
+transaction.setTitle("Paid towards"+" "+operatorName+" recharge - "+mobileNumber);
 
-    @Override
-    public int getOrder() {
-        return 1;
-    }
-}
-
-
-    @Bean
-    public Module javaTimeModule() {
-        JavaTimeModule module = new JavaTimeModule();
-        module.addSerializer(LOCAL_DATETIME_SERIALIZER);
-        return module;
-    }
-@Bean
-@Primary
-public ObjectMapper objectMapper() {
-    JavaTimeModule module = new JavaTimeModule();
-    module.addSerializer(LOCAL_DATETIME_SERIALIZER);
-    return new ObjectMapper()
-      .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-      .registerModule(module);
-}
-
-@Bean
-public Jackson2ObjectMapperBuilder jackson2ObjectMapperBuilder() {
-    return new Jackson2ObjectMapperBuilder().serializers(LOCAL_DATETIME_SERIALIZER)
-      .serializationInclusion(JsonInclude.Include.NON_NULL);
-}
-It will configure two options by default:
----------------------------------------------------
-disable MapperFeature.DEFAULT_VIEW_INCLUSION
-disable DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
-
-
-
-
-
-
-
-
-
-
-
-
-1) Pretty-Print JSON with Jackson Once
-----------------------------------------
-ObjectMapper mapper = new ObjectMapper();
-Object jsonString = mapper.readValue(inputString, Object.class);
-String indentedString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonString);
-System.out.println(jsonString);
-System.out.println(indentedString);
+transactionListView.setInfo1(operatorName+" Recharge of "+ mobileNumber);
 
 OUT-PUT
 ----------------------------------

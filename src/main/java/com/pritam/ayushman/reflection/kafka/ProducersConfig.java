@@ -23,10 +23,24 @@ public class ProducersConfig {
     public Map<String, Object> producerConfigs() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        configProps.put(ProducerConfig.ACKS_CONFIG, "all");
-        configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+
+        configProps.put(ProducerConfig.ACKS_CONFIG, "all");
+        configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
+
+        // set the producer idempotent
+        // idempotent producer props:
+        // acks = all, retries = Integer.Max, max_in_flight_request_per_connection = 5
+//        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+//        props.put(ProducerConfig.ACKS_CONFIG, "all");
+//        props.put(ProducerConfig.RETRIES_CONFIG, String.valueOf(Integer.MAX_VALUE));
+//        props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5);
+
+        // add batching to get high throughput
+//        props.put(ProducerConfig.LINGER_MS_CONFIG, "50");
+//        props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+
         return configProps;
     }
 
