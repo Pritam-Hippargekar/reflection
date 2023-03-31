@@ -1,0 +1,240 @@
+SELECT `source`.`Limit System Account_name` AS `Limit System Account_name`, count(*) AS `count`, 
+       sum(`source`.`Total Amount`) AS `sum`, max(`source`.`Limit Account_current_balance`) AS `max`, 
+       (sum(`source`.`Total Amount`) - max(`source`.`Limit Account_current_balance`)) AS `expression`
+FROM (SELECT `limit_recon_transactions`.`id` AS `id`, `limit_recon_transactions`.`txn_date` AS `txn_date`, 
+      `limit_recon_transactions`.`mobile_number` AS `mobile_number`,
+      `limit_recon_transactions`.`partner_reference_number` AS `partner_reference_number`,
+      `limit_recon_transactions`.`txn_reference_number` AS `txn_reference_number`,
+      `limit_recon_transactions`.`merchant_reference_number` AS `merchant_reference_number`,
+      `limit_recon_transactions`.`amount` AS `amount`, `limit_recon_transactions`.`txn_status` AS `txn_status`,
+      `limit_recon_transactions`.`settlement_status` AS `settlement_status`,
+      `limit_recon_transactions`.`merchant_payable` AS `merchant_payable`,
+      `limit_recon_transactions`.`commission_receivable` AS `commission_receivable`,
+      `limit_recon_transactions`.`commission_receivable_gst` AS `commission_receivable_gst`, 
+      `limit_recon_transactions`.`fees` AS `fees`, `limit_recon_transactions`.`fees_gst` AS `fees_gst`, 
+      `limit_recon_transactions`.`is_pool_wallet_debited` AS `is_pool_wallet_debited`,
+      `limit_recon_transactions`.`field_1` AS `field_1`,
+      `limit_recon_transactions`.`field_2` AS `field_2`,
+      `limit_recon_transactions`.`field_3` AS `field_3`,
+      `limit_recon_transactions`.`service_consumption_state` AS `service_consumption_state`, 
+      `limit_recon_transactions`.`is_neutralized` AS `is_neutralized`, `limit_recon_transactions`.`is_ignored` AS `is_ignored`,
+      `limit_recon_transactions`.`transaction_remarks` AS `transaction_remarks`,
+      `limit_recon_transactions`.`owner_type` AS `owner_type`, `limit_recon_transactions`.`owner_id` AS `owner_id`,
+      `limit_recon_transactions`.`partner_id` AS `partner_id`,
+      `limit_recon_transactions`.`limit_system_account_id` AS `limit_system_account_id`,
+      `limit_recon_transactions`.`created_date` AS `created_date`,
+      `limit_recon_transactions`.`last_modified_date` AS `last_modified_date`,
+      `limit_recon_transactions`.`hold_expiry_date` AS `hold_expiry_date`, 
+      `limit_recon_transactions`.`gefu_id` AS `gefu_id`, `limit_recon_transactions`.`transaction_type` AS `transaction_type`,
+      `limit_recon_transactions`.`field_4` AS `field_4`, `limit_recon_transactions`.`settlement_cycle` AS `settlement_cycle`,
+      `limit_recon_transactions`.`settlement_date` AS `settlement_date`, 
+      `limit_recon_transactions`.`failure_message` AS `failure_message`,
+      `limit_recon_transactions`.`failure_code` AS `failure_code`,
+      `limit_recon_transactions`.`limit_recon_transaction_record_id` AS `limit_recon_transaction_record_id`,
+      `limit_recon_transactions`.`field_5` AS `field_5`, 
+      `limit_recon_transactions`.`partner_callback_confirmation` AS `partner_callback_confirmation`,
+      `limit_recon_transactions`.`partner_callback_attempts` AS `partner_callback_attempts`,
+      `limit_recon_transactions`.`purpose` AS `purpose`, `limit_recon_transactions`.`service_charge` AS `service_charge`,
+      CASE WHEN `limit_recon_transactions`.`settlement_status` = 'CLAIMED' THEN (-1 * `limit_recon_transactions`.`amount`) 
+           WHEN `limit_recon_transactions`.`settlement_status` = 'REFUND' THEN (-1 * `limit_recon_transactions`.`amount`) 
+           WHEN `limit_recon_transactions`.`settlement_status` = 'HOLD' THEN (-1 * `limit_recon_transactions`.`amount`)
+           WHEN `limit_recon_transactions`.`settlement_status` = 'RECOVERED' THEN `limit_recon_transactions`.`amount` 
+           WHEN `limit_recon_transactions`.`settlement_status` = 'RELEASE' THEN `limit_recon_transactions`.`amount` 
+      END AS `Total Amount`,
+	 `Limit System Account`.`name` AS `Limit System Account_name`, 
+     `Limit System Account`.`account_type` AS `Limit System Account_account_type`,
+     `Limit Account`.`current_balance` AS `Limit Account_current_balance`,
+     `Limit System Account`.`id` AS `Limit System Account_id`,
+     `Limit System Account`.`limit_account_id` AS `Limit System Account_limit_account_id`,
+     `Limit Account`.`id` AS `Limit Account_id` 
+      FROM `limit_recon_transactions` 
+       INNER JOIN `limit_system_account` `Limit System Account` 
+      ON `limit_recon_transactions`.`limit_system_account_id` = `Limit System Account`.`id` 
+       INNER JOIN `limit_account` `Limit Account` 
+      ON `Limit System Account`.`limit_account_id` = `Limit Account`.`id`) `source`
+WHERE (
+   (`source`.`settlement_status` = 'CLAIMED'
+   OR `source`.`settlement_status` = 'REFUND' 
+   OR `source`.`settlement_status` = 'HOLD' 
+   OR `source`.`settlement_status` = 'RECOVERED' 
+   OR `source`.`settlement_status` = 'RELEASE')
+   AND `source`.`txn_status` = 'SUCCESS' 
+AND (`source`.`Limit System Account_account_type` = 'cbs_load_pool' 
+     OR `source`.`Limit System Account_account_type` = 'hold_pool' 
+     OR `source`.`Limit System Account_account_type` = 'pa_disbursement_pool' 
+     OR `source`.`Limit System Account_account_type` = 'upi_load_pool') 
+AND `source`.`is_neutralized` = FALSE AND `source`.`is_ignored` = FALSE)
+GROUP BY `source`.`Limit System Account_name`
+ORDER BY `source`.`Limit System Account_name` ASC
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SELECT `source`.`Limit System Account_name` AS `Limit System Account_name`, count(*) AS `count`, 
+       sum(`source`.`Total Amount`) AS `sum`, max(`source`.`Limit Account_current_balance`) AS `max`, 
+       (sum(`source`.`Total Amount`) - max(`source`.`Limit Account_current_balance`)) AS `expression`
+FROM (SELECT `limit_recon_transactions`.`id` AS `id`, `limit_recon_transactions`.`txn_date` AS `txn_date`, 
+      `limit_recon_transactions`.`mobile_number` AS `mobile_number`,
+      `limit_recon_transactions`.`partner_reference_number` AS `partner_reference_number`,
+      `limit_recon_transactions`.`txn_reference_number` AS `txn_reference_number`,
+      `limit_recon_transactions`.`merchant_reference_number` AS `merchant_reference_number`,
+      `limit_recon_transactions`.`amount` AS `amount`, `limit_recon_transactions`.`txn_status` AS `txn_status`,
+      `limit_recon_transactions`.`settlement_status` AS `settlement_status`,
+      `limit_recon_transactions`.`merchant_payable` AS `merchant_payable`,
+      `limit_recon_transactions`.`commission_receivable` AS `commission_receivable`,
+      `limit_recon_transactions`.`commission_receivable_gst` AS `commission_receivable_gst`, 
+      `limit_recon_transactions`.`fees` AS `fees`, `limit_recon_transactions`.`fees_gst` AS `fees_gst`, 
+      `limit_recon_transactions`.`is_pool_wallet_debited` AS `is_pool_wallet_debited`,
+      `limit_recon_transactions`.`field_1` AS `field_1`,
+      `limit_recon_transactions`.`field_2` AS `field_2`,
+      `limit_recon_transactions`.`field_3` AS `field_3`,
+      `limit_recon_transactions`.`service_consumption_state` AS `service_consumption_state`, 
+      `limit_recon_transactions`.`is_neutralized` AS `is_neutralized`, `limit_recon_transactions`.`is_ignored` AS `is_ignored`,
+      `limit_recon_transactions`.`transaction_remarks` AS `transaction_remarks`,
+      `limit_recon_transactions`.`owner_type` AS `owner_type`, `limit_recon_transactions`.`owner_id` AS `owner_id`,
+      `limit_recon_transactions`.`partner_id` AS `partner_id`,
+      `limit_recon_transactions`.`limit_system_account_id` AS `limit_system_account_id`,
+      `limit_recon_transactions`.`created_date` AS `created_date`,
+      `limit_recon_transactions`.`last_modified_date` AS `last_modified_date`,
+      `limit_recon_transactions`.`hold_expiry_date` AS `hold_expiry_date`, 
+      `limit_recon_transactions`.`gefu_id` AS `gefu_id`, `limit_recon_transactions`.`transaction_type` AS `transaction_type`,
+      `limit_recon_transactions`.`field_4` AS `field_4`, `limit_recon_transactions`.`settlement_cycle` AS `settlement_cycle`,
+      `limit_recon_transactions`.`settlement_date` AS `settlement_date`, 
+      `limit_recon_transactions`.`failure_message` AS `failure_message`,
+      `limit_recon_transactions`.`failure_code` AS `failure_code`,
+      `limit_recon_transactions`.`limit_recon_transaction_record_id` AS `limit_recon_transaction_record_id`,
+      `limit_recon_transactions`.`field_5` AS `field_5`, 
+      `limit_recon_transactions`.`partner_callback_confirmation` AS `partner_callback_confirmation`,
+      `limit_recon_transactions`.`partner_callback_attempts` AS `partner_callback_attempts`,
+      `limit_recon_transactions`.`purpose` AS `purpose`, `limit_recon_transactions`.`service_charge` AS `service_charge`,
+      CASE WHEN (`limit_recon_transactions`.`settlement_status` IN ('CLAIMED','REFUND','HOLD')) THEN (-1 * `limit_recon_transactions`.`amount`) 
+           WHEN (`limit_recon_transactions`.`settlement_status` IN ('RECOVERED','RELEASE')) THEN `limit_recon_transactions`.`amount` 
+      END AS `Total Amount`,
+	 `Limit System Account`.`name` AS `Limit System Account_name`, 
+     `Limit System Account`.`account_type` AS `Limit System Account_account_type`,
+     `Limit Account`.`current_balance` AS `Limit Account_current_balance`,
+     `Limit System Account`.`id` AS `Limit System Account_id`,
+     `Limit System Account`.`limit_account_id` AS `Limit System Account_limit_account_id`,
+     `Limit Account`.`id` AS `Limit Account_id` 
+      FROM `limit_recon_transactions` 
+       INNER JOIN `limit_system_account` `Limit System Account` 
+      ON `limit_recon_transactions`.`limit_system_account_id` = `Limit System Account`.`id` 
+       INNER JOIN `limit_account` `Limit Account` 
+      ON `Limit System Account`.`limit_account_id` = `Limit Account`.`id`) `source`
+WHERE (( `source`.`settlement_status` IN ('CLAIMED','REFUND','HOLD','RECOVERED','RELEASE'))
+   AND `source`.`txn_status` = 'SUCCESS' 
+AND (`source`.`Limit System Account_account_type` IN( 'cbs_load_pool','hold_pool','pa_disbursement_pool','upi_load_pool' ) ) 
+AND `source`.`is_neutralized` = FALSE 
+AND `source`.`is_ignored` = FALSE)
+GROUP BY `source`.`Limit System Account_name`
+ORDER BY `source`.`Limit System Account_name` ASC
+
+
+
+
+
+
+`limit_recon_transactions`.`is_ignored` AS `is_ignored`, 
+`limit_recon_transactions`.`is_neutralized` AS `is_neutralized`,
+`Limit System Account`.`account_type` AS `Limit System Account_account_type`,
+`limit_recon_transactions`.`txn_status` AS `txn_status`,
+`limit_recon_transactions`.`settlement_status` AS `settlement_status`,
+`Limit System Account`.`name` AS `Limit System Account_name`,
+ CASE WHEN (`limit_recon_transactions`.`settlement_status` IN ('CLAIMED','REFUND','HOLD')) THEN (-1 * `limit_recon_transactions`.`amount`) 
+           WHEN (`limit_recon_transactions`.`settlement_status` IN ('RECOVERED','RELEASE')) THEN `limit_recon_transactions`.`amount` 
+      END AS `Total Amount`,
+`Limit Account`.`current_balance` AS `Limit Account_current_balance`,
+
+
+
+
+
+
+
+SELECT `source`.`Limit System Account_name` AS `Limit System Account_name`, 
+        count(*) AS `count`, 
+       sum(`source`.`Total Amount`) AS `sum`,
+       max(`source`.`Limit Account_current_balance`) AS `max`, 
+       (sum(`source`.`Total Amount`) - max(`source`.`Limit Account_current_balance`)) AS `expression`
+FROM (SELECT `limit_recon_transactions`.`id` AS `id`, `limit_recon_transactions`.`txn_date` AS `txn_date`, 
+      `limit_recon_transactions`.`mobile_number` AS `mobile_number`,
+      `limit_recon_transactions`.`partner_reference_number` AS `partner_reference_number`,
+      `limit_recon_transactions`.`txn_reference_number` AS `txn_reference_number`,
+      `limit_recon_transactions`.`merchant_reference_number` AS `merchant_reference_number`,
+      `limit_recon_transactions`.`amount` AS `amount`, `limit_recon_transactions`.`txn_status` AS `txn_status`,
+      `limit_recon_transactions`.`settlement_status` AS `settlement_status`,
+      `limit_recon_transactions`.`merchant_payable` AS `merchant_payable`,
+      `limit_recon_transactions`.`commission_receivable` AS `commission_receivable`,
+      `limit_recon_transactions`.`commission_receivable_gst` AS `commission_receivable_gst`, 
+      `limit_recon_transactions`.`fees` AS `fees`, `limit_recon_transactions`.`fees_gst` AS `fees_gst`, 
+      `limit_recon_transactions`.`is_pool_wallet_debited` AS `is_pool_wallet_debited`,
+      `limit_recon_transactions`.`field_1` AS `field_1`,
+      `limit_recon_transactions`.`field_2` AS `field_2`,
+      `limit_recon_transactions`.`field_3` AS `field_3`,
+      `limit_recon_transactions`.`service_consumption_state` AS `service_consumption_state`, 
+      `limit_recon_transactions`.`is_neutralized` AS `is_neutralized`, `limit_recon_transactions`.`is_ignored` AS `is_ignored`,
+      `limit_recon_transactions`.`transaction_remarks` AS `transaction_remarks`,
+      `limit_recon_transactions`.`owner_type` AS `owner_type`, `limit_recon_transactions`.`owner_id` AS `owner_id`,
+      `limit_recon_transactions`.`partner_id` AS `partner_id`,
+      `limit_recon_transactions`.`limit_system_account_id` AS `limit_system_account_id`,
+      `limit_recon_transactions`.`created_date` AS `created_date`,
+      `limit_recon_transactions`.`last_modified_date` AS `last_modified_date`,
+      `limit_recon_transactions`.`hold_expiry_date` AS `hold_expiry_date`, 
+      `limit_recon_transactions`.`gefu_id` AS `gefu_id`, `limit_recon_transactions`.`transaction_type` AS `transaction_type`,
+      `limit_recon_transactions`.`field_4` AS `field_4`, `limit_recon_transactions`.`settlement_cycle` AS `settlement_cycle`,
+      `limit_recon_transactions`.`settlement_date` AS `settlement_date`, 
+      `limit_recon_transactions`.`failure_message` AS `failure_message`,
+      `limit_recon_transactions`.`failure_code` AS `failure_code`,
+      `limit_recon_transactions`.`limit_recon_transaction_record_id` AS `limit_recon_transaction_record_id`,
+      `limit_recon_transactions`.`field_5` AS `field_5`, 
+      `limit_recon_transactions`.`partner_callback_confirmation` AS `partner_callback_confirmation`,
+      `limit_recon_transactions`.`partner_callback_attempts` AS `partner_callback_attempts`,
+      `limit_recon_transactions`.`purpose` AS `purpose`, 
+      CASE WHEN (`limit_recon_transactions`.`settlement_status` IN ('CLAIMED','REFUND','HOLD')) THEN (-1 * `limit_recon_transactions`.`amount`) 
+           WHEN (`limit_recon_transactions`.`settlement_status` IN ('RECOVERED','RELEASE')) THEN `limit_recon_transactions`.`amount` 
+      END AS `Total Amount`,
+	 `Limit System Account`.`name` AS `Limit System Account_name`, 
+     `Limit System Account`.`account_type` AS `Limit System Account_account_type`,
+     `Limit Account`.`current_balance` AS `Limit Account_current_balance`,
+     `Limit System Account`.`id` AS `Limit System Account_id`,
+     `Limit System Account`.`limit_account_id` AS `Limit System Account_limit_account_id`,
+     `Limit Account`.`id` AS `Limit Account_id` 
+      FROM `ypp`.`limit_recon_transactions` 
+       INNER JOIN `ypp`.`limit_system_account` `Limit System Account` 
+      ON `limit_recon_transactions`.`limit_system_account_id` = `Limit System Account`.`id` 
+       INNER JOIN `ypp`.`limit_account` `Limit Account` 
+      ON `Limit System Account`.`limit_account_id` = `Limit Account`.`id`) `source`
+WHERE (( `source`.`settlement_status` IN ('CLAIMED','REFUND','HOLD','RECOVERED','RELEASE'))
+		AND `source`.`txn_status` = 'SUCCESS' 
+		AND (`source`.`Limit System Account_account_type` IN( 'cbs_load_pool','hold_pool','pa_disbursement_pool','upi_load_pool' ) ) 
+		AND `source`.`is_neutralized` = FALSE 
+		AND `source`.`is_ignored` = FALSE)
+GROUP BY `source`.`Limit System Account_name`
+ORDER BY `source`.`Limit System Account_name` ASC

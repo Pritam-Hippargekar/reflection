@@ -1,0 +1,288 @@
+YPP-14757 YPHUB | Collection Settlelement
+=========================================
+
+@PostMapping("/collection-settlement")
+public ResponseEntity<PartnerApisResponse> createCollectionSettlement(@RequestBody PartnerApisRequest request)
+        throws URISyntaxException {
+    log.info("Collection Settlement {}", request);
+    request.setActionName(PartnerApiAction.DCA_COLLECTION_SETTLEMENT);
+    request.setChannel(ChannelEnum.YPHUB.name());
+    Partner partner = partnerRepository.findByKey(request.getPartnerKey()).get();
+    log.debug("calling collectionSettlement api");
+    PartnerApisResponse result = clientRemitterManagement.collectionSettlement(request, partner);
+    if (!"00".equals(result.getResponseCode())) {
+        throw new BadRequestAlertException(result.getResponseMessage(), ENTITY_NAME, result.getResponseCode());
+    }
+    return ResponseEntity.ok()
+            .headers(HeaderUtil.createAlert(applicationName, "Settlement initiated for client", ""))
+            .body(result);
+}
+
+
+public PartnerApisResponse collectionSettlement(PartnerApisRequest request, Partner partner) {
+        log.info("Request for Collection Settlement : Request {}, Partner {}", request, partner.getId());
+        try {
+       
+        	if("YPHUB".equals(request.getChannel())) {
+        		String partnerReferenceNo = getPartnerReferenceNumber();
+        		log.info("partnerReferenceNo in collection settlement {} " ,partnerReferenceNo);
+        		request.setPartnerReferenceNo(partnerReferenceNo);
+        	}
+            if(StringUtils.isAnyBlank(request.getPartnerReferenceNo(),request.getP1(), request.getP2())) {
+	    		log.info("Parameter Missing for Collection Settlement");
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "P006"))); 
+	    	}
+            if (!request.getPartnerReferenceNo().matches("[a-zA-Z0-9]+")) {
+				log.info("Invalid Partner Reference Number {}",request.getPartnerReferenceNo() );
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA068"))); 
+			}
+	    	if (!validateAmount(request.getP2())) {
+	    	    log.info("Invalid amount {}", request.getP2());
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA038"))); 
+            }
+            BigDecimal amount = new BigDecimal(request.getP2());
+            Optional<PartnerClient> clientOptional = partnerClientRepository.findByClientIdentifierAndPartnerId(request.getP1(), partner.getId());
+            if (!clientOptional.isPresent()) {
+                log.info("Invalid client identifier {}", request.getP1());
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA005"))); 
+            }
+            PartnerClient partnerClient = clientOptional.get();
+            if (PartnerClientPurposeEnum.TRADE.equals(partnerClient.getPurpose())) {
+				log.info("client is onboarded for {}", partnerClient.getPurpose());
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA057"))); 
+			}
+            if (!Status.ACTIVE.equals(partnerClient.getStatus())) {
+                log.info("Partner Client is not active");
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA029"))); 
+            } else if (StringUtils.isAnyBlank(partnerClient.getCollectionSettlementAccount(), partnerClient.getCollectionSettlementIFSCCode())) {
+                log.info("Partner Client Account no {} or Ifsc Code {} not set", partnerClient.getCollectionSettlementAccount(), partnerClient.getCollectionSettlementIFSCCode());
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA060"))); 
+            }
+            if(partnerClient.getIsSuspended() == Boolean.TRUE) {
+           	 log.info("Client is suspended {}", partnerClient.getIsSuspended());
+           	 return new PartnerApisResponse(DAErrorCode.CLIENT_IS_SUSPENDED);
+           }
+
+          //Check for partner reference number
+	    	if(limitReconTransactionsRepository.existsByPartnerReferenceNumberAndPartnerId(request.getPartnerReferenceNo(),partner.getId())) {
+	    		log.info("Invalid partner reference number {}", request.getPartnerReferenceNo());
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA023"))); 
+	    	}
+
+            PartnerDASetup partnerDASetup = partnerDASetupRepository.findByPartnerId(partner.getId()).get();
+            Integer minSettlementTime = null;
+            if (partnerDASetup.getCollectionSettlementType().equals(CollectionSettlementTypeEnum.AUTO)) {
+                log.info("Collection Settlement Type is AUTO at partner");
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA061"))); 
+            } else if (partnerDASetup.getCollectionSettlementType().equals(CollectionSettlementTypeEnum.PARTNER_DRIVEN) && ! CollectionSettlementTypeEnum.MANUAL.equals(partnerClient.getCollectionSettlementType())) {
+                log.info("Collection Settlement Type is PARTNER DRIVEN at partner and not MANUAL at client");
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA061"))); 
+            } else if (partnerDASetup.getCollectionSettlementType().equals(CollectionSettlementTypeEnum.MANUAL)) {
+                minSettlementTime = partnerDASetup.getMinimumSettlementHoldTime();
+            } else {
+                minSettlementTime = partnerDASetup.getMinimumSettlementHoldTime();
+            }
+
+            List<LimitAccountEntry> accountEntries = limitAccountEntryRepository.findByTransactionTypeAndOwnerTypeAndOwnerIdAndCreatedDateAfter(TransactionableTypeEnum.LIMIT_LOAD.name(), LimitOwnerType.PARTNER_CLIENT.name(), partnerClient.getId(), Instant.now().minus(minSettlementTime.longValue(), ChronoUnit.HOURS));
+            BigDecimal withdrawAbleAmount = partnerClient.getLimitAccount().getCurrentBalance().subtract(accountEntries.stream().map(LimitAccountEntry::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, BigDecimal.ROUND_HALF_UP));
+            log.info("Withdraw able amount {} for partner client {} with min settlement time {}", withdrawAbleAmount, partnerClient.getId(), minSettlementTime);
+            if (amount.compareTo(withdrawAbleAmount) > 0) {
+                log.info("Transfer amount {} is greater than withdrawable amount {}", amount, withdrawAbleAmount);
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA059"))); 
+            }
+            ParameterManagement parameterManagement = parameterManagementRepository.findByName(ParameterManagementEnum.MIN_TRANSFER_AMOUNT.name());
+            BigDecimal minTransferAmt = new BigDecimal(parameterManagement.getValue());
+            if(minTransferAmt.compareTo(withdrawAbleAmount) > 0) {
+            	minTransferAmt = withdrawAbleAmount;
+            }
+
+            if (minTransferAmt.compareTo(amount) > 0) {
+                log.info("Amount less than min transfer amount : Withdrawable Amt {}, Min Transfer amt {}, Transfer Amt {}", withdrawAbleAmount, minTransferAmt, amount);
+                return new PartnerApisResponse("DCA067", "Transfer amount cannot be lower than "+minTransferAmt);
+            }
+            LimitSystemAccount systemAccount;
+            String transferType;
+            BigDecimal fee;
+            parameterManagement = parameterManagementRepository.findByName(ParameterManagementEnum.IMPS_TXN_AMT_LIMIT.name());
+			BigDecimal impsTxnAmtLimit = new BigDecimal(parameterManagement.getValue());
+			BigDecimal serviceCharge = BigDecimal.ZERO;
+            if (amount.compareTo(impsTxnAmtLimit) <= 0) {
+                systemAccount = limitSystemAccountRepository.findByAccountType(AccountTypeEnum.IMPS_PAYABLE_POOL.getName());
+                transferType = "IMPS";
+                fee = partnerDASetup.getImpsFee(amount);
+               serviceCharge = accountUtil.getServiceCharge(ServiceTypeEnum.IMPS, ChannelEnum.FT3, amount);
+            } else {
+                systemAccount = limitSystemAccountRepository.findByAccountType(AccountTypeEnum.NEFT_PAYABLE_POOL.getName());
+                transferType = "NEFT";
+                fee = partnerDASetup.getNeftFlatFee();
+                serviceCharge = accountUtil.getServiceCharge(ServiceTypeEnum.NEFT, ChannelEnum.FT3, amount);
+            }
+
+            LimitReconTransactions transaction = new LimitReconTransactions();
+            transaction.limitSystemAccount(systemAccount).amount(amount)
+                                .txnStatus(TransactionStatus.SUCCESS).settlementStatus(SettlementStatus.PENDING).field3(partnerClient.getCollectionSettlementIFSCCode()+"|"+partnerClient.getCollectionSettlementAccount()+"|"+partnerClient.getClientName())
+                                .partnerReferenceNumber(request.getPartnerReferenceNo()).fees(fee).feesGst(accountUtil.getGst(fee))
+                                .txnRefNo(accountUtil.getTxnCounter("PARTNER_CLIENT")).partner(partner).transactionType(TransactionableTypeEnum.FUND_TRANSFER)
+                                .ownerType(LimitOwnerType.PARTNER_CLIENT).ownerId(partnerClient.getId()).mobileNumber(partnerClient.getMobileNumber());
+            transaction.setServiceCharge(serviceCharge);
+            limitAccountEntryService.fundTransfer(transaction, partnerClient);
+
+            neftImpsService.bankTransfer(transaction, transferType, partnerClient.getClientName(), Boolean.FALSE);
+            //Success Response
+	    	if (transaction.getSettlementStatus().equals(SettlementStatus.PENDING)) {
+                PartnerApisResponse partnerApisResponse = new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "00")));
+                partnerApisResponse.setStatus("SUCCESS");
+                partnerApisResponse.setPartnerReferenceNumber(request.getPartnerReferenceNo());
+                partnerApisResponse.setYppTxnReferenceNumber(transaction.getTxnReferenceNumber());
+                return partnerApisResponse;
+            } else {
+	            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA062"))); 
+            }
+
+        } catch (Exception e) {
+            log.error("Collection Settlement Exception ", e);
+            return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(DCA_DCA_COLLECTION_SETTLEMENT, "YPP", "", "DCA062"))); 
+        }
+    }
+
+    public BigDecimal getServiceCharge(ServiceTypeEnum serviceType, ChannelEnum channel, BigDecimal txnAmount) {
+    	log.debug("Fetching ServiceCharge for serviceType: {}, channel: {}, txnAmount: {}", serviceType, channel, txnAmount);
+    	BigDecimal serviceCharge = BigDecimal.ZERO;
+    	if (null != serviceType && null != channel && null != txnAmount) {
+    		Optional<ServiceChargesDetails> serviceChargesDetailsInfo = serviceChargesDetailsRepository.findTopByServiceTypeAndChannelAndStatusAndLowerSlabLessThanAndUpperSlabGreaterThanEqual(serviceType, channel, ServiceChargesDetailsStatusEnum.ACTIVE, txnAmount, txnAmount);
+    	    if (serviceChargesDetailsInfo.isPresent()) {
+    	    	ServiceChargesDetails serviceChargesDetails = serviceChargesDetailsInfo.get();
+    	    	log.debug("Found ServiceChargesDetails with id: {} and chargeType: {}", serviceChargesDetails.getId(), serviceChargesDetails.getChargeType());
+    	        if (ChargeTypeEnum.PERCENTAGE.equals(serviceChargesDetails.getChargeType())) {
+    	        	serviceCharge = serviceChargesDetails.getServiceCharge().divide(new BigDecimal(100)).multiply(txnAmount).setScale(4, BigDecimal.ROUND_HALF_UP);
+    	        } else {
+    	        	serviceCharge = serviceChargesDetails.getServiceCharge();
+    	        }
+    	    }
+    	}
+    	log.debug("returning from serviceCharge method with serviceCharge: {}", serviceCharge);
+    	return serviceCharge;
+    }
+
+  public BigDecimal getGst(BigDecimal amt) {
+        log.info("Amount {}", amt);
+        if (amt.compareTo(BigDecimal.ZERO) > 0) {
+            ParameterManagement parameterManagement = parameterManagementRepository.findByName(ParameterManagementEnum.GST_RATE.name());
+            BigDecimal gstPercentage = new BigDecimal(parameterManagement.getValue());
+            return gstPercentage.divide(new BigDecimal(100)).multiply(amt).setScale(4, BigDecimal.ROUND_HALF_UP);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public String getTxnCounter(String txnType) {
+        DATxnCounter tc = new DATxnCounter();
+        tc.setTxnType(txnType);
+        tc.setTimestamp(RandomUtil.dateFormat(Instant.now(), "yyMMddHH"));
+        DATxnCounter daTxnCounter = daTxnCounterRepository.save(tc);
+        log.info("{}", daTxnCounter);
+        return daTxnCounter.getId().toString();
+    }
+
+    public void fundTransfer(LimitReconTransactions transaction, PartnerClient partnerClient) {
+    	transaction = limitReconTransactionsRepository.save(transaction);
+    	String txnSubType = getTxnSubType(transaction);
+        String result = limitAccountEntryRepository.limitFundTransfer(transaction.getAmount(), TransactionableTypeEnum.FUND_TRANSFER.toString(), transaction.getId(), partnerClient.getLimitAccount().getId(), transaction.getLimitSystemAccount().getLimitAccount().getId(), transaction.getOwnerId(), transaction.getOwnerType().name(), txnSubType, transaction.getOwnerId().toString(), null, null);
+        if ("Insufficient Balance".equals(result)) {
+            throw new InsufficientBalanceException("No balance");
+        } else if (!"success".equals(result)) {
+            throw new StoredProcedureException("Fund Transfer Exception");
+        }
+    }
+
+public void bankTransfer(LimitReconTransactions transactions, String transferType, String creditorName, Boolean isPartnerDrivenNarration) {
+    	try {
+    	    DomesticPaymentsRequestDTO requestDTO = getDomesticPaymentsRequestDto(transactions, transactions.getPartner(), transactions.getAmount(), transferType, creditorName, isPartnerDrivenNarration);
+    		ObjectMapper mapper = new ObjectMapper();
+    		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    		String json = mapper.writeValueAsString(requestDTO);
+    		String response = dataPowerUtil.postJsonWithDataPower(domesticPaymenturl, json, Integer.parseInt(domesticPaymentsTimeout),true);
+    		JSONObject responseJson = new JSONObject(response);
+    		DomesticPaymentResponseDTO responseDTO = mapper.readValue(responseJson.toString(), DomesticPaymentResponseDTO.class);
+            DomesticPaymentsDataDTO paymentsDataDTO = responseDTO.getData();
+            if (paymentsDataDTO != null) {
+                if (null != paymentsDataDTO.getStatus() && paymentsDataDTO.getStatus().equalsIgnoreCase("Received")) {
+                    transactions.setField1(paymentsDataDTO.getStatus() + "|" + paymentsDataDTO.getTransactionIdentification());
+                    if(null != paymentsDataDTO.getInitiation()) {
+                        transactions.setMerchantReferenceNumber(paymentsDataDTO.getInitiation().getEndToEndIdentification());
+                     }
+                    limitReconTransactionsRepository.save(transactions);
+                } else if (null != paymentsDataDTO.getStatus() && paymentsDataDTO.getStatus().equalsIgnoreCase("Failed")) {
+                    limitAccountEntryService.reversal(transactions, TransactionableTypeEnum.AUTO_REVERSAL);
+                    transactions.settlementStatus(SettlementStatus.REVERSED).isIgnored(Boolean.TRUE).transactionRemarks("Transaction not accepted");
+                    if(null != paymentsDataDTO.getInitiation()) {
+                        transactions.setMerchantReferenceNumber(paymentsDataDTO.getInitiation().getEndToEndIdentification());
+                     }
+                    MetaResponseDTO metaDTO = responseDTO.getMeta();
+                    if (null != metaDTO) {
+                        String field1 = paymentsDataDTO.getStatus() + "|" + metaDTO.getErrorCode() + "|" + metaDTO.getErrorSeverity();
+                        transactions.setField1(StringUtils.substring(field1, 0, 254));
+                        transactions.failureCode(metaDTO.getErrorCode()).failureMessage(metaDTO.getErrorSeverity());
+                    }
+                    limitReconTransactionsRepository.save(transactions);
+                }
+            }
+    	} catch (InterruptedException | ConnectTimeoutException | SocketTimeoutException e) {
+    		log.error("Timeout Exception ", e);
+    		transactions.setField1("999|Timeout");
+    		limitReconTransactionsRepository.save(transactions);
+    	} catch (Exception ex) {
+    		log.error("Exception ", ex);
+    	}
+    }
+
+	private DomesticPaymentsRequestDTO getDomesticPaymentsRequestDto(LimitReconTransactions transactions, Partner partner, BigDecimal amount, String transferType, String creditorName, Boolean isPartnerDrivenNarration) {
+		LimitSystemAccount systemAccounts = transactions.getLimitSystemAccount();
+		String debtorName = "YPP "+partner.getPartnerCode()+ " "+transferType+" Payable Pool";
+        String[] accountDetails = transactions.getField3().split("\\|");
+
+        DomesticPaymentsRequestDTO requestDTO = new DomesticPaymentsRequestDTO();
+		DomesticPaymentsDataDTO dataDTO = new DomesticPaymentsDataDTO();
+		dataDTO.setConsentId(consentId); // TODO
+		DomesticPaymentsInitiationDTO initiationDTO = new DomesticPaymentsInitiationDTO();
+		initiationDTO.setInstructionIdentification(transactions.getTxnReferenceNumber());
+		initiationDTO.setInstructedAmount(new InstructedAmountDTO(amount.toString(), "INR"));
+
+		DebtorAccountDTO debtorAccountDTO = new DebtorAccountDTO(); // DebtorAccount
+		debtorAccountDTO.setIdentification(systemAccounts.getAccountNumber());
+		debtorAccountDTO.setSecondaryIdentification(systemAccounts.getCustomerId());
+		debtorAccountDTO.setName(debtorName);
+		initiationDTO.setDebtorAccount(debtorAccountDTO);
+
+		CreditorAccountDTO creditorAccountDTO = new CreditorAccountDTO();
+		creditorAccountDTO.setSchemeName(accountDetails[0]);
+		creditorAccountDTO.setIdentification(accountDetails[1]);
+		creditorAccountDTO.setName(creditorName.replaceAll("[^a-zA-Z0-9 ]", ""));
+		initiationDTO.setCreditorAccount(creditorAccountDTO);
+
+		RemittanceInformationDTO remittanceInformationDTO = new RemittanceInformationDTO();
+		String oldNarrationValue = "Fund Transfer /LM/ " + transactions.getTxnReferenceNumber();
+		//Optional<PartnerClient> partnerClientOpt = this.partnerClientRepository.findById(transactions.getOwnerId()); // TODO need to confirm
+        //String narration = partnerClientOpt.isPresent() ? RandomUtil.trimPartnerClientName(partnerClientOpt.get().getClientName()): oldNarrationValue;
+		remittanceInformationDTO.setUnstructured(new RemittanceInformationUnstructuredDTO(isPartnerDrivenNarration ? (StringUtils.isNotBlank(transactions.getField5()) ? transactions.getField5() : oldNarrationValue) : oldNarrationValue)); // TODO
+		initiationDTO.setRemittanceInformation(remittanceInformationDTO);
+		initiationDTO.setClearingSystemIdentification(transferType);
+
+		dataDTO.setInitiation(initiationDTO);
+		requestDTO.setData(dataDTO);
+
+		DomesticPaymentsRiskDTO paymentsRiskDTO = new DomesticPaymentsRiskDTO();
+		DeliveryAddressDTO addressDTO = new DeliveryAddressDTO();
+		PartnerAddress partnerAddress = partnerAddressRepository.findByPartner(partner).get();
+		List<String> addressList = Arrays.asList(partnerAddress.getCity());
+		addressList = addressList.stream()
+				.map(address -> address.replaceAll("[^a-zA-Z0-9 ]", ""))
+				.collect(Collectors.toList());
+		addressDTO.setAddressLine(addressList); // TODO
+		paymentsRiskDTO.setDeliveryAddress(addressDTO);
+
+		requestDTO.setData(dataDTO);
+		requestDTO.setRisk(paymentsRiskDTO);
+		return requestDTO;
+	}
+
+

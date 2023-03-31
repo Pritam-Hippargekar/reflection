@@ -1,0 +1,599 @@
+There are a few ways to run the SonarQubeScans:
+===================================================
+Maven
+Gradle
+Manually, using the SonarScanner
+
+
+You can use multiple ways to define a Jenkins pipeline:
+========================================================
+Manual configuration in the GUI
+DSL script
+Jenkinsfile with a scripted pipeline
+Jenkinsfile with a declarative pipeline
+
+
+On top of that, there are two ways to configure the scanner:
+==================================================================
+Using sonar-project.properties
+By sending parameters to the SonarScanner
+
+
+
+
+
+stage('SonarCloud') {
+  environment {
+    SCANNER_HOME = tool 'SonarQubeScanner'
+    ORGANIZATION = "igorstojanovski-github"
+    PROJECT_NAME = "igorstojanovski_jenkins-pipeline-as-code"
+  }
+  steps {
+    withSonarQubeEnv('SonarCloudOne') {   //withSonarQubeEnv(installationName: 'SonarCloudOne', credentialsId: 'SonarCloudOne') 
+        sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.organization=$ORGANIZATION \
+        -Dsonar.java.binaries=build/classes/java/ \
+        -Dsonar.projectKey=$PROJECT_NAME \
+        -Dsonar.sources=.'''
+    }
+  }
+}
+stage("Quality Gate") {
+  steps {
+    timeout(time: 1, unit: 'MINUTES') {
+        waitForQualityGate abortPipeline: true
+    }
+  }
+}
+
+------------------------------------------------
+
+Service changes if PERCENTAGE
+------------------------------
+BigDecimal serviceCharge = BigDecimal.ZERO;
+    serviceCharge = serviceChargesDetails.getServiceCharge().divide(new BigDecimal(100)).multiply(txnAmount).setScale(4, BigDecimal.ROUND_HALF_UP);
+
+
+            BigDecimal withdrawAbleAmount = partnerClient.getLimitAccount().getCurrentBalance().subtract(accountEntries.stream()
+                                            .map(LimitAccountEntry::getAmount)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                            .setScale(2, BigDecimal.ROUND_HALF_UP));
+
+==============================================
+
+pipeline {
+	agent { label 'node01' }
+
+	stages {
+		stage('Build') {
+			steps {
+				bat 'mvn clean package -DskipTests'
+			}
+		}
+		stage('Test') {
+			steps {
+				bat 'mvn test'
+			}
+		}
+		stage('SonarQube Analysis') {
+			environment {
+				SCANNER_HOME = tool 'sonar-scanner'  // sonar-scanner is the name of the tool in the manage jenkins> tool configuration
+			}
+			steps {
+
+				withSonarQubeEnv(installationName: 'sonar1') {  //installationName is the name of sonar installation in manage jenkins>configure system
+					bat "%SCANNER_HOME%/bin/sonar-scanner \
+					-Dsonar.projectKey=projectsonar1 \
+					-Dsonar.projectName=projectsonar1 \
+					-Dsonar.sources=src/ \
+					-Dsonar.java.binaries=target/classes/ \
+					-Dsonar.exclusions=src/test/java/****/*.java"
+
+				}
+			}
+		}
+
+		stage('SQuality Gate') {
+			steps {
+				timeout(time: 2, unit: 'MINUTES') {
+					waitForQualityGate abortPipeline: true
+				}	
+			}
+		}
+			
+	}   
+}
+
+
+https://sweetcode.io/how-to-create-an-amazon-elastic-kubernetes-service-cluster-using-terraform/
+https://sweetcode.io/how-to-build-and-push-docker-images-to-docker-hub-using-jenkins-pipeline/
+add the Docker Hub credentials to Jenkins.
+add the Git Hub credentials to Jenkins.
+
+`Dockerfile` without any extension
+`Jenkinsfile` without any extension
+
+pipeline {
+  agent any
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '5'))
+  }
+  environment {
+    DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+  }
+  stages {
+    stage('Build') {
+      steps {
+        sh 'docker build -t lloydmatereke/jenkins-docker-hub .'
+      }
+    }
+    stage('Login') {
+      steps {
+        sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+      }
+    }
+    stage('Push') {
+      steps {
+        sh 'docker push lloydmatereke/jenkins-docker-hub'
+      }
+    }
+  }
+  post {
+    always {
+      sh 'docker logout'
+    }
+  }
+}
+
+
+
+OR 
+steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerHub', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
+          sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
+          sh 'docker push shanem/spring-petclinic:latest'
+        }
+      }
+OR 
+ stage('Build and Push Image') {
+     steps {
+       sh 'docker image build -t ${REPOSITORY_TAG} .'
+       sh 'docker tag ${REPOSITORY_TAG} localhost:32000/${REPOSITORY_TAG}'
+       sh 'docker push localhost:32000/${REPOSITORY_TAG}'
+     }
+  }
+https://igorski.co/sonarqube-scans-using-jenkins-declarative-pipelines/
+https://aspiresoftware.in/blog/intergrating-sonarqube-and-jenkins/
+https://blog.devops.dev/jenkins-gitlab-sonarqube-maven-integration-devops-configuration-aa5ddaff3977
+
+
+
+
+pipeline {
+    agent any
+    environment {
+        SAMPLE_GLOBAL_ENV_VAR = "Test global ENV variables."
+        SAMPLE_ENV = credentials("simple-secret-text")
+    }
+    stages {
+        stage("Build") {
+            environment {
+                SAMPLE_STAGE_ENV_VAR = "Test stage ENV variables."
+            }
+            steps {
+                echo "Build stage."
+                echo "$SAMPLE_GLOBAL_ENV_VAR"
+                echo "$SAMPLE_STAGE_ENV_VAR"
+            }
+        }
+        stage("Test") {
+            steps {
+                echo "Test stage."
+                echo "$env.SAMPLE_GLOBAL_ENV_VAR"
+                sh 'echo $MYUSERPASS'
+                sh 'logintest --username $MYUSERPASS_USR --password $MYUSERPASS_PSW'
+            }
+        }
+        stage("Release") {
+            steps {
+                echo "Release stage."
+                echo "${SAMPLE_GLOBAL_ENV_VAR}"
+            }
+        }
+    }
+}
+
+agent: any execute the pipeline or a specific stage on any available agent.
+agent: none is used to disable global agent for the entire pipeline. Instead, we should define the agent in each stage. Here is an example:
+
+
+pipeline {
+  agent any
+  stages {
+echo 'Pipeline logic starts'
+    stage('Setup parameters') {
+      steps {
+        script {
+          properties([
+            parameters([
+              string(
+                name: 'ECR_IMAGE_URL',
+                trim: true
+              ),
+              string(
+                name: 'AWS_ECR_REGION',
+                trim: true
+              ),
+              string(
+                name: 'GCP_PROJECT_ID',
+                trim: true
+              ),
+              string(
+                name: 'AWS_ACCOUNT_ID',
+                trim: true
+              ),
+              string(
+                name: 'GCR_IMAGE_NAME',
+                trim: true
+              ),
+        //booleanParam(name: "TEST_BOOLEAN", defaultValue: true, description: "Sample boolean parameter")
+        //string(name: "TEST_STRING", defaultValue: "ssbostan", trim: true, description: "Sample string parameter")
+        //text(name: "TEST_TEXT", defaultValue: "Jenkins Pipeline Tutorial", description: "Sample multi-line text parameter")
+        //password(name: "TEST_PASSWORD", defaultValue: "SECRET", description: "Sample password parameter")
+        //choice(name: "TEST_CHOICE", choices: ["production", "staging", "development"], description: "Sample multi-choice parameter")
+              string(
+                name: 'GCR_IMAGE_TAG',
+                trim: true
+              )
+            ])
+          ])
+        }
+      }
+    }
+    stage('Pulling Image from ECR') {
+      steps {
+
+        script {
+          docker.withRegistry("https://" + "${params.ECR_IMAGE_URL}", "ecr:${params.AWS_ECR_REGION}:${params.AWS_ACCOUNT_ID}") {
+            sh "docker pull ${params.ECR_IMAGE_URL}"
+          }
+        }
+      }
+    }
+
+    stage("Tagging ECR Image") {
+      steps {
+        script {
+          sh "docker tag ${params.ECR_IMAGE_URL}  gcr.io/${params.GCP_PROJECT_ID}/${params.GCR_IMAGE_NAME}:${params.GCR_IMAGE_TAG}"
+
+        }
+      }
+    }
+    stage("Pushing ECR Image to GCR") {
+      steps {
+        script {
+          withDockerRegistry([credentialsId: "gcr:${params.GCP_PROJECT_ID}", url: "https://gcr.io"]) {
+            sh "docker push gcr.io/${params.GCP_PROJECT_ID}/${params.GCR_IMAGE_NAME}:${params.GCR_IMAGE_TAG}"
+          }
+        }
+      }
+    }
+
+  }
+
+}
+
+
+
+
+The complete Jenkins Post Actions example:
+-------------------------------------------
+pipeline {
+    agent any
+    stages {
+        stage("Build") {
+            steps {
+                echo "Build stage."
+            }
+            post {
+                always {
+                    echo "This block always runs after this stage."
+                }
+            }
+        }
+        stage("Test") {
+            steps {
+                echo "Test stage."
+            }
+            post {
+                unstable {
+                    echo "This block runs when the status of this stage is marked unstable."
+                }
+            }
+        }
+        stage("Release") {
+            steps {
+                echo "Release stage."
+            }
+            post {
+                success {
+                    echo "This block runs when the stage succeeded."
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo "This block always runs."
+        }
+        changed {
+            echo "This block runs when the current status is different than the previous one."
+        }
+        fixed {
+            echo "This block runs when the current status is success and the previous one was failed or unstable."
+        }
+        regression {
+            echo "This block runs when the current status is anything except success but the previous one was successful."
+        }
+        unstable {
+            echo "This block runs if the current status is marked unstable."
+        }
+        aborted {
+            echo "This block runs when the build process is aborted."
+        }
+        failure {
+            echo "This block runs when the build is failed."
+        }
+        success {
+            echo "This block runs when the build is succeeded."
+        }
+        unsuccessful {
+            echo "This block runs when the current status is anything except success."
+        }
+        cleanup {
+            echo "This block always runs after other conditions are evaluated."
+        }
+    }
+}
+
+
+
+
+
+
+
+
+pipeline {
+    agent any
+    parameters {
+        booleanParam(name: "DEBUG", defaultValue: true)
+    }
+    environment {
+        ENV = "testing"
+    }
+    stages {
+        stage("Test") {
+            when {
+                expression {
+                    return params.DEBUG
+                }
+            }
+            when {
+                environment(name: "ENV", value: "testing")
+            }
+            when {
+                equals(actual: currentBuild.number, expected: 1)
+            }
+            when {
+                branch "release-*"
+            }
+            when {
+                not {
+                    branch "master"
+                }
+            }
+            when {
+                allOf {
+                    branch "master"
+                    environment(name: "ENV", value: "production")
+                    tag "release-*"
+                }
+            }
+            steps {
+                echo "Hello World!"
+            }
+        }
+    }
+}
+
+
+
+https://itnext.io/jenkins-tutorial-part-9-basic-pipeline-steps-eeb1b9ed79f8 == imp
+
+
+pipeline {
+    agent any
+    stages {
+        stage("Deploy") {
+            input {
+                message "Ready to deploy?"
+                ok "Yes"
+                submitter "ssbostan,admin,admins,managers"
+                submitterParameter "SUBMITTER_USERNAME"
+            }
+            input {
+                message "Ready to deploy?"
+                ok "Yes"
+                parameters {
+                    string(name: "DEPLOY_ENV", defaultValue: "production")
+                }
+            }
+            steps {
+                echo "Deployment stage."
+            }
+            steps {
+                echo "Deploy to the ${DEPLOY_ENV} environment."
+            }
+        }
+    }
+}
+
+
+
+pipeline {
+    agent any
+    stages {
+        stage("Clone Git Repository") {
+            steps {
+                git(
+                    url: "https://github.com/ssbostan/testrepo.git",
+                    branch: "main",
+                    changelog: true,
+                    poll: true
+                )
+            }
+        }
+        stage("Create artifacts or make changes") {
+            steps {
+                sh "touch testfile"
+                sh "git add testfile"
+                sh "git commit -m 'Add testfile from Jenkins Pipeline'"
+            }
+        }
+        stage("Push to Git Repository") {
+            steps {
+                withCredentials([gitUsernamePassword(credentialsId: 'ssbostan-github-token', gitToolName: 'Default')]) {
+                    sh "git push -u origin main"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            deleteDir()
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+pipeline {
+    stages {
+        stage("Test1") {
+            steps {
+                script {
+                    def test_var = "Hello, World!"
+                    def sample_array = ["TOM", "JACk", "HARRY"]
+                    env.test_var = test_var
+                    echo "${env.test_var}"
+                    for (int i = 0; i < sample_array.size(); i++) {
+                        echo sample_array[i]
+                    }
+                    return test_var
+                }
+            }
+            steps {
+              sh 'printenv'
+              if (env.BRANCH_NAME == 'main') {
+                  echo 'Hello from main branch'
+              } else {
+                  sh "echo 'Hello from ${env.BRANCH_NAME} branch!'"
+              }
+            }
+        }
+        
+        stage("Test2") {
+            steps {
+                echo "${Test1}"
+            }
+        }
+    }
+}
+
+
+https://digitalvarys.com/jenkins-declarative-pipeline-with-examples/
+Jenkins declarative pipeline function with parameter
+---------------------------------------------------------https://naiveskill.com/jenkins-pipeline-email-notification/
+def custom_msg(){
+  def JENKINS_URL= "localhost:8888"
+  def JOB_NAME = env.JOB_NAME
+  def BUILD_ID= env.BUILD_ID
+
+  def JENKINS_LOG= " FAILED: Job [${env.JOB_NAME}] Logs path: ${JENKINS_URL}/job/${JOB_NAME}/${BUILD_ID}/consoleText"
+  return JENKINS_LOG
+}
+
+pipeline {
+    agent any
+    parameters {
+        string(name: 'x1', defaultValue: 'default', description: 'This is a parameter')
+    }
+    stages {
+        stage('hello') {
+            steps {
+                script {
+                    def myFunction(x1) {
+                        echo "x1 = ${x1}"
+                    }
+                    myFunction(params.x1)
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_ID = credentials('DOCKER_ID')
+        DOCKER_PASSWORD = credentials('DOCKER_PASSWORD')
+    }
+
+    stages {
+        stage('Init') {
+            steps {
+                echo 'Initializing..'
+                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                echo "Current branch: ${env.BRANCH_NAME}"
+                sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_ID --password-stdin'
+            }
+        }
+        stage('Build') {
+            steps {
+                echo 'Building image..'
+                sh 'docker build -t $DOCKER_ID/cotu:latest .'
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Testing..'
+                sh 'docker run --rm -e CI=true $DOCKER_ID/cotu pytest'
+            }
+        }
+        stage('Publish') {
+            steps {
+                echo 'Publishing image to DockerHub..'
+                sh 'docker push $DOCKER_ID/cotu:latest'
+            }
+        }
+        stage('Cleanup') {
+            steps {
+                echo 'Removing unused docker containers and images..'
+                sh 'docker ps -aq | xargs --no-run-if-empty docker rm'
+                // keep intermediate images as cache, only delete the final image
+                sh 'docker images -q | xargs --no-run-if-empty docker rmi'
+            }
+        }
+    }
+}
