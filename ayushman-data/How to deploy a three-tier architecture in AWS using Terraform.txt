@@ -1,0 +1,388 @@
+https://medium.com/geekculture/how-to-deploy-a-three-tier-architecture-in-aws-using-terraform-e5dfd7b6d38f
+https://hitesh-pattanayak.medium.com/
+https://medium.com/@shamimice03
+https://joshuajordancallis.medium.com/
+https://medium.com/@dksoni4530
+https://naiveskill.com/jenkins-operator/
+https://sweetcode.io/?q=ansible
+https://faun.pub/service-account-kubernetes-ec0f112c5bc5
+https://faun.pub/give-users-and-groups-access-to-kubernetes-cluster-using-rbac-b614b6c0b383
+https://awstip.com/deploying-a-spring-boot-application-on-aws-eks-using-jenkins-cicd-a-step-by-step-guide-8e684f488ffc
+
+1) Log in to AWS Management Console: To create an IAM user, you first need to log in to the AWS Management Console. You can access the console by visiting https://aws.amazon.com and signing in with your AWS account credentials.
+2) Navigate to the IAM section: Once you are logged in to the AWS Management Console, you need to navigate to the IAM (Identity and Access Management) section. You can find the IAM section in the “Services” drop-down menu or by searching for “IAM” in the AWS Management Console search bar.
+3) Click on “Users” link: In the IAM section, click on the “Users” link from the left navigation menu. This will take you to the IAM Users page where you can manage the IAM users in your AWS account.
+4) Click on “Add user” button: To create a new IAM user, click on the “Add user” button on the IAM Users page.
+5) Enter user name and select “Programmatic access”: On the “Add user” page, enter a user name for the new IAM user and select the “Programmatic access” checkbox. This indicates that the IAM user will be used for programmatic access to AWS services, such as AWS Lambda.
+6) Click on “Next: Permissions” button: After entering the user name and selecting the “Programmatic access” checkbox, click on the “Next: Permissions” button.
+7) Select “Attach existing policies directly” and search for “Lambda”: On the “Permissions” page, select the “Attach existing policies directly” option. In the filter box, search for “Lambda” to find the necessary policies for AWS Lambda.
+8) Select “AWSLambdaFullAccess” policy: From the list of policies, select the “AWSLambdaFullAccess” policy. This policy provides full access to AWS Lambda, allowing the IAM user to perform any action on AWS Lambda.
+9) Click on “Next: Review” button: After selecting the policy, click on the “Next: Review” button to review the details of the new IAM user.
+10) Click on “Create user” button: On the “Review” page, review the details of the new IAM user and click on the “Create user” button to create the IAM user.
+11) Store Access Key ID and Secret Access Key securely: After the IAM user is created, you can access the IAM user’s Access Key ID and Secret Access Key from the “Security credentials” tab. Store these credentials securely, as they will be used to authenticate the IAM user in Jenkins when deploying the Python app to AWS Lambda.
+
+
+Policies
+Essentially when a user is authenticated a policy defines what services that user can access. Policies generally should be attached to groups.
+Policies are generally defined via JSON or the Visual Editor, in a nutshell, think of policies as something that stands between your users and AWS services.
+
+
+How to run an ansible playbook using Jenkins?
+================================================
+Edit the ansible.cfg and add below content in it
+---------------------------------------------------https://devopsquare.com/how-to-run-an-ansible-playbook-using-jenkins-191e2b349bff----
+[defaults]
+host_key_checking = false
+remote_user = ec2-user
+ask_pass = false
+private_key_file = <pem file's path>
+[privilege_escalation]
+become = true
+become_method = sudo
+become_user = root
+become_ask_pass = false
+
+pipeline{
+  agent any  
+  stages{
+    
+      stage("Git Checkout"){
+        steps{
+          sh 'git clone <Your-Repository-URL>'
+        }
+      }
+      
+      stage("Run an ansible playbook"){
+        steps{
+          sh 'ansible-playook <playbook-name.yml> --vault-password- file <password file>'
+        }
+      }
+   }
+}
+
+
+
+
+List<Long> ids = bulkMdFileRecords.parallelStream().map(BulkMdFileUploadRecords::getId).collect(Collectors.toList());
+Collection<List<Long>> partitionedList = IntStream.range(0, ids.size())
+.boxed()
+.collect(Collectors.groupingBy(partition -> (partition / partitionSize), Collectors.mapping(elementIndex -> ids.get(elementIndex), Collectors.toList())))
+.values();
+
+
+Persistent Volume (PV)
+A persistent volume is a piece of storage in a cluster that an administrator has provisioned. It is a resource in the cluster
+
+Persistent Volume Claim (PVC)
+A PersistentVolumeClaim (PVC) is a request for storage by a user. It is similar to a Pod. Pods consume node resources and PVCs consume PV resources.
+
+A PVC will remain unbound indefinitely if a matching volume does not exist. Claims will be bound whenever a matching PV becomes available.
+
+Create a persistent volume (PV)
+==================================
+> kubectl create -f <pv-manifest-file>.yaml
+---
+#PV using host directory
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-volume01
+  labels: 
+    storage-tier: standard
+spec:
+  capacity:
+    storage: 50Mi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain 
+  hostPath:
+      path: /var/local/data
+---
+#PV using NFS-Share directory
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-nfs
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  nfs:
+    path: /var/nfs_server/kubernetes_data
+    server: 10.25.96.6     #IP or DNS of nfs server
+
+
+persistentVolumeReclaimPolicy —
+------------------------------------
+Retain — volume will be retained, after associate pod terminates.
+Delete — volume will be deleted after associate pod terminates.
+Recycle — volume will be recycled for future use.
+
+accessModes —
+-------------------------
+ReadWriteOnce — the volume can be mounted as read-write by a single node. 
+ReadWriteOnly — the volume can be mounted as read-only by many nodes.
+ReadWriteMany — the volume can be mounted as read-write by many nodes.
+ReadWriteOncePod — the volume can be mounted as read-write by single pod.
+
+aws ec2 create-volume --availability-zone ap-northeast-1d --size 10 --volume-type gp2 --query "VolumeId" --output text
+volumes:
+- name: test-volume
+  awsElasticBlockStore:  # This AWS EBS Volume must already exist 
+    volumeID: "vol-0b067ed35227a1bff"  # Volume-id
+    fsType: ext4
+
+
+
+
+EBS (BLOCK)
+================
+Think of EBS as a virtual hard drive in the cloud.
+Since EBS Volumes are only locked to a specific AZ. So, EBS volume and the worker node where the pod will be running should be in the same AZ.
+EBS is primarily used by the AWS EC2 instances for persistent data storage which means that even if EC2 instances are shut down, the data on EBS volume is not lost.
+EBS volumes can be dynamically attached, detached and scaled with EC2 instances.
+EBS is highly available within Availability Zones.
+You can also take point-in-time snapshots and have backup of your data in the EBS volumes.
+Relational and NoSQL databases can also be deployed and scaled with EBS.
+It’s perfect for installing operating systems or databases. It’s also possible to store files in EBS but you won’t get the same redundancy as S3.
+It’s also possible to attach multiple EC2 instances to one EBS.
+Only available in one-availability zone.
+Only the node (ec2 instance) in eu-west-2a could access the volume. A node (ec2 instance) in eu-west2b, wouldn’t be able to access that EBS volume.
+
+
+S3 (OBJECT)
+================
+We can put objects into a bucket or get the objects from a bucket. An object can be a file of any type like a text file, a video, an image, etc.
+S3 is highly scalable which means that the users can scale the storage as much as they need. Users can secure their data in S3 via different means like, encryption, ACLs, and policies.
+You can’t install an operating system on S3 and you can’t install a database on S3, it’s used only for flat/static files — things that don’t change.
+
+EFS (FILE)
+================
+It is a set-and-forget serverless file system. There’s no cost for the set up, you only pay for the storage utilised, read/write of data, and any provisioned throughput.
+Multiple instances can be attached to EFS and all the instances can access it at the same time.
+Multiple EC2 instances can access the same EFS store.
+Available in multi-availability zones.
+Not only the instances in different availability zones can connect to EFS, but also instances from different VPCs (using VPC peering) and on-premise systems (using VPN or Direct Connection) can connect to EFS.
+
+
+
+
+
+
+Rolling updates & rollbacks in Deployments (Kubernetes)
+==============================START===========================================
+Upgrade: The ability to deploy latest major version and shut older version(s).
+Rollout: The ability to deploy lates minor version (bugfix, hotfix, minor feature, enhancement) without downtime.
+Rollback: The ability to restore back the older working version in case something goes wrong.
+
+To handle these risks associated with the deployments, we need to have definite strategies to handle them, for example.
+--------------------------------------------------------
+- We need to make sure the new version should be available to the users as early as possible.
+- And, in case of failure, we should be able to roll back the application to the previous version in no time.
+
+
+A rolling update offers a way to gradually deploy the new version of our application across the cluster. 
+It replaces the pods during several phases. 
+For example, we may replace 25% of the pods during the first phase, then another 25% during the next, and so on, until all are upgraded.
+problem : However, even if we use Rolling updates, there is still a risk that our application will not work the way we expect it at the end of the deployment and in such a case, we need a rollback.
+
+Rolling back a deployment:
+--------------------------
+Sometimes, due to a breaking change, we may want to rollback a Deployment and Kubernetes By default maintain Deployment’s rollout history so that we can rollback anytime we want.
+We can rollback a deployment in two ways.
+-----------------
+A) Previous Version
+B) Specific Version
+
+Verify Deployment, Pods, ReplicaSets
+-----------------------------------------
+kubectl get deploy
+kubectl get rs
+kubectl get po
+kubectl describe deploy my-first-deployment
+
+
+We can verify the rollout status:
+---------------------------------------kubectl rollout status deployment <deployment-name>
+$ kubectl rollout status deployment.apps/demo-app
+
+To rollback, we need to check the rollout history:
+--------------------------------------------------kubectl rollout history deployment <deployment name>
+$ kubectl rollout history deployment.apps/demo-app
+
+We can rollback to a specific version by specifying it with --to-revision:
+--------------------------------------------------------------------------kubeclt rollout undo deployment <deployment name>
+$ kubectl rollout undo deployment.apps/demo-app --to-revision=2
+
+Check if the rollback was successful and the Deployment is running as expected, run:
+------------------------------------------------------------
+$ kubectl get deployment demo-app
+
+
+Rolling restarts will kill the existing pods and recreate new pods in a rolling fashion.
+-------------------------------------------------------------------------------------
+kubectl rollout restart deployment/<Deployment-Name>
+
+We can check the status of pods as well.
+-----------------------------------------
+$ kubectl get pods
+
+
+
+
+
+But there is another way to do the same thing. You could use the following command to update the image of your application.
+$ kubectl set image deployment/myapp-deployment nginx=nginx:1.7.1
+But remember doing it this way will result in the deployment definition file having a different configuration. 
+So you must be careful when using the same definition file to make changes in the future.
+
+$ kubectl describe deployment myapp-deployment
+You will notice when the recreate strategy was used, the events indicate that the old replica set was scaled down to zero first 
+and then the new replica sets scaled up to 5.(Here we see the old replicaset with 0 PODs and the new replicaset with 5 PODs.)
+However when the rolling update strategy was used the old replica set was scaled down one at a time, simultaneously scaling up the new replica set one at a time.
+
+
+
+
+# Get NodePort
+kubectl get svc
+Observation: Make a note of port which starts with 3 (Example: 80:3xxxx/TCP). Capture the port 3xxxx and use it in application URL below. 
+
+# Get Public IP of Worker Nodes
+kubectl get nodes -o wide
+Observation: Make a note of "EXTERNAL-IP" if your Kubernetes cluster is setup on AWS EKS.
+
+# Application URL
+http://<worker-node-public-ip>:<Node-Port>
+
+
+
+
+Labels & Selectors
+----------------------------
+Labels are key/value pairs that are attached to objects, such as pods
+Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users.
+Ability to group kubernetes objects together and filter them based on needs is achieved using labels and selectors.
+Selectors help us filter kubernetes objects based on the attached properties (labels).
+ex: $ kubectl get pods --selector app=mock-app
+
+
+
+NodePort: The K8s services are like any other K8s objects, one of the use case of services is to listen to the Node port and forward the request to a target pod port.
+          (App is now accessible at http://node-ip:38080.)
+          Create a NodePort service to make app1-service accessible to outside world.
+          This type of Service is useful for exposing a microservice to the internet or to other services outside the cluster.
+           This type of service is called a NodePort service as this service listens to a pod of Node and forwards to a pod port.(30000 to 32767)
+ClusterIP: This type of service create a virtual IP inside the cluster to enable communication b/w sets of services within the cluster itself.
+           (clusterIp services provide us a single interface that group pods together to access the pods of similar types.)
+           Create a cluster-ip service to make DB pod accessible.
+           is ideal for microservices that need to communicate with each other but do not need to be exposed to the outside world.
+           A ClusterIP Service provides a stable IP address and DNS name for a set of Pods within a cluster.
+LoadBalancer: This type of service distributes the load across the web servers that it caters to.
+
+
+
+
+
+Deployments provide the following benefits:(stateless applications)
+-----------------------------------------------
+Scalability: Deployments can scale up and down the number of replicas based on demand, ensuring that your application can handle increasing traffic loads.
+Rolling Updates: Deployments can update the pods in a rolling fashion, allowing you to perform updates without any downtime.
+Automatic Rollbacks: Deployments can automatically roll back to the previous version if an update fails, ensuring that your application remains available.
+
+StatefulSets provides the following benefits:(stateful applications)
+------------------------------------------------
+Ordered Pod Creation: StatefulSets ensure that each pod is created in a specific order, allowing applications to rely on the order of pod creation for initialization tasks.
+Stable Network Identities: StatefulSets provide stable network identities for each pod, making it easy to communicate with specific pods in the set.
+Persistent Storage: StatefulSets can manage the creation and deletion of PersistentVolumeClaims (PVCs), ensuring that each pod has a unique persistent storage.
+Automatic Scaling: StatefulSet can scale up and down the number of pods in the set based on demand, ensuring that the application can handle increasing traffic loads.
+
+
+Use Kubernetes Deployment when:
+------------------------------------
+You need to manage stateless applications
+You need to scale your application up and down based on demand
+You need to perform rolling updates without any downtime
+
+Use Kubernetes StatefulSet when:
+---------------------------------------
+You need to manage stateful applications that require stable network identities and persistent storage
+You need to manage the ordering of pod creation for initialization tasks
+You need to manage persistent storage for each pod in the set
+StatefulSet is useful for managing stateful applications such as databases, message brokers, and other stateful services.
+
+
+
+Network Policy in K8s
+---------------------
+For software and hardware, traffic control can be done by using firewalls. But in the case of Kubernetes, traffic control functionality is implemented by network plugins and controlled by network policies.
+Only ingress, only egress, or both.
+1) The egress definition says to allow outgoing traffic to:
+     Ingress:
+    ----------
+    Ingress network policies allow you to control inbound access to pods, from other pods and from external IPs.
+    Kubernetes ingress is a way to configure external load-balancers to route traffic into the cluster.
+
+2) The ingress definition says to allow incoming traffic from:
+     Ingress:
+    ----------
+    Ingress network policies allow you to control inbound access to pods, from other pods and from external IPs.
+    Kubernetes ingress is a way to configure external load-balancers to route traffic into the cluster.
+
+
+if we would like to allow some back db server from a specific IP/range to access our DB server.
+Similarly if we would like to access the back up of DB server at a specific IP/range.
+
+In Kubernetes, networks serve two main purposes:
+----------------------------------------------------
+Internal networks: Networks handle internal traffic that facilitates communications between pods, Kubernetes nodes, and other resources within a cluster. Typically, internal networks use private subnets and IP addresses, and are isolated from the public Internet.
+External networks: Workloads that need to connect to the Internet use public IP addresses.
+
+
+What Exactly Are Network Policies
+---------------------------------------
+Other pods: You can select other pods using labels that should be allowed to talk to the selected pods.
+Namespaces: You can select complete namespaces as well. In this case, all pods in the namespace would be able to communicate with the selected pods.
+IP blocks: You can specify CIDR ranges from or to which traffic is allowed for the selected pods.
+
+
+NetworkPolicy documentation specifies 3 combinations you can use to manage traffic:
+------------------------------------------------------------------------------
+Pod-to-pod traffic by identifying the pod using selectors (for example using pod labels)
+Traffic rules based on Namespace (for example pod from namespace 1 can access all pods in namespace 2)
+Rules based on IP blocks (taking into account that traffic to and from the node that the pod is running on is always allowed)
+
+Ex: Communication between pods within the same namespace:
+------------------------------------------------------
+Now, let’s see if two pods (webserver-1 and webserver-2) within the same namespace (prod) can communicate with each other
+Similarly, webserver-2 can communicate with webserver-3
+
+Ex: Communication between pods from different namespaces:
+--------------------------------------------------------
+Let’s see if a pod (testserver-1) residing in the “dev” namespace can communicate with a pod (webserver-1) residing in the “prod” namespace
+
+Policy Validation
+------------------------
+$ kubernetes get networkpolicy <policy-name> -o yaml
+
+# If the source pod is selected by one or more egress policies, it will be restricted according the to union of the policies and in this case you will need to explicitly allow it to connect to the destination pod. If the pod is not selected by any policy, it is allowed all egress traffic by default.
+# Similarly, a destination pod which is selected by one or more ingress policies, will be restricted according the to union of the policies and in this case you will need to explicitly allow it to receive traffic from the source pod. If the pod is not selected by any policy, it is allowed all ingress traffic by default.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+use a shared storage system for the Kubernetes cluster. Such as NFS and AWS EFS.
+Kubernetes also supports several types of standard storage solutions such as NFS, glusterFS, or 
+Public cloud solutions like AWS EBS, AWS EFS, Azure Disk or file, Google’s Persistent Disk, and many more.

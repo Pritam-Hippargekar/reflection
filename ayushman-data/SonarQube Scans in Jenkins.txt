@@ -157,8 +157,9 @@ OR
  stage('Build and Push Image') {
      steps {
        sh 'docker image build -t ${REPOSITORY_TAG} .'
-       sh 'docker tag ${REPOSITORY_TAG} localhost:32000/${REPOSITORY_TAG}'
+       sh 'docker tag ${REPOSITORY_TAG} localhost:32000/${REPOSITORY_TAG}' //docker tag [EXISTING-IMAGE] [HUB-USER]/[PRIVATE_REPO]:[IMAGE_TAG]
        sh 'docker push localhost:32000/${REPOSITORY_TAG}'
+       //docker push [HUB-USER]/[PRIVATE_REPO]:[IMAGE_TAG]
      }
   }
 https://igorski.co/sonarqube-scans-using-jenkins-declarative-pipelines/
@@ -264,7 +265,7 @@ echo 'Pipeline logic starts'
       steps {
         script {
           sh "docker tag ${params.ECR_IMAGE_URL}  gcr.io/${params.GCP_PROJECT_ID}/${params.GCR_IMAGE_NAME}:${params.GCR_IMAGE_TAG}"
-
+         // docker tag [EXISTING-IMAGE] [HUB-USER]/[PRIVATE_REPO]:[IMAGE_TAG]
         }
       }
     }
@@ -273,6 +274,7 @@ echo 'Pipeline logic starts'
         script {
           withDockerRegistry([credentialsId: "gcr:${params.GCP_PROJECT_ID}", url: "https://gcr.io"]) {
             sh "docker push gcr.io/${params.GCP_PROJECT_ID}/${params.GCR_IMAGE_NAME}:${params.GCR_IMAGE_TAG}"
+            //docker push [HUB-USER]/[PRIVATE_REPO]:[IMAGE_TAG]
           }
         }
       }
@@ -585,6 +587,7 @@ pipeline {
             steps {
                 echo 'Publishing image to DockerHub..'
                 sh 'docker push $DOCKER_ID/cotu:latest'
+                //docker push [HUB-USER]/[PRIVATE_REPO]:[IMAGE_TAG]
             }
         }
         stage('Cleanup') {
@@ -597,3 +600,77 @@ pipeline {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+stage('Push Docker image') {
+            environment {
+                DOCKER_HUB_LOGIN = credentials('docker-hub')
+            }
+            steps {
+                sh 'docker login --username=$DOCKER_HUB_LOGIN_USR --password=$DOCKER_HUB_LOGIN_PSW'
+                sh './gradlew dockerPush'
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Jenkins pipeline will:
+- Automate maven build(jar) using Jenkins
+- Automate Docker image creation
+- Automate Docker image upload into AWS container registry
+- Automate Deployments to AWS Kubernetes Cluster
+
+Pre-requisites:
+1. Amazon EKS Cluster is setup and running.
+2. Create ECR repo in AWS
+3. Jenkins Master is up and running
+4. Docker installed on Jenkins instance 
+5. Docker, Docker pipeline and Kubernetes CLI plug-ins are installed in Jenkins
+
+Under the project root, we can execute the three following commands:
+--------------------------------------------------------------------------
+$ mvn clean install - (Build the project, needs maven in the PATH environment variable)
+$ docker build -t devopsexample:1.0 . - (Build the docker image)
+$ docker run --name devopsexample:1.0 -p 2222:2222 -d devopsexample
+$ docker login
+$ docker push <-------------->/devopsexample:1.0  //docker push [HUB-USER]/[PRIVATE_REPO]:[IMAGE_TAG]
+In these three last steps, we have built our project files and generated jar and also our docker image. Then, we finally ran our application on the container.
+
+
+
+
+
+
+
+
+How to encode and decode data in Linux?
+-----------------------------------------
+Encoding —
+echo -n "password" | base64
+Decoding -
+echo -n "cGFzc3dvcmQ" | base64 --decode
