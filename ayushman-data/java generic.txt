@@ -117,3 +117,15 @@ PA_MERCHANT_SETTLEMENT
 
 
 PA_BULK_MERCHANT_DISBURSEMENT
+
+
+Variables aren’t values; variables are references to values.
+React Prefers Immutability
+----------------------------
+In React’s case, it’s important to never mutate state or props. Whether a component is a function or a class doesn’t matter for this rule. If you’re about to write code
+like this.state.something = ... or this.props.something = ..., take a step back and try to come up with a better way.
+As for props, they’re a one-way thing. Props come IN to a component. They’re not a two-way street,
+
+
+mutable =  Function, Object, Array, Map, Set, Date and Almost everything made with 'new' keyword.
+Immutable = Undefine, null, Symbol, String, Boolean and BigInt
