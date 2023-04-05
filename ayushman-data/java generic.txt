@@ -1,0 +1,119 @@
+https://www.robinwieruch.de/react-router-lazy-loading/
+https://www.copycat.dev/blog/react-lazy/
+https://www.aleksandrhovhannisyan.com/blog/react-lazy-dynamic-imports/
+
+
+why virtual dom is faster?
+ans => because of immutibility concepts (it compare object references)  like String in java
+
+
+// mutate items and set it back
+this.state = {
+            counter: 0,
+        }
+this.state.counter = this.state.counter + 1 ;   what is problem here. it will notice that its props haven’t changed and it will not re-render.
+ans == the component will not rerender since the state is compared shallowly. Additionally, the update may be lost if there are other state changes queued asynchronously using setState.
+The Solution
+The solution for the first example is to always use the setState function to ensure state changes are properly queued.
+
+
+
+increment() {
+        this.setState({
+            counter: this.state.counter + this.props.increment
+        })
+    }
+potential race condition between other state/prop changes and this particular state update. What happens if the props and/or state change before this state update happens?
+The Solution
+increment() {
+        this.setState((prevState, props) => ({
+            counter: prevState.counter + props.increment
+        })
+    }
+
+
+
+
+
+public static <T> Stream<T> getStream(T[] arr) {
+    return Arrays.stream(arr);
+    return Stream.of(arr);
+    return Arrays.asList(arr).stream();
+}
+
+public <T> List<T> magicalListGetter(final  Class<T> klazz) {
+    List<T> list = new ArrayList<>();
+    list.add(klazz.cast(actuallyT));
+    try {
+        list.add(klazz.getConstructor().newInstance()); // If default constructor
+    } ...
+    return list;
+}
+
+Type of parameters passed to a method as in and out parameter.
+ ---------------------------------------------------------------
+Upper Bound WildCards: ? extends Type: an unknown type which is a specific Type or sub-type Type
+Lower Bound Wildcards: ? super Type: an unknown type which is a specific Type or super-type of that Type.
+
+Guidelines for Wildcards(Get-Put Principle)
+------------------------------------------------
+Upper bound wildcard − If a variable is of in category, use extends keyword with wildcard.
+Lower bound wildcard − If a variable is of out category, use super keyword with wildcard.
+Unbounded wildcard − If a variable can be accessed using Object class method then use an unbound wildcard.
+No wildcard − If code is accessing variable in both in and out category then do not use wildcards.
+
+
+
+https://levelup.gitconnected.com/generics-and-wildcards-in-java-1e678f7792
+...........................................................................
+public class Pet { String name(); }
+public class Dog extends Pet { String name(){...}  }
+public class Bulldog extends Dog { String name(){...} }
+
+public class Cat extends Pet {  String name(){...} }
+public class Persian extends Cat {  String name(){...} }
+
+Even though Dog is a subtype of Pet, List<Dog> is not a subtype of List<Pet>.
+means === a subtype has to offer all the services of the super-type.
+List<? extends Pet> is the type of a list in which the elements have an unspecified type that is a subtype of Pet (or Pet itself).
+means  === List<Dog> is a subtype of List<? extends Pet> is now valid.
+
+void addCat(List<? super Cat> collection) {
+  collection.add(new Cat(...));
+}
+Method addCat can be called on a List<Cat> or on a List<Pet>, or even on a List<Object>.
+
+wildcards are generally used for non-manipulation operations only
+
+public class Box<T> {
+
+    private T value;
+
+    public void setValue(T value) {
+        this.value = value;
+    }
+
+    public T getValue() {
+        return value;
+    }
+}
+
+
+PA_ADD_MERCHANT
+PA_EDIT_MERCHANT
+PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT
+PA_COMMISSION_LIMIT_BALANCE
+PA_MERCHANT_LIMIT_BALANCE
+PA_BULK_DISBURSEMENT_STATUS
+PA_MERCHANT_TRANSACTIONS
+PA_REFUND_SETTLEMENT
+PA_REFUND_VA_CREDIT
+PA_COMMISSION_SETTLEMENT
+PA_COMMISSION_SETTLEMENT_STATUS
+PA_MERCHANT_DISBURSEMENT
+PA_SETTLEMENT_STATUS
+PA_MERCHANT_SETTLEMENT
+
+
+
+PA_BULK_MERCHANT_DISBURSEMENT
