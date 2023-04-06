@@ -113,10 +113,7 @@ PA_COMMISSION_SETTLEMENT_STATUS
 PA_MERCHANT_DISBURSEMENT
 PA_SETTLEMENT_STATUS
 PA_MERCHANT_SETTLEMENT
-
-
-
-PA_BULK_MERCHANT_DISBURSEMENT
+PA_BULK_DISBURSEMENT
 
 
 Variables aren’t values; variables are references to values.
@@ -129,3 +126,48 @@ As for props, they’re a one-way thing. Props come IN to a component. They’re
 
 mutable =  Function, Object, Array, Map, Set, Date and Almost everything made with 'new' keyword.
 Immutable = Undefine, null, Symbol, String, Boolean and BigInt
+
+
+handleButtonClicked = evt => {
+    this.setState({name: evt.currentTarget.value})
+    this.props.callback(this.state.name) // Will send the old value for name
+}
+The Solution:
+------------------
+The setState function takes an optional callback parameter that can be used to make updates after the state is changed.
+handleButtonClicked = evt => {
+    this.setState({name: evt.currentTarget.value}, () => {
+        this.props.callback(this.state.name)
+    })
+}
+
+
+
+
+https://yespp.atlassian.net/browse/YPP-16923,https://yespp.atlassian.net/browse/YPP-16921,https://yespp.atlassian.net/browse/YPP-16929,
+https://yespp.atlassian.net/browse/YPP-16925,https://yespp.atlassian.net/browse/YPP-13468,https://yespp.atlassian.net/browse/YPP-16877
+
+https://www.theodinproject.com/lessons/node-path-intermediate-html-and-css-advanced-selectors
+https://learn.shayhowe.com/advanced-html-css/complex-selectors/
+Andy Bell and Heydon Pickering
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* + * {
+  margin-top: 1.5rem;
+}
+
+
+
+
+
+
+Important=====https://github.com/Vicky-cmd/Authentication-Service
+Currently Working as a Developer in Tata Consultancy Services on Spring Boot Applications & Microservices. 
+Interested to learn new things about cloud and DevOps
+https://github.com/Nasruddin/spring-boot-based-microservices
+2. Enable Spring Cloud API Gateway Routes == management.endpoint.gateway.enabled=true
+3. Expose API Gateway Routes == management.endpoints.web.exposure.include=health,gateway

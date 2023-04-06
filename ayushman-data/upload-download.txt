@@ -1,0 +1,191 @@
+1) Create a Class to hold form data:
+
+public class FormWrapper {
+    private MultipartFile image;
+    private String title;
+    private String description;
+}
+2) Create an HTML form for submitting data:
+
+<form method="POST" enctype="multipart/form-data" id="fileUploadForm" action="link">
+    <input type="text" name="title"/><br/>
+    <input type="text" name="description"/><br/><br/>
+    <input type="file" name="image"/><br/><br/>
+    <input type="submit" value="Submit" id="btnSubmit"/>
+</form>
+3) Create a method to receive form's text data and multipart file:
+
+@PostMapping("/api/upload/multi/model")
+public ResponseEntity<?> multiUploadFileModel(@ModelAttribute FormWrapper model) {
+    try {
+        // Save as you want as per requiremens
+        saveUploadedFile(model.getImage());
+        formRepo.save(mode.getTitle(), model.getDescription());
+    } catch (IOException e) {
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    return new ResponseEntity("Successfully uploaded!", HttpStatus.OK);
+}
+4) Method to save file:
+
+private void saveUploadedFile(MultipartFile file) throws IOException {
+    if (!file.isEmpty()) {
+        byte[] bytes = file.getBytes();
+        Path path = Paths.get(UPLOADED_FOLDER + file.getOriginalFilename());
+        Files.write(path, bytes);
+    }
+}
+
+https://awstip.com/how-to-create-aws-lambda-function-for-java-project-beginners-ad2dff52673a
+
+
+Below is some ways for creating the file downloading function:
+-----------------------------------------------------------------https://o7planning.org/11765/spring-boot-file-download
+ResponseEntity<InputStreamResource>: Write a method to return ResponseEntity. This object wraps an  InputStreamResource object (which is data of the file downloaded by user).
+ResponseEntity<ByteArrayResource>: Write a method to return  ResponseEntity. This object wraps the  ByteArrayResource object (which is data of the file downloaded by user).
+HttpServletRespone: Write the data of the file to be downloaded directly into the HttpServletRespone.
+
+
+1. Download File Using StreamingResponseBody
+------------------------------------------------------
+StreamingResponseBody is a functional interface. It can also be used as the assignment target for a method reference or a lambda expression.
+@RestController  // It is also possible to @Controller.
+public class StreamingResponseBodyController {
+    @RequestMapping(value = "downloadTestFile", method = RequestMethod.GET)
+    public StreamingResponseBody getSteamingFile(HttpServletResponse response) throws IOException {
+	if(DownloadAllowCondition...){
+		response.setContentType("application/pdf");
+		response.setHeader("Content-Disposition", "attachment; filename=\"test.pdf\"");
+		InputStream inputStream = new FileInputStream(new File("C:\\test-file.pdf"));
+		return outputStream -> {
+		    int nRead;
+		    byte[] data = new byte[1024];
+		    while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+		        System.out.println("Writing some bytes of file...");
+		        outputStream.write(data, 0, nRead);
+		    }
+		};
+	} else {
+		response.sendRedirect("failed url...");
+	}
+    }
+}
+
+2. Download File using InputStream to HttpServletResponse
+-------------------------------------------------------------
+To read files in java we can use Reader or Stream. But for text data Reader is the good option to use but for binary data, we should use Stream.
+@RequestMapping(value = "downloadTestFile", method = RequestMethod.GET)
+public void getSteamingFile1(HttpServletResponse response) throws IOException {
+response.setContentType("application/pdf");
+response.setHeader("Content-Disposition", "attachment; filename=\"test.pdf\"");
+InputStream inputStream = new FileInputStream(new File("C:\\test-file.pdf"));
+   int nRead;
+   while ((nRead = inputStream.read()) != -1) {
+       response.getWriter().write(nRead);
+   }
+}
+
+3. Download File using InputStreamResource
+---------------------------------------------
+@RequestMapping(value = "downloadTestFile", method = RequestMethod.GET)
+public InputStreamResource FileSystemResource (HttpServletResponse response) throws IOException {
+	response.setContentType("application/pdf");
+	response.setHeader("Content-Disposition", "attachment; filename=\"test.pdf\"");
+	InputStreamResource resource = new InputStreamResource(new FileInputStream("C:\\test-file.pdf"));
+	return resource;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=5MB
+
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+
+@Table(name = "assignment")
+public class Assignment {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long fileId;
+
+    @Column(name = "fileName", columnDefinition = "varchar(50)")
+    private String fileName;
+
+    @Column(name = "fileContent", columnDefinition = "BLOB")
+    private byte[] fileContent;
+}
+    ...........................
+set the column type for the file content as BLOB.
+set the data type for the column content as byte[]
+
+@GetMapping("/download/{fileName}")
+public ResponseEntity downloadAssignment(@PathVariable String fileName) {
+
+    byte[] response = assignmentService.downloadAssignment(fileName);
+
+    return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/pdf"))
+            .header(
+                    HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"" + fileName + "\""
+            )
+            .body(response);
+}
+
+
+@Service
+public class AssignmentService {
+
+    @Autowired
+    AssignmentRepository assignmentRepository;
+
+    public String uploadAssignment(MultipartFile request){
+        // extract file name
+        String fileName = StringUtils.cleanPath(request.getOriginalFilename());
+       
+        try {
+            Assignment assignment = new Assignment();
+            assignment.setFileName(fileName);
+            assignment.setFileContent(request.getBytes());
+
+            assignmentRepository.save(assignment);
+            return "Assignment submitted successfully";
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+        
+    }
+
+    public byte[] downloadAssignment(String fileName){
+        Assignment assignment = assignmentRepository.readAssignmentByFileName(fileName);
+        return assignment.getFileContent();
+    }
+}
+
+
+
+
+How to validate a file name in Java using regex?
+let’s assume that the file name may contain only letters, numbers, hyphens (“-“),  underscores, dots (“.”), and spaces.
+For the extension part, the file name must have one of these extensions (doc, pdf, csv, and xls).
+^[a-zA-Z0-9._ -]+\\.(doc|pdf|csv|xls)$
+Important note: Many operating systems treat file names with the only extension as a valid one. In that case, you can replace the “+” with “*” to allow file names with only extensions as given below.
+^[a-zA-Z0-9._ -]*\\.(doc|pdf|csv|xls)$
+The “+” matches one or more times, while the “*” matches with zero or more. So even if any of the allowed characters are absent before the dot “.”, the pattern will still match.
