@@ -1,0 +1,154 @@
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA003','Duplicate Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA004','Merchant Name is too long',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA050','Invalid Merchant Name',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA005','Invalid Merchant Identifier',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA006','Merchant Identifier already taken',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA007','Invalid Merchant Type',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA008','Invalid Mobile Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA009','Merchant with given mobile number already exists',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA010','Invalid Email Id',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA011','Merchant with given email id already exists',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA012','Invalid PAN',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA013','Merchant with given PAN already exists',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA015','Invalid GST Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA016','Invalid Settlement Account Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA017','Merchant with given settlement account number already exists',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA018','Invalid Settlement Account IFSC',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA014','Merchant details doesn’t match with PAN details',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_ADD_MERCHANT','YPP','PA001','Unable to add partner merchant, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA005','Invalid Merchant Identifier',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA020','Invalid Merchant Status',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA008','Invalid Mobile Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA009','Merchant with given mobile number already exists',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA010','Invalid Email Id',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA011','Merchant with given email id already exists',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA049','Different GST is already set',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA015','Invalid GST Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT','YPP','PA019','Unable to edit partner merchant, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT','YPP','PA005','Invalid Merchant Identifier',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT','YPP','PA022','New merchant settlement account number is invalid',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT','YPP','PA017','Merchant with given settlement account number already exists',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT','YPP','PA018','Invalid Settlement Account IFSC',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT','YPP','PA021','Unable to edit settlement account details, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_LIMIT_BALANCE','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_LIMIT_BALANCE','YPP','PA039','Unable to fetch balance, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_LIMIT_BALANCE','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_LIMIT_BALANCE','YPP','PA005','Invalid Merchant Identifier',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_LIMIT_BALANCE','YPP','PA040','Unable to fetch balance, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT_STATUS','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT_STATUS','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT_STATUS','YPP','PA073','File not found for shared Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT_STATUS','YPP','PA077','File is under process. Please check the status after some time.',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT_STATUS','YPP','PA077','File is under process. Please check the status after some time.',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT_STATUS','YPP','PA076','No records found in file',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT_STATUS','YPP','PA074','Unable to fetch file records status',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT_STATUS','YPP','PA078','Invalid file uploaded. Please ensure file does not contain special characters.',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','PA005','Invalid Merchant Identifier',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','PA042','Invalid page number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','PA043','Invalid Txn Start Date',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','PA043','Invalid Txn End Date',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','PA046','Txn End Date cannot be less than Txn Start Date',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','PA045','Duration between txn start and end date cannot exceed 30 days',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','PA048','No transaction found',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_TRANSACTIONS','YPP','PA041','Unable to fetch transactions list, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA003','Duplicate Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA057','Invalid Mode',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA055','Invalid account number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA056','Invalid IFSC',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA066','Invalid Source Name',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA026','Invalid Amount',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA058','Amount not applicable for given mode',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA054','Insufficient refund virtual account balance',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_SETTLEMENT','YPP','PA053','Unable to initiate refund settlement, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_VA_CREDIT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_VA_CREDIT','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_VA_CREDIT','YPP','PA003','Duplicate Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_VA_CREDIT','YPP','PA026','Invalid Amount',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_VA_CREDIT','YPP','PA030','Disbursement limit exceeded',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_REFUND_VA_CREDIT','YPP','PA052','Unable to load partner refund virtual account, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT','YPP','PA035','Invalid partner configuration',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT','YPP','PA003','Duplicate Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT','YPP','PA032','Invalid Settlement Amount',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT','YPP','PA033','Insufficient withdrawable balance',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT','YPP','PA034','Settlement amount cannot be lower than minimum transfer amount ',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT','YPP','PA037','Unable to initiate commission settlement, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT_STATUS','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT_STATUS','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT_STATUS','YPP','PA035','Invalid partner configuration',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT_STATUS','YPP','PA048','No transaction found',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_COMMISSION_SETTLEMENT_STATUS','YPP','PA038','Unable to fetch commission settlement status, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA003','Duplicate Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA026','Invalid Amount',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA028','Invalid Transaction Type',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA055','Invalid account number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA056','Invalid IFSC',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA066','Invalid Source Name',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA027','Invalid Partner Commission',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA029','Settlement after days should not be less than minimum wait period',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA047','Invalid Settlement after days',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA082','Invalid txn category',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA005','Invalid Merchant Identifier',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA024','Merchant is inactive',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA025','Merchant Settlement Account is not verified',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA084','Merchant is Suspended',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA030','Disbursement limit exceeded',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA023','Unable to disburse funds to merchant, please try again later',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA052','Unable to load partner refund virtual account, please try again later',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_DISBURSEMENT','YPP','PA054','Insufficient refund virtual account balance',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_SETTLEMENT_STATUS','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_SETTLEMENT_STATUS','YPP','PA050','Invalid Transaction Type',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_SETTLEMENT_STATUS','YPP','PA048','No transaction found',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_SETTLEMENT_STATUS','YPP','PA036','Unable to fetch settlement status, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA057','Invalid Mode',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA035','Invalid partner configuration',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA005','Invalid Merchant Identifier',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA024','Merchant is inactive',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA003','Duplicate Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA059','Invalid disbursement reference number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA061','Disbursement of funds in merchant account is in process. Please initiate settlement after successful loading.',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA065','Settlement cannot be initiated since funds have not been disbursed in merchant account',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA062','Merchant settlement is in process',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA063','Merchant settlement is Successful.',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA067','Settlement cannot be initiated since maximum settlement attempts are exceeded',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA064','Settlement cannot be initiated. Please initiate settlement after hold period.',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA032','Invalid Settlement Amount',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA058','Amount not applicable for given mode',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA025','Merchant Settlement Account is not verified',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA060','Amount not matching with the original disbursement amount',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA033','Insufficient withdrawable balance',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_MERCHANT_SETTLEMENT','YPP','PA031','Unable to initiate merchant settlement, please try again later',CURRENT_TIMESTAMP());
+
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT','YPP','PA081','Invalid VA type',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT','YPP','PA068','Invalid File format. Please upload file in CSV format.',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT','YPP','PA079','File must contain all headers',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT','YPP','PA071','File size exceeded',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT','YPP','PA069','File with Partner Reference Number already submitted',CURRENT_TIMESTAMP());
+INSERT INTO ypp.error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('PA_BULK_DISBURSEMENT','YPP','PA075','Unable to process file',CURRENT_TIMESTAMP());

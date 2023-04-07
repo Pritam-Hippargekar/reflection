@@ -171,3 +171,286 @@ Interested to learn new things about cloud and DevOps
 https://github.com/Nasruddin/spring-boot-based-microservices
 2. Enable Spring Cloud API Gateway Routes == management.endpoint.gateway.enabled=true
 3. Expose API Gateway Routes == management.endpoints.web.exposure.include=health,gateway
+
+why function based component we should use?
+------------------------------------
+1) class => function => render
+2) function => render
+
+The methods defined in the two interfaces of GatewayFilter and GlobalFilter are both Monofilter(ServerWebExchange exchange, GatewayFilterChain chain), the only difference is that GatewayFilter inherits ShortcutConfigurable, and GlobalFilter does not have any inheritance.
+
+Custom GlobalFilter
+-------------------
+The GlobalFilter interface has the same signature as GatewayFilter. These are special filters that are conditionally applied to all routes.
+@Component
+public class AuthSignatureFilter implements GlobalFilter, Ordered {
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String token = exchange.getRequest().getQueryParams().getFirst("authToken");
+        if (token == null || token.isEmpty()) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+        return chain.filter(exchange);
+    }
+
+    @Override
+    public int getOrder() {
+        return -200;
+    }
+}
+
+
+Custom GatewayFilter
+----------------------------------------------
+public class CustomFilter implements GatewayFilter, Ordered {
+
+    private static final Log log = LogFactory.getLog(GatewayFilter.class);
+    private static final String COUNT_Start_TIME = "countStartTime";
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        exchange.getAttributes().put(COUNT_Start_TIME, System.currentTimeMillis());
+        return chain.filter(exchange).then(
+                Mono.fromRunnable(() -> {
+                    Long startTime = exchange.getAttribute(COUNT_Start_TIME);
+                    Long endTime=(System.currentTimeMillis() - startTime);
+                    if (startTime != null) {
+                        log.info(exchange.getRequest().getURI().getRawPath() + ": " + endTime + "ms");
+                    }
+                })
+        );
+    }
+
+    @Override
+    public int getOrder() {
+        return Ordered.LOWEST_PRECEDENCE;
+    }
+}
+
+@Bean
+public RouteLocator customerRouteLocator(RouteLocatorBuilder builder) {
+    return builder.routes()
+            .route(r -> r.path("/test/prefix/**")
+                    .filters(f -> f.stripPrefix(2)
+                            .filter(new CustomFilter())
+                            .addResponseHeader("X-Response-test", "test"))
+                    .uri("lb://SC-CONSUMER")
+                    .order(0)
+                    .id("test_consumer_service")
+            )
+            .build();
+}
+
+
+spring:
+  application:
+    name: apigateway-service
+  cloud:
+    gateway:
+      routes:
+        - id: first-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/first-service/**
+          filters:
+            - AddRequestHeader=first-request, first-request-header2 # 앞에가 key, 뒤에가 value
+            - AddResponseHeader=first-response, first-response-header2
+        - id: second-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/second-service/**
+          filters:
+            - AddRequestHeader=second-request, second-request-header2
+            - AddResponseHeader=second-response, second-response-header2
+@Configuration
+public class FilterConfig {
+
+    @Bean
+    public RouteLocator gatewayRoutes(RouteLocatorBuilder routeLocatorBuilder) {
+        return routeLocatorBuilder
+                .routes()
+                    .route(r -> r.path("/first-service/**")// 1.path를 확인하고
+                            .filters(f -> f// 2.필터를 적용하여
+                                    .addRequestHeader("first-request", "first-service-requestHeader")
+                                    .addResponseHeader("first-response", "first-service-responseHeader"))
+                            .uri("http://localhost:8081"))//uri로 이동시켜준다.
+
+                    .route(r -> r.path("/second-service/**")
+                            .filters(f -> f
+                                    .addRequestHeader("second-request", "second-service-requestHeader")
+                                    .addResponseHeader("second-response", "second-service-responseHeader"))
+                            .uri("http://localhost:8082"))
+                    .build();
+    }
+}
+
+
+
+public class LoggingFilter extends AbstractGatewayFilterFactory<LoggingFilter.Config> {
+    public LoggingFilter() {
+        super(Config.class);
+    }
+
+    @Override
+    public GatewayFilter apply(Config config) {
+        GatewayFilter filter = new OrderedGatewayFilter((exchange, chain) -> {
+            ServerHttpRequest request = exchange.getRequest();
+            ServerHttpResponse response = exchange.getResponse();
+
+            log.info("Logging Filter baseMessage:  {}",config.getBaseMessage());
+
+            if (config.isPreLogger()) {
+                log.info("Logging Pre Filter: request id ->  {}", request.getId());
+            }
+
+            // Custom PostFilter
+            return chain.filter(exchange).then(Mono.fromRunnable(() -> {
+                if (config.isPostLogger()) {
+                    log.info("Logging Post Filter: response -> {}",response.getStatusCode());
+                }
+            }));
+
+        }, Ordered.LOWEST_PRECEDENCE);
+
+        return filter;
+    }
+
+    
+
+    @Data
+    public static class Config {
+        // put the configuration Properties
+        private String baseMessage;
+        private boolean preLogger;
+        private boolean postLogger;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+spring:
+  application:
+    name: apigateway-service
+  cloud:
+    gateway:
+      default-filters:
+        - name: GlobalFilter
+          args:
+            baseMessage: Spring Cloud Gatway Global Filter
+            preLogger: true
+            postLogger: true
+      routes:
+        - id: first-service
+          uri: http://localhost:8081/
+          predicates:
+            - Path=/first-service/**
+@Component
+@Slf4j
+public class GlobalFilter extends AbstractGatewayFilterFactory<GlobalFilter.Config>{
+
+    public GlobalFilter()    {
+        super(Config.class);
+    }
+
+    @Override
+    public GatewayFilter apply(Config config)    {
+        //Custom Pre Filter
+        return ((exchange, chain) -> {
+            ServerHttpRequest request = exchange.getRequest();
+            ServerHttpResponse response = exchange.getResponse();
+
+            log.info("Global Filter baseMessage: {}",config.getBaseMessage());
+
+            if (config.isPreLogger()){
+                log.info("GLobal Filter Start: request id -> {}" , request.getId());
+            }
+
+            // Custom Post Filter
+            return chain.filter(exchange).then(Mono.fromRunnable(() -> {
+                if (config.isPostLogger()){
+                    log.info("Global Filter End : response code -> {}",response.getStatusCode());
+                }
+            }));
+        });
+    }
+
+    @Data
+    public static class Config    {
+        private String baseMessage;
+        private boolean preLogger;
+        private boolean postLogger;
+        // Put the configuration properties
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+ the laziness of the Java Streams and how that helps optimising the performance.
+ The Java 8 Streams API is fully based on the ‘process only on demand‘ strategy and hence supports laziness.
+ Java 8 Streams do not process the collection operations until user actually starts using it.
+ 
+ //Created a Stream of a Students List 
+//attached a map operation on it 
+Stream<String> streamOfNames = students.stream() 
+    .map(student - > { 
+        System.out.println("In Map - " + student.getName()); 
+        return student.getName(); 
+    }); 
+
+//Just to add some delay 
+for (int i = 1; i <= 5; i++) { 
+    Thread.sleep(1000); 
+    System.out.println(i + " sec"); 
+} 
+
+//Called a terminal operation on the stream 
+streamOfNames
+    .collect(Collectors.toList());
+
+Output:
+
+1 sec 
+2 sec 
+3 sec 
+4 sec 
+5 sec 
+In Map - Tom 
+In Map - Chris 
+In Map - Dave
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
