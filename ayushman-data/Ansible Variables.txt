@@ -1,0 +1,204 @@
+- name: Example Simple Variable
+  hosts: all
+  become: yes
+  vars:
+    username: bob
+    cidr_blocks:
+      production:
+        vpc_cidr: "172.31.0.0/16"
+      staging:
+        vpc_cidr: "10.0.0.0/24"          cidr_blocks['staging']['vpc_cidr']
+    users: 
+    - user_1: maria
+    - user_2: peter
+    - user_3: sophie     users['user_3'] or users.user_3
+    version:
+    - v1
+    - v2
+    - v3                 "{{ version[2] }}"
+
+
+
+
+Registering Variables:
+http://miro.borodziuk.eu/index.php/2020/01/27/ansible-variable-and-facts/
+http://miro.borodziuk.eu/index.php/category/devops/configuration-management/ansible/page/4/
+https://spacelift.io/blog/ansible-variables
+---https://www.ivankrizsan.se/2021/12/13/ansible-variable-precedence/---------------------https://spacelift.io/blog/ansible-variables----
+During our plays, we might find it handy to utilize the output of a task as a variable that we can use in the following tasks. 
+We can use the keyword register to create our own custom variables from task output.
+
+Since registered variables are stored in memory, 
+it’s not possible to use them in future plays, and they are only available for the current playbook run.
+
+tasks:
+- name: Register an example variable
+shell: cat /etc/hosts
+register: hosts_contents
+
+- name: Check if hosts file contains the word "localhost"
+debug:
+    msg: "/etc/hosts file contains the word localhost"
+when: hosts_contents.stdout.find("localhost") != -1
+    var: find_hosts_output
+
+
+
+
+
+Lineinfile & Blockinfile Modules
+The lineinfile module adds, replaces, or ensures that a particular line exists in a file. It’s pretty common to use this module when we need to update a single line in configuration files.
+
+- name: Add a line to a file if it doesnt exist
+  ansible.builtin.lineinfile:
+    path: /tmp/example_file
+    line: "This line must exist in the file"
+    state: present
+The blockinfile module inserts, updates, or removes a block of lines from a file. It has the same functionality as the previous module but is used when you want to manipulate multi-line text blocks.
+
+- name: Add a block of config options at the end of the file if it doesn’t exist
+  ansible.builtin.blockinfile:
+    path: /etc/example_dictory/example.conf
+    block: |
+      feature1_enabled: true
+      feature2_enabled: false
+      feature2_enabled: true
+    insertafter: EOF
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kubernetes StatefulSet
+-----------------------------
+https://spacelift.io/blog/kubernetes-statefulset
+
+postgres-0 – Primary node (read-write).
+postgres-1 – Read-only replica.
+postgres-2 – Read-only replica.
+
+When you use a StatefulSet, Kubernetes terminates Pods in the opposite order to their creation. 
+This ensures it’ll be postgres-2 that’s destroyed first.
+
+
+Several other StatefulSet features also apply to this example:
+
+- The applications that use your database need to reliably connect to the primary node, so they can both read and write data. The StatefulSet’s stable network identifiers ensure postgres-0.service.namespace.svc.cluster.local will always map to the primary Node, even after scaling or replacing your Pods.
+- The read-only replicas shouldn’t start until after the primary is up. StatefulSets use rolling updates so each successive Pod is only created when the previous one is ready. This ensures there’s data available to replicate.
+- Each replica has its own sticky volume for storage. The persistent data stored by each replica is bound to its Pod. The version of the database that postgres-1 has replicated needs to be maintained separately to the copy held by postgres-2. StatefulSets can handle this requirement
+
+
+StatefulSet Example: Running PostgreSQL in Kubernetes
+--------------------------------------------------------
+First, create a headless service for your deployment. 
+A headless service is a service that defines a port binding but has its clusterIP set to None. 
+StatefulSets require you to create a headless service to control their network identities.
+
+postgres-service.yaml
+========================$ kubectl apply -f postgres-service.yaml====
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  ports:
+    - name: postgres
+      port: 5432
+  clusterIP: None
+  selector:
+    app: postgres
+
+
+postgres-statefulset.yaml
+==========================$ kubectl apply -f postgres-statefulset.yaml=====
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  serviceName: postgres
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      initContainers:
+        - name: postgres-init
+          image: postgres:latest
+          command:
+          - bash
+          - "-c"
+          - |
+            set -ex
+            [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+            ordinal=${BASH_REMATCH[1]}
+            if [[ $ordinal -eq 0 ]]; then
+              printf "I am the primary"
+            else
+              printf "I am a read-only replica"
+            fi
+      containers:
+        - name: postgres
+          image: postgres:latest
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: postgres
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          ports:
+          - name: postgres
+            containerPort: 5432
+          livenessProbe:
+            exec:
+              command:
+                - "sh"
+                - "-c"
+                - "pg_isready --host $POD_IP"
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - "sh"
+                - "-c"
+                - "pg_isready --host $POD_IP"
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 1
+          volumeMounts:
+          - name: data
+            mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi    
+
+
+
+Each Pod in the StatefulSet gets its own Persistent Volume and Persistent Volume Claim. 
+These are created using the manifest template defined in the StatefulSet’s volumeClaimTemplates field.     
+This allows the Pods to manage their own state, independently of the others in the StatefulSet.     

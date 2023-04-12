@@ -1,3 +1,412 @@
+variable "location" {
+  type        = string
+  default     = "eastus"
+  description = "The Azure Region to deploy resources."
+  validation {
+    condition     = contains(["eastus", "westus"], lower(var.location))   ##can(regex("us$", var.location))
+    error_message = "Unsupported Azure Region specified. Supported regions include: eastus, westus"
+  }
+}
+
+resource "azurerm_service_plan" "appserviceplan" {
+  name                = "${var.name}-asp"
+  location            = var.location
+}
+
+output "appserviceplan" {
+    value = azurerm_service_plan.appserviceplan
+}
+
+
+module "azure-web-app-1" {
+    source = "../../modules/azure-web-app"
+
+    name     = "E1-B59-WebApp1"
+    locatiom = local.azure_region
+    resource_group_name = azurerm_resource_group.azure_rg.name
+}
+
+resource "azurerm_linux_web_app" "webapp2" {
+  name                  = "E1-B59-WebApp2-app"
+  location              = local.azure_region
+  resource_group_name   = azurerm_resource_group.azure_rg.name
+
+  # Access the id attribute of the appserviceplan Output Variable
+  # from the module named azure-web-app-1
+  service_plan_id       = module.azure-web-app-1.appserviceplan.id
+
+  https_only            = true
+  site_config { 
+    minimum_tls_version = "1.2"
+  }
+}
+
+
+# Map of Strings
+variable "vm_ip_map" {
+  type = map(string)       //map(any)
+  description = "Specifies the app service settings to be created."
+  default     = null
+  sensitive   = true
+}
+EX:
+# Map of Strings (using colons ':')
+vm_ip_map = {
+  "vm1": "10.50.0.1/32"
+  "vm2": "10.83.0.5/32"
+}
+
+# Map of Strings (using equals '=')
+vm_ip_map = {
+  "vm1" = "10.50.0.1/32"
+  "vm2" = "10.83.0.5/32"
+}
+
+Structural Types
+------------------Using structural types requires a data schema to be defined for the Input Variables type so that Terraform knows what a valid value is.
+object(...) – A collection of values each with their own type.
+tuple(...) – A sequence of values each with their own type.
+# Object with defined schema
+variable "vm_configs" {
+  type = object({
+    location       = string
+    size           = string
+    instance_count = number
+  })
+}
+
+#Storage Account Config - List of Objects (Each object represents a storage config)
+variable "storage_config" {
+  type = list(object({
+    name                      = string
+    account_kind              = string
+    enable_https_traffic_only = bool
+  }))
+}
+
+# Tuple with defined schema
+variable "tuple_values" {
+  type = tuple([
+    string,
+    number,
+    bool
+  ])
+}
+
+Ex:
+# Input Variable of type Object
+vm_configs = {
+  location       = "eastus"
+  size           = "Standard_DS2"
+  instance_count = 4
+}
+
+# Input Variable of type Tuple
+tuple_values = [
+  "Chris",
+  42,
+  true
+]
+
+
+Pass Input Variables to Terraform Deployments
+------------------------------------------------
+A) -var flag enables a single input variable value to be passed in at the command-line.
+B) -var-file flag enables multiple input variable values to be passed in by referencing a file that contains the values.
+   Using <.....>.tfvars Files and -var-file Command-line Flag
+
+
+The automatic loading of .tfvars files is based on the following file names and pattern:
+---------------------------------------------------------------
+A) Files named with these exact file names will automatically be loaded to populate Input Variables: terraform.tfvars or terraform.tfvars.json
+B) Any files with the following suffixes will automatically be loaded to populate Input Variables: .auto.tfvars or .auto.tfvars.json   
+
+Using Environment Variables
+--------------------------------Environment Variables that are named using the prefix of TF_VAR_ followed by the name of the Input Variable.
+$ export TF_VAR_location="eastus"         Bash
+$ export TF_VAR_locations='["eastus","westus"]'   Bash
+PS C:\> $env:TF_VAR_location = 'eastus'   PowerShell
+
+
+
+Input Variable Definition Precedence
+---------------------------------------https://build5nines.com/use-terraform-input-variables-to-parameterize-infrastructure-deployments/
+1) Environment variables
+2) terraform.tfvars file, if present
+3) terraform.tfvars.json file, if present
+4) Any .auto.tfvars or .auto.tfvars.json files, processed in lexical order of their filenames.
+5) Any -var and -var-file flags on the command-line, in the order they are provided.
+
+What are Terraform Modules?
+https://build5nines.com/terraform-modules-create-reusable-infrastructure-as-code/
+
+variable "apps" {
+  type = list(object({
+    app_name            = string
+    app_kind            = string
+    app_require_feature = bool
+  }))
+  default = [
+    {
+      app_name            = "App1"
+      app_kind            = "Linux"
+      app_require_feature = false
+    },
+    {
+      app_name            = "App2"
+      app_kind            = "Linux"
+      app_require_feature = false
+    },
+    {
+      app_name            = "App3"
+      app_kind            = "Windows"
+      app_require_feature = true
+    },
+    {
+      app_name            = "App4"
+      app_kind            = "Windows"
+      app_require_feature = false
+    }
+  ]
+}
+
+
+
+
+
+
+#// code/variables.tf#L1-L20
+#Resource Group Config - Object
+variable "rg_config" {
+  type = object({
+    create_rg = bool
+    location  = string
+  })
+}
+
+#Storage Account Config - List of Objects (Each object represents a storage config)
+variable "storage_config" {
+  type = list(object({
+    name                      = string
+    account_kind              = string
+    account_tier              = string
+    account_replication_type  = string
+    access_tier               = string
+    enable_https_traffic_only = bool
+    min_tls_version           = string
+    is_hns_enabled            = bool
+  }))
+}
+
+
+#// code/common.auto.tfvars.tf#L1-L30
+#Resource Group Config - Object Values
+rg_config = {
+  create_rg = true
+  name      = "Demo-Terraform-RG"
+  location  = "uksouth"
+}
+
+#Storage Account Configs - List of Objects Values
+storage_config = [
+  #Storage Account 1 (Object1): StorageV2
+  {
+    name                      = "pwd9000v2sa001"
+    account_kind              = "StorageV2"
+    account_tier              = "Standard"
+    account_replication_type  = "LRS"
+    min_tls_version           = "TLS1_2"
+    enable_https_traffic_only = true
+    access_tier               = "Cool"
+    is_hns_enabled            = false
+  },
+  #Storage Account 2 (object2): Azure Data Lake Storage V2 (ADLS2)
+  {
+    name                      = "pwd9000adls2sa001"
+    account_kind              = "BlockBlobStorage"
+    account_tier              = "Premium"
+    account_replication_type  = "ZRS"
+    min_tls_version           = "TLS1_2"
+    enable_https_traffic_only = false
+    access_tier               = "Hot"
+    is_hns_enabled            = true
+  }
+]
+
+
+#// code/resources.tf#L6-L32
+resource "azurerm_resource_group" "demo_rg" {
+  count    = var.rg_config.create_rg ? 1 : 0           ///conditional expression
+  location = var.rg_config.location
+  tags     = { Purpose = "Demo-RG", Automation = "true" }
+}
+
+## COUNT Example ##
+resource "azurerm_storage_account" "sas" {
+  count = length(var.storage_config)
+
+  #Implicit dependency from previous resource
+  resource_group_name = azurerm_resource_group.demo_rg[0].name
+  location            = azurerm_resource_group.demo_rg[0].location
+
+  #values from variable storage_config objects
+  name                      = var.storage_config[count.index].name
+  account_kind              = var.storage_config[count.index].account_kind
+  account_tier              = var.storage_config[count.index].account_tier
+  account_replication_type  = var.storage_config[count.index].account_replication_type
+  access_tier               = var.storage_config[count.index].access_tier
+  enable_https_traffic_only = var.storage_config[count.index].enable_https_traffic_only
+  min_tls_version           = var.storage_config[count.index].min_tls_version
+  is_hns_enabled            = var.storage_config[count.index].is_hns_enabled
+
+  #Apply tags
+  tags = { Purpose = "Demo-sa-${count.index + 1}", Automation = "true" }
+}
+
+## FOR_EACH Example ##
+resource "azurerm_storage_account" "sas" {
+  for_each = { for each in var.storage_config : each.name => each )
+
+  #Implicit dependency from previous resource
+  resource_group_name = azurerm_resource_group.demo_rg[0].name
+  location            = azurerm_resource_group.demo_rg[0].location
+
+  #values from variable storage_config objects
+  name                      = each.value.name
+  account_kind              = each.value.account_kind
+  account_tier              = each.value.account_tier
+  account_replication_type  = each.value.account_replication_type
+  access_tier               = each.value.access_tier
+  enable_https_traffic_only = each.value.enable_https_traffic_only
+  min_tls_version           = each.value.min_tls_version
+  is_hns_enabled            = each.value.is_hns_enabled
+
+  #Apply tags
+  tags = { Purpose = "Demo-sa-${count.index + 1}", Automation = "true" }
+}
+
+
+
+--------------------------------------------------
+The lookup() function can be used to lookup a particular value inside of a map, given its key and if the given key does not exist, the given default value is returned instead:
+lookup(map, key, default)
+
+## variables.tf ##
+variable "site_names" {
+  type        = list(string)
+  default     = ["siteA", "siteB"]
+  description = "Provide a list of all Contoso site names - Will be mapped to local var 'site_configs'"
+}
+## local.tf ##
+locals {
+  site_configs = {
+    siteA = {
+      resource_group_name = "Demo-Inf-SiteA-RG"
+      location            = "UKSouth"
+      allowed_ips         = ["8.8.8.8", "8.8.8.9"]
+    },
+    siteB = {
+      resource_group_name = "Demo-Inf-SiteB-RG"
+      location            = "UKWest"
+      allowed_ips         = ["7.7.7.7", "7.7.7.8"]
+    }
+  }
+}
+
+## storage_resources.tf ##
+resource "azurerm_resource_group" "RGS" {
+  for_each = toset(var.site_names)
+  name     = lookup(local.site_configs[each.value], "resource_group_name", null)
+  location = lookup(local.site_configs[each.value], "location", null)
+}
+
+
+
+
+## config-dev.tfvars ##
+storage_config = [
+  #V2 Storage - SiteA
+  {
+    name                      = "pwd9000v2sitea"
+    account_kind              = "StorageV2"
+    account_tier              = "Standard"
+    account_replication_type  = "LRS"
+    enable_https_traffic_only = true
+    access_tier               = "Hot"
+    is_hns_enabled            = false
+    site_name                 = "siteA"
+  },
+  #ADLS2 Storage - SiteA
+  {
+    name                      = "pwd9000dfssitea"
+    account_kind              = "BlockBlobStorage"
+    account_tier              = "Premium"
+    account_replication_type  = "ZRS"
+    enable_https_traffic_only = true
+    access_tier               = "Hot"
+    is_hns_enabled            = true
+    site_name                 = "siteA"
+  },
+  #V2 Storage - SiteB
+  {
+    name                      = "pwd9000v2siteb"
+    account_kind              = "StorageV2"
+    account_tier              = "Standard"
+    account_replication_type  = "LRS"
+    enable_https_traffic_only = false
+    access_tier               = "Hot"
+    is_hns_enabled            = false
+    site_name                 = "siteB"
+  }
+]
+This site_name corresponds with the local variable maps key of each of the site_configs maps:
+## local.tf ##
+locals {
+  site_configs = {
+    siteA = {
+      resource_group_name = "Demo-Inf-SiteA-RG"
+      location            = "UKSouth"
+      allowed_ips         = ["8.8.8.8", "8.8.8.9"]
+    },
+    siteB = {
+      resource_group_name = "Demo-Inf-SiteB-RG"
+      location            = "UKWest"
+      allowed_ips         = ["7.7.7.7", "7.7.7.8"]
+    }
+  }
+}
+Notice that when we are building out the storage accounts for each of the sites we can now lookup the network_rules to apply to each of our storage accounts that corresponds to the allowed IPs for that site using the lookup() function ip_rules = lookup(local.site_configs[each.value.site_name], "allowed_ips", null) as shown below:
+resource "azurerm_storage_account" "SAS" {
+  for_each = { for n in var.storage_config : n.name => n }
+
+  #Implicit dependency from previous resource
+  resource_group_name = azurerm_resource_group.RGS[each.value.site_name].name
+  location            = azurerm_resource_group.RGS[each.value.site_name].location
+
+  #values from variable storage_config objects
+  name                      = "${lower(each.value.name)}${random_integer.sa_num.result}"
+  account_kind              = each.value.account_kind
+  account_tier              = each.value.account_tier
+  account_replication_type  = each.value.account_replication_type
+  access_tier               = each.value.access_tier
+  enable_https_traffic_only = each.value.enable_https_traffic_only
+  is_hns_enabled            = each.value.is_hns_enabled
+
+  #Lookup allowed ips
+  network_rules {
+    default_action = "Deny"
+    ip_rules       = lookup(local.site_configs[each.value.site_name], "allowed_ips", null)
+  }
+}
+
+resource "random_integer" "sa_num" {
+  min = 0001
+  max = 9999
+}
+--------------------------------------------------
+
+
+
 terraform {
   backend "s3" {
     encrypt = true
@@ -90,3 +499,79 @@ module "app" {
 
 
 
+==============================================================================================
+main.tf
+---------------
+resource "azuread_group" "ad_group" {
+  count                   = length(var.ad_group_names)
+  display_name            = var.ad_group_names[count.index]
+  owners                  = var.group_owners_list
+  prevent_duplicate_names = true
+  security_enabled        = true
+}
+output.tf
+----------------
+output "ad_group_names" {
+  value = azuread_group.ad_group.*.display_name
+}
+
+output "ad_group_id" {
+  value = azuread_group.ad_group.*.id
+}
+
+variables.tf
+-------------
+variable "ad_group_names" {
+  type        = list(string)
+  description = "list of all the AD groups that were created"
+}
+
+variable "group_owners_list" {
+  type        = list(string)
+  description = "The name of the of the owner to be added to the groups"
+}
+
+module START===
+
+
+main.tf
+------------
+module "azure_ad_groups" {
+  source          = "../../modules/azure_ad_group"
+  ad_group_names  = var.groups_list
+  group_owners_list = var.group_owners_list
+}
+variables.tf
+--------------
+variable "group_owners_list" {
+  type        = list(string)
+  description = "The name of the of the owner to be added to the groups"
+}
+
+variable "groups_list" {
+  type        = list(string)
+  description = "The name of the of the groups"
+}
+terraform.tfvars
+-------------------------
+group_owners_list = ["jack.roper@madeup.com"]
+groups_list = ["Group1", "Group2", "Group3"]
+
+
+
+
+
+
+
+
+
+
+
+==================================================for_each
+A map would be defined like this:
+for_each = {
+    "Group1" = "jack.roper@madeup.com",
+    "Group2" = "bob@madeup.com",
+    "Group3" = "john@madeup.com"
+}
+for_each = toset( ["Group1", "jack.roper@madeup.com"] ["Group2", "bob@madeup.com"] ["Group3", "john@madeup.com"])

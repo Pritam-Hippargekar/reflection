@@ -46,7 +46,16 @@ Unit	Equivalent
 
 
 entity = DTO = QueryService = Criteria = then .xml file changeset.
-
+<changeSet author="jhipster" id="202312040329000-33">
+        <validCheckSum>ANY</validCheckSum>
+        <insert tableName="parameter_management">
+            <column name="name" value="BBPS_MASTER_CATEGORY"/>
+            <column name="value" value="Recharges,Utilities"/>
+            <column name="data_type" value="STRING"/>
+            <column name="comments" value="BBPS Master Category"/>
+            <column name="unit" value="String"/>
+        </insert>
+    </changeSet>
 
 
 public class Base {

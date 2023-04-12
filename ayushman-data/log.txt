@@ -1,0 +1,59 @@
+try {
+  parseXML();
+} catch (Exception e) {
+    // documentId is a StructuredArgument for structured logging, e is used for stacktrace
+    logger.error("Parsing xml document failed!", kv("documentId", documentId), e);
+    logger.error("Parsing xml document {} failed, underlying cause was [{}]", documentId, e.getMessage(), e);
+}
+
+
+
+
+
+input {
+  file {
+    path => "/var/app/current/logs/javaApp.log"
+    mode => "tail"
+    codec => multiline {
+      pattern => "^%{TIMESTAMP_ISO8601} "
+      negate => true
+      what => "previous"
+    }
+  }
+}
+
+
+
+
+input {
+        file {
+
+        path => "/root/mult.log"
+        start_position => "beginning"
+        sincedb_path => "/dev/null"
+        codec => multiline{
+
+                 pattern => "^ -%{SPACE}%{TIMESTAMP_ISO8601}"
+                 negate => true
+                 what => "previous"
+        }
+}
+ }
+filter {
+    grok {
+     match => [
+       "message", "(?m)^ -%{SPACE}%{TIMESTAMP_ISO8601:time} \[%{WORD:main}\] %{LOGLEVEL:loglevel}%{SPACE}\(%{JAVACLASS:class}\) %{DATA:mydata}\n(\t)?%{GREEDYDATA:stack}",
+       "message", "^ -%{SPACE}%{TIMESTAMP_ISO8601:time} \[%{WORD:main}\] %{LOGLEVEL:loglevel}%{SPACE}\(%{JAVACLASS:class}\) %{GREEDYDATA:mydata}" ]
+        break_on_match => false
+ }
+    date {
+    match => [ "timestamp" , "dd/MMM/yyyy:HH:mm:ss Z"]
+ }
+}
+
+output {
+  stdout { codec => rubydebug}
+elasticsearch {
+    host => "localhost"
+  }
+}

@@ -1,0 +1,156 @@
+What is Prometheus?
+1) Prometheus is an open-source system monitoring and alerting tool.
+2) It doesn’t use protocols such as SNMP or some sort of agent service. Instead, it pulls/scrapes metrics from a client/target over HTTP and places the data into its local time series database that you can query using its own DSL.
+3) It uses exporters that are installed and configured on the clients in order to convert and expose their metrics in a Prometheus Format. And then Prometheus server scrapes the exporter for metrics.
+4) You can access the default Prometheus UI via port 9090 on its server.
+5) Users also have the ability to build dashboards and integrate their visualization software, such as Grafana.
+6) it uses a separate component for alerting called the AlertManager. The AlertManager receives metrics from the Prometheus server and then it is responsible for grouping and making some meaningful information about the metrics and then forwarding an alert to your chosen notification system.
+
+What is Grafana?
+A) Grafana is multi-platform open-source analytics and interactive visualization software.
+B) It is a solution for running data analytics, pulling up metrics, and monitoring our apps with the help of dashboards.
+C) It provides charts, graphs, and alerts for the web when connected to supported data sources.
+D) It provides you with tools to turn your time-series database (TSDB) data into graphs and visualizations.
+
+Why do we need System Monitoring?
+# To detect and prevent failures, it is very convenient to have a good monitoring tool that provides you with a solid monitoring system.
+# Monitoring systems are responsible for controlling the technology used by companies in order to analyze their operation and performance.
+# Understanding the state of your infrastructure and systems is essential for ensuring the reliability and stability of your services.
+# Information about the health and performance of your deployments not only helps your team react to issues but also gives them the security to make changes with confidence.
+
+
+How to Integrate Prometheus and Grafana on Kubernetes
+The are two ways of integrating Prometheus and Grafana on Kubernetes:
+1. Manually Deploy all Deployments, Services, ConfigMaps, Secrets, PV and PVC configurations files.
+2. Using Helm 
+
+Helm: interacts and communicates with Kubernetes to deploy the Helm Charts to the Kubernetes Cluster.(Helm makes it easy to deploy applications to Kubernetes.)
+Helm Charts: will help us to define, install, upgrade and integrate even the most complex application on Kubernetes using a few Helm commands. 
+             You can easily download and use existing Helm Charts. 
+
+https://devpress.csdn.net/k8s/62fa37a07e6682346618e01a.html
+
+$ kubectl create ns prometheus
+namespace/prometheus created
+$ kubectl create ns grafana
+namespace/grafana created
+
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+$ helm repo add grafana https://grafana.github.io/helm-charts
+
+
+$ helm upgrade -i .........
+$ helm install prometheus prometheus-community/prometheus --namespace prometheus --set alertmanager.persistentVolume.storageClass="gp2" --set server.persistentVolume.storageClass="gp2"
+$ kubectl get all -n prometheus
+Check you PVC state by running the command below.(pods stuck in a pending state)
+$ kubectl describe pvc <prometheus-alertmanager> -n prometheus
+
+$ helm install grafana grafana/grafana --namespace grafana --set persistence.storageClassName="gp2" --set persistence.enabled=true --set adminPassword='EKS' --values ./grafana.yaml --set service.type=LoadBalancer
+$ kubectl get all -n grafana
+To get the password to login to Grafana run the command below. The default username is admin.
+$ kubectl get secret --namespace grafana grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+$ kubectl port-forward -n prometheus deploy/prometheus-server 8080:9090
+You can access Prometheus UI at <http://localhost:8080>
+
+$ kubectl get svc -n grafana
+You can access Grafana’s UI by DNS of the Load Balancer.
+
+
+
+
+
+Installing Helm
+===============
+Prerequisites
+1) A Linux machine with Docker installed
+2) A single node Kubernetes Cluster.
+3) Helm Package Manager installed 
+https://sweetcode.io/how-to-integrate-prometheus-and-grafana-on-kubernetes-with-helm/
+
+
+$ minikube config set memory 8192
+❗  These changes will take effect upon a minikube delete and then a minikube start
+$ minikube config set cpus 6
+❗  These changes will take effect upon a minikube delete and then a minikube start
+
+Then start and check your system's status:
+
+$ minikube start
+$ minikube status
+
+
+
+
+
+Kubectl get
+=========
+Namespace   $ kubectl get ns    or      $ kubectl get pods -n <Namespace Name>
+Pod
+Node
+Deployment
+Service
+ReplicaSets  
+secret       $ kubectl get secret/db-credentials -o yaml   or    kubectl get secret -n monitoring grafana-admin-credentials -o jsonpath="{.data.admin-user}" | base64 --decode
+
+echo -n 'adminuser' > ./admin-user # change your username
+echo -n 'p@ssword!' > ./admin-password # change your password
+$ kubectl create secret generic grafana-admin-credentials --from-file=./admin-user --from-file=admin-password -n monitoring
+
+Kubectl create
+==============
+service
+cronjob(cj)    $ kubectl create cj my-existing-cron --image=busybox --schedule="*/15 * * * *" -- echo hello
+deployment
+job
+namespace (ns)
+secret         $ kubectl create secret generic db-credentials --from-literal=username=admin --from-literal=password=secret
+
+
+Kubectl edit
+=============
+
+Kubectl delete
+==============
+
+Kubectl apply
+=============
+
+Kubectl describe
+================
+Nodes
+Pods
+Services
+Deployments
+Replica sets
+Cronjobs
+secret  $ kubectl describe secret -n monitoring grafana-admin-credentials
+
+Kubectl logs
+============
+
+Kubectl exec
+=============  $ kubectl exec -it cherry-chart-88d49478c-dmcfv -n charts -- /bin/bash
+
+Kubectl cp
+=============
+Here's an example of copying a local file to a container.
+kubectl cp <filename> <namespace/podname:/path/tofile>
+ex: $ kubectl cp commands_copy.txt charts/cherry-chart-88d49478c-dmcfv:commands.txt
+
+this time pulling a file to our local machine from a container.
+kubectl cp <namespace/podname:/path/tofile>
+Ex: kubectl cp charts/cherry-chart-88d49478c-dmcfv:commands.txt commands_copy.txt
+
+
+
+3 types of Kubernetes container logging:https://opensource.com/article/21/11/cluster-logging-kubernetes
+------------------------------------------------------
+A) Node-level logging agent
+  usually implement these using a DaemonSet as a deployment strategy to deploy a pod (which acts as a logging agent) in all the Kubernetes nodes.
+  You usually configure the agent to read the nodes /var/logs directory capturing stdout/stderr streams and send it to the logging backend storage.
+B) Sidecar container application for logging
+C) Exposing application logs directly to logging backend
+
+
+
