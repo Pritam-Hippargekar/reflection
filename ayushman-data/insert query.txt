@@ -1,4 +1,3 @@
-P_AGG_
 ===================START===================
 INSERT INTO error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('P_AGG_PA_ADD_MERCHANT','YPP','P006','Parameter Missing',CURRENT_TIMESTAMP());
 INSERT INTO error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('P_AGG_PA_ADD_MERCHANT','YPP','PA002','Invalid Partner Reference Number',CURRENT_TIMESTAMP());
@@ -301,3 +300,298 @@ INSERT INTO error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_
 INSERT INTO error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('P_AGG_PA_BULK_DISBURSEMENT','YPP','PA997','Invalid Request IP',CURRENT_TIMESTAMP());
 INSERT INTO error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('P_AGG_PA_BULK_DISBURSEMENT','YPP','PA998','Invalid Request',CURRENT_TIMESTAMP());
 INSERT INTO error_code_message_master(wrapper_id,core_api_id,ypp_error_code,ypp_error_message,created_date) VALUES ('P_AGG_PA_BULK_DISBURSEMENT','YPP','P999','Something went wrong',CURRENT_TIMESTAMP());
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+===================START P_AGG_PA_ADD_MERCHANT===================LIMIT
+  
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_ADD_MERCHANT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_ADD_MERCHANT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_ADD_MERCHANT, "YPP", "", "P005")));    
+    
+      
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_ADD_MERCHANT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_ADD_MERCHANT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_ADD_MERCHANT, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_EDIT_MERCHANT===================LIMIT
+ 
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT, "YPP", "", "P005")));    
+     
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT, "YPP", "", "PA082")));   
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT===================LIMIT
+ 
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT, "YPP", "", "P005")));    
+   
+     
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_COMMISSION_LIMIT_BALANCE===================LIMIT
+  
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_LIMIT_BALANCE, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_LIMIT_BALANCE, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_LIMIT_BALANCE, "YPP", "", "P005")));    
+    
+   
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_LIMIT_BALANCE, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_LIMIT_BALANCE, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_LIMIT_BALANCE, "YPP", "", "P999")));    
+
+
+===================START P_AGG_PA_MERCHANT_LIMIT_BALANCE===================LIMIT
+ 
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_LIMIT_BALANCE, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_LIMIT_BALANCE, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_LIMIT_BALANCE, "YPP", "", "P005")));    
+   
+    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_LIMIT_BALANCE, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_LIMIT_BALANCE, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_LIMIT_BALANCE, "YPP", "", "P999")));   
+
+ ===================START P_AGG_PA_MERCHANT_TRANSACTIONS===================LIMIT
+  
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_TRANSACTIONS, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_TRANSACTIONS, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_TRANSACTIONS, "YPP", "", "P005")));    
+     
+    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_TRANSACTIONS, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_TRANSACTIONS, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_TRANSACTIONS, "YPP", "", "P999")));   
+
+===================START P_AGG_PA_BULK_DISBURSEMENT_STATUS===================DISB
+  
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "P005")));     
+   
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA003")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA024")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA025")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA026")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA027")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA028")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA029")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA030")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA047")));    
+   
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA080")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_REFUND_SETTLEMENT===================DISB
+   
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_SETTLEMENT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_SETTLEMENT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_SETTLEMENT, "YPP", "", "P005")));    
+     
+    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_SETTLEMENT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_SETTLEMENT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_SETTLEMENT, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_REFUND_VA_CREDIT===================DISB
+  
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_VA_CREDIT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_VA_CREDIT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_VA_CREDIT, "YPP", "", "P005")));    
+     
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_VA_CREDIT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_VA_CREDIT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_REFUND_VA_CREDIT, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_COMMISSION_SETTLEMENT===================DISB
+ 
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT, "YPP", "", "P005")));    
+     
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_COMMISSION_SETTLEMENT_STATUS===================DISB
+  
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT_STATUS, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT_STATUS, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT_STATUS, "YPP", "", "P005")));    
+    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT_STATUS, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT_STATUS, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_COMMISSION_SETTLEMENT_STATUS, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_MERCHANT_DISBURSEMENT=================== DISB
+  
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "P005")));    
+   
+    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA003")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA005")));      
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA052")));   
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA054")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA055")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA056")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA066")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA082")));    
+   
+    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_SETTLEMENT_STATUS===================DISB
+ 
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "P005")));    
+    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "PA002")));       
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "PA051")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_MERCHANT_SETTLEMENT===================DISB
+ 
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_SETTLEMENT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_SETTLEMENT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_SETTLEMENT, "YPP", "", "P005")));    
+    
+   
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_SETTLEMENT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_SETTLEMENT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_SETTLEMENT, "YPP", "", "P999")));    
+
+===================START P_AGG_PA_BULK_DISBURSEMENT===================DISB
+ return new PartnerApisResponse();
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "P001")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "P002")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "P005")));    
+    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "PA002")));       
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "PA070")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "PA072")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "PA997")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "PA998")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "P999")));    
+
+
+
+
+
+
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA003")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA005")));      
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA052")));   
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA054")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA055")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA056")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA066")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_MERCHANT_DISBURSEMENT, "YPP", "", "PA082")));    
+ ===*===removed===*=== return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "PA002"))); 

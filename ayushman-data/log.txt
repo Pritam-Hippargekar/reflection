@@ -1,3 +1,230 @@
+<pattern>
+    <pattern>
+        {
+        "timestamp": "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}",  
+        "severity": "%level",
+        "service": "${springAppName:-}",
+        "trace": "%X{X-B3-TraceId:-}",
+        "span": "%X{X-B3-SpanId:-}",
+        "exportable": "%X{X-Span-Export:-}",
+        "pid": "${PID:-}",
+        "thread": "%thread",
+        "class": "%logger{40}",
+        "rest": "%message",
+        "message": "%msg",
+        "level":"%p",
+        "logger": "%logger",
+        "host": "%property",
+        "appname":"springcloud_consume",
+        "serverName":"${server-name}"
+        "stackTrace":"%ex",
+        "ip": "%X{ip}",
+        "url": "%X{url}",
+        "method": "%X{method}",
+        "arg": "%X{arg}",
+        "throwable": "%X{throwable}",
+        }
+    </pattern>
+</pattern>
+
+https://www.jianshu.com/p/576723ce2e3a
+
+Each microservice logs through console and we’ll use the Docker fluentd logging driver to process these logs and send them to our elasticsearch.
+
+Trace Id: A unique ID that remains the same throughout the request containing multiple microservices.
+Span Id: A unique ID per microservice.
+Spring Cloud Sleuth:
+----------------------
+It lets you track the progress of subsequent microservices by adding the appropriate headers to the HTTP requests.
+The library is based on the MDC (Mapped Diagnostic Context) concept, where you can easily extract values put to context and display them in the logs.
+If we inspect the http-headers in the request to XXXXController we'll see the following:
+------------------------------------------------------------
+"x-b3-traceid"="e40993b7256eda9d"
+"x-b3-spanid"="0bcc87a9c8ea5fe3"
+"x-b3-parentspanid"="71b4a062bf8f970c"
+
+
+Distributed tracing platforms like OpenZipkin record trace data. 
+Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph (DAG for short). 
+A root node represents the trace or overall journey, and each span represents an individual hop along the service route. 
+
+Once you have Spring Cloud Sleuth on the classpath, it will automatically instrument common communication channels such as:
+----------------------------------------------
+Messaging like Kafka or RabbitMQ
+HTTP headers via WebMVC and WebFlux controllers
+Request headers made through WebClient, and RestTemplate
+
+
+STEP 7: Configuring microservices to send logs to logstash
+------------------------------------------------------------
+Sending microservice logs to logstash requires the following dependencies to be added to each and every microservice.
+<dependency>
+    <groupId>net.logstash.logback</groupId>
+    <artifactId>logstash-logback-encoder</artifactId>
+    <version>5.3</version>
+</dependency>
+<dependency>
+    <groupId>ch.qos.logback</groupId>
+    <artifactId>logback-core</artifactId>
+    <version>1.2.3</version>
+</dependency>
+The next configuration to add is to create a file called logback.xml in resource folder of every microservice with the following contents:
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>localhost:5044</destination>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <mdc/>
+                <context/>
+                <version/>
+                <logLevel/>
+                <loggerName/>
+                <message/>
+                <pattern>
+                    <pattern>
+                        {
+                            "serviceName": "account-service"
+                        }
+                    </pattern>
+                </pattern>
+                <threadName/>
+                <stackTrace/>
+            </providers>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="logstash"/>
+    </root>
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="com.cinema" level="INFO"/>
+</configuration>
+The steps outlined above if followed diligently will enable you to put in a place distributed tracing in your micro services architectures and be able to visualise your logs through kibana and search through them using elasticsearch.
+
+
+
+logback-spring.xml
+=================
+<? xml version = "1.0" encoding = "UTF-8" ?> 
+<configuration> 
+    <include resource = "org/springframework/boot/logging/logback/defaults.xml" />
+
+    <springProperty scope = "context" name = "springAppName" source = "spring.application.name" /> 
+    <property name = "CONSOLE_LOG_PATTERN" value = "%clr(%d{yyyy-MM-dd HH:mm:ss. SSS}){faint} %clr(${level:-%5p}) %clr([${springAppName:-},%X{X-B3-TraceId:-},%X{X-B3-SpanId: -},%X{X-Span-Export:-}]){yellow} %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t] ){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}" / >  
+    
+    <appender name = "CONSOLE" class = "ch.qos.logback.core.ConsoleAppender" > 
+       <encoder> <pattern> ${CONSOLE_LOG_PATTERN} </pattern> <charset> UTF-8 </charset> </encoder> 
+    < /appender> 
+        
+    <root level = "INFO" > 
+        <appender-ref ref = "CONSOLE" /> 
+    </root> 
+</configuration>
+
+
+
+
+
+
+
+
+1. The first springboot-logstash environment construction
+1.1 Add maven
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>6.3</version>
+        </dependency>
+1.2 logback-spring.xml adds log printing
+    <!--LOGSTASH config -->
+    <appender name="LOGSTASH"
+        class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>localhost:5000</destination>
+        <!--<encoder charset="UTF-8"
+            class="net.logstash.logback.encoder.LogstashEncoder"> -->
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}
+                [service:${springAppName:-}]
+                [traceId:%X{X-B3-TraceId:-},spanId:%X{X-B3-SpanId:-},parentSpanId:%X{X-B3-ParentSpanId:-},exportable:%X{X- Span-Export:-}]
+                [%thread] %-5level %logger{50} - %msg%n</pattern>
+            <charset>UTF-8</charset> <!-- Set the character set here -->
+        </encoder>
+    </appender>
+1.3 configure logstash
+input {
+  tcp {
+    port => 5000
+  }
+}
+filter {
+  grok {
+    match => {
+    "message" => "%{TIMESTAMP_ISO8601:logTime} %{GREEDYDATA:service} %{GREEDYDATA:thread} %{LOGLEVEL:level} %{GREEDYDATA:loggerClass}-%{GREEDYDATA:logContent}"}
+  }
+}
+output {
+  elasticsearch {
+    hosts => ["http://localhost:9200"]
+    index => "springboot-%{+YYYY.MM.dd}"
+    user => "elastic"
+    password => "changeme"
+  }
+}
+
+
+
+
+
+
+
+
+- Spans are timed operations representing small logical units of work. 
+  Each span contains some basic information like Start Time, Duration, etc. 
+  We can think of Spans as the building blocks of a distribute trace.
+    Spans could be
+      Request from Loadbalance to Order Service
+      Request Order Service to Product Service
+      Product Service to Database
+      Order Service to Database
+- Trace is nothing but a complete execution path of a request and can be thought of as a collection of Directed Acyclic Graph of Spans.
+  (Trace is the entire HTTP Request/Response)
+
+
+
+What you are seeing there, are the respective parameters:[food-order-publisher,888114b702f9c3aa,888114b702f9c3aa,true]
+-------------------------------------------------------------
+appname – the name of the application that logged the span
+traceId – the id of the latency graph that contains the span
+spanId – the id of a specific operation
+exportable – whether the log should be exported to Zipkin or not (more about Zipkin later)
+
+
+
+Zipkin Client
+==================
+Zipkin client contains Sampler which collects data from ms apps with the help of sleuth and provides it the zipkin server.
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-zipkin</artifactId>
+</dependency>
+
+spring.zipkin.service.name=food-order-consumer
+spring.zipkin.sender.type=web             # we want to report data to Zipkin via HTTP calls rather than a message queue  
+spring.zipkin.baseUrl=http://localhost:9411
+spring.sleuth.sampler.percentage=1.0      # Default is 0.1 which means 10%
+
+@Bean
+fun sleuthTraceSampler(): Sampler {
+    return Sampler.ALWAYS_SAMPLE
+}
+
+Spring Boot App → Log File → Logstash → Elasticsearch. 
+There are other ways of accomplishing the same thing, such as configuring logback to use TCP appender to send logs to a remote Logstash instance via TCP, 
+and many other configurations.
+event will either be a single log line or multiline log event grouped according to the rules described
+
 try {
   parseXML();
 } catch (Exception e) {
@@ -12,15 +239,44 @@ try {
 
 input {
   file {
-    path => "/var/app/current/logs/javaApp.log"
-    mode => "tail"
+    path => "/var/app/current/logs/javaApp.log"     ## It must be absolute
+    mode => "tail"                           ## only read new entries at the end of the file
+    type => "java"                           ## it's just additional piece of metadata in case you will use multiple types of log files in the future.
     codec => multiline {
-      pattern => "^%{TIMESTAMP_ISO8601} "
-      negate => true
-      what => "previous"
+      pattern => "^%{TIMESTAMP_ISO8601} "    ## Each new log event needs to start with date
+      negate => true                         ## if it doesn't start with a date
+      what => "previous"                     ## then it should be grouped with a previous line
     }
   }
 }
+filter {
+  #If log line contains tab character followed by 'at' then we will tag that entry as stacktrace
+  if [message] =~ "\tat" {
+    grok {
+      match => ["message", "^(\tat)"]
+      add_tag => ["stacktrace"]
+    }
+  }
+
+  #Grokking Spring Boot's default log format
+  grok {
+    match => [ "message", 
+               "(?<timestamp>%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{TIME})  %{LOGLEVEL:level} %{NUMBER:pid} --- \[(?<thread>[A-Za-z0-9-]+)\] [A-Za-z0-9.]*\.(?<class>[A-Za-z0-9#_]+)\s*:\s+(?<logmessage>.*)",
+               "message",
+               "(?<timestamp>%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{TIME})  %{LOGLEVEL:level} %{NUMBER:pid} --- .+? :\s+(?<logmessage>.*)"
+             ]
+  }
+
+  #Parsing out timestamps which are in timestamp field thanks to previous grok section
+  date {
+    match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss.SSS" ]
+  }
+}
+
+
+
+
+
 
 
 
@@ -57,3 +313,409 @@ elasticsearch {
     host => "localhost"
   }
 }
+
+
+
+
+
+
+
+
+output {
+    elasticsearch {
+        hosts => "elasticsearch:9200"
+        index => "인덱스명지정"
+        user => "아이디입력"
+        password => "비밀번호입력"
+    }
+}
+
+
+
+
+
+
+
+
+
+input {
+  file {
+    path => "/usr/logstash/logstash-7.2.0/ml-latest-small/movies.csv" #Pay attention to change to your own directory
+    start_position => "beginning" 
+    sincedb_path => "/dev/null"
+  }
+}
+filter {
+  csv {
+    separator => "," 
+    columns => ["id","content","genre" ]
+  }
+  mutate {
+    split => { "genre" => "|" }
+    remove_field => ["path", "host","@timestamp","message" ]
+  }
+  mutate {
+
+    split => ["content", "(" ]
+    add_field => { "title" => "%{[content][0]}" }
+    add_field => { "year" => "%{[content][2]}" }
+  }
+  mutate {
+    convert => {
+       "year" => "integer"
+    }
+    strip => ["title" ]
+    remove_field => ["path", "host","@timestamp","message","content" ]
+  }
+}
+output {
+   elasticsearch {
+     hosts => http: // 192.168.1.204:9200 #Pay attention to modify to your own ES 
+     index => "movies" 
+     document_id => "%{id}"
+   }
+  stdout{}
+}
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!--The log saves log information with different log levels into different files-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+
+    <!--springProperty: Find the corresponding configuration item in the properties/yml file -->
+    <springProperty scope="context" name="springAppName" source="spring.application.name" />
+    <springProperty scope="context" name="logFilePath" source="logging.config.path" />
+
+    <!-- The output location of the log in the project -->
+    <property name="LOG_FILE" value="${BUILD_FOLDER:-build}/${springAppName}" />
+
+    <!-- console log output style -->
+    <property name="CONSOLE_LOG_PATTERN" 
+              value ="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${ PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}" />
+
+    <!-- console output appender-->
+    <appender name="console" class ="ch.qos.logback.core.ConsoleAppender">
+        <filter class ="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <!-- Log output encoding -->
+        <encoder class ="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Appender for logstash output in JSON format -->
+    <appender name="logstash"
+              class ="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>192.168.1.204:9665</destination>
+        <!-- Log output encoding -->
+        <encoder class ="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <pattern>
+                    <pattern>
+                        {
+                        "severity": "%level" ,
+                         "service": "${springAppName:-}" ,
+                         "trace": "%X{X-B3-TraceId:-}" ,
+                         "span": "%X{X- B3-SpanId:-}" ,
+                         "exportable": "%X{X-Span-Export:-}" ,
+                         "pid": "${PID:-}" ,
+                         "thread": "%thread" ,
+                         "class ": "%logger{40}" ,
+                         "rest": "%message"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!--File format output appender-->
+    <appender name="file" class ="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!--Define the path of log output-->
+        <!--The scheduler.manager.server.home here is not set in the above configuration, so the value configured when java starts will be used-->
+        <!--For example, configure this property through java -Dscheduler.manager.server.home=/path/to XXXX -->
+        <file>${logging.path}/spring-boot/elk.log</file>
+        <!--Define the log rolling strategy-->
+        <rollingPolicy class ="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--The format of the file name when defining the file scrolling -->
+            <fileNamePattern>${scheduler.manager.server.home}/logs/${app.name}.%d{yyyy-MM- dd.HH}.log
+             </fileNamePattern>
+            <!--60-day time period, the maximum log volume is 20GB-->
+            <maxHistory>60</maxHistory>
+            <!-- This attribute is only supported after version 1.1.6 -->
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
+        <triggeringPolicy class ="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <!--The maximum size of each log file is 100MB-->
+            <maxFileSize>100MB</maxFileSize>
+        </triggeringPolicy>
+        <!--Define output format-->
+        <encoder>
+            <pattern>%d [%thread] %-5level %logger{36} [%file : %line] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--logger is used to set the log printing level of a certain package or a specific class and specify appender-->
+    <!--The logger can be obtained through LoggerFactory.getLogger("mytest")-->
+    <!--Since this logger automatically inherits the root appender, there is already a stdout appender in the root, and I have introduced the stdout appender-->
+    <!--If additivity="false" is not set, a log will be output twice in the console, and the division of labor is done through appender- ref, and root is responsible for console and logstash
+      This logger is responsible for file output -->
+    <!--additivity indicates whether to use the appender configured by rootLogger for output -->
+    <logger name="test" level="INFO" additivity="false">
+        <appender-ref ref="file"/>
+    </logger>
+
+    <!-- The root logger is also a kind of logger, and has only one level attribute -->
+    <root level="INFO">
+        <appender-ref ref="console" />
+        <appender-ref ref="logstash" />
+    </root>
+
+</configuration>
+
+
+
+
+
+
+
+
+
+
+https://insight-bgh.tistory.com/519
+-----------------------------------------
+
+1. Add logstash dependency (build.gradle )
+implementation 'net.logstash.logback:logstash-logback-encoder:6.6'
+ 
+
+2. Add logback-spring.xml file
+Add logback-spring.xml under resources folder.
+
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%-5level %d{HH:mm:ss.SSS} [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}[%-5level] : %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <file>mylog.txt</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>mylog-%d{yyyy-MM-dd}.%i.txt</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- or whenever the file size reaches 100MB -->
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%-5level] %d{HH:mm:ss.SSS} %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Log Stash 사용시 사용할 TCP 통신 정보 -->
+    <appender name="stash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>서버ip정보:logstash포트</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"></encoder>
+    </appender>
+
+   
+    <root level="INFO">
+        <appender-ref ref="console" />
+        <appender-ref ref="stash" />
+    </root>
+
+</configuration>
+ 
+
+3. Add logback-spring.xml to application.yml
+logging:
+  config: classpath:logback-spring.xml
+ 
+
+4. Add spring-cloud-starter-sleuth (build.gradle )
+If you want to see logs by traceId and spanId, add spring-cloud-starter-sleuth dependency. It is often used to track logs in the msa environment.
+implementation group: 'org.springframework.cloud', name: 'spring-cloud-starter-sleuth', version: '3.0.4'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# spring.application.name and server.port are set in the main methods,
+# so not done here
+#logging.level.org.springframework.web=DEBUG
+spring.sleuth.traceId128=true
+spring.zipkin.base-url=http://127.0.0.1:9411/
+spring.sleuth.sampler.probability=1.0
+# Adds trace and span IDs to logs (when a trace is in progress)
+#logging.pattern.level=[%X{traceId}/%X{spanId}] %-5p [%t] %C{2} - %m%n
+# Propagates a field named 'user_name' downstream
+spring.sleuth.baggage.remote-fields=user_name
+spring.application.name=sale
+server.port=8081
+
+Logstash
+========
+Logstash is not just an input | filter | output data flow, 
+but an input | decode | filter | encode | output data flow! codec is used to decode and encode events.
+
+
+Execute the command to check whether the file configuration is OK
+------------------------------------------------------logstash -e "input { stdin { } } output { stdout {} }"
+logstash -f first-pipeline.conf --config.test_and_exit
+
+Execute the command to run logstash
+-------------------------------------
+logstash -f first-pipeline.conf --config.reload.automatic
+
+--config.reload.automatic option allows you to automatically enable configuration reloading without restarting Logstash
+
+
+
+
+
+input {
+    file {
+        path => ["/var/log/**/*.log", "/var/log/message"] #绝对路径
+        type => "system"
+        start_position => "beginning"
+        sincedb_path => /dev/null  #每次重启自动从头开始读
+    }
+}
+---
+input {
+    stdin {
+        codec => multiline {
+            pattern => "^\["
+            negate => true
+            what => "previous"
+        }
+    }
+}
+
+
+https://elasticsearch.tutorials24x7.com/blog/how-to-install-elasticsearch-kibana-and-logstash-elk-elastic-stack-on-windows
+
+
+https://blog.frankel.ch/structuring-data-with-logstash/
+Indexing unstructured log messages is not very useful. Logstash configuration allows to pre-parse unstructured data and send structured data instead.
+Grok
+Grokking data is the usual way to structure data with pattern matching.
+
+Dissect
+The Grok filter gets the job done. But it seems to suffer from performance issues, especially if the pattern doesn’t match. 
+An alternative is to use the dissect filter instead, which is based on separators.
+it’s much easier to write a separator-based filter than a regex-based one.
+
+filter {
+  dissect {
+	mapping => { "message" => ... }
+  }
+  mutate {
+    strip => [ "log", "class" ]                        strip additional spaces with Logstash
+  }
+}
+
+
+
+
+
+Log file configuration
+-----bin/logstash -e 'input{stdin{}}output{stdout{codec=>rubydebug}}'----------------------------------------------------------------------------logstash -e 'input { stdin { } } output { stdout {} }'
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml" />
+    <!-- 按照每天生成日志文件 -->
+    <appender name="FILE"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--日志文件输出的文件名 -->
+            <FileNamePattern>${user.dir}/logs/user-%d{yyyyMMdd}.log
+            </FileNamePattern>
+            <!--日志文件保留天数 -->
+            <MaxHistory>30</MaxHistory>
+        </rollingPolicy>
+        <!--日志文件最大的大小 -->
+        <triggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>10MB</MaxFileSize>
+        </triggeringPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                {"level":"%level","pid":${PID},"thread":"%thread","requestId":"%X{requestId}","remoteIp":"%X{remoteIp}","traceId":"%X{X-B3-TraceId:-}","spanId":"%X{X-B3-SpanId:-}","parentSpanId":"%X{X-B3-ParentSpanId:-}","class":"%logger{50}","method":"%method","line":%line,"message":"%message","stack_trace":"%exception{10}"}%n
+            </pattern>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

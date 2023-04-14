@@ -1,0 +1,62 @@
+Install Using Package repositories on Linux
+---------------sudo apt-get install wget unzip---------------------------------
+1) wget https://releases.hashicorp.com/terraform/1.1.0/terraform_1.1.0_linux_amd64.zip
+2) sudo unzip terraform_1.1.0_linux_amd64.zip
+3) sudo mv terraform /usr/local/bin/
+
+OR 
+
+1) sudo mkdir -p /opt/terraform
+2) cd /opt/terraform
+3) wget https://releases.hashicorp.com/terraform/1.1.0/terraform_1.1.0_linux_amd64.zip
+4) sudo unzip terraform_1.1.0_linux_amd64.zip
+5) sudo vi ~/.bash_profile
+
+  Add these two lines on the opened file:
+---------------------------------------------
+    PATH="/opt/terraform:${PATH}"
+    export PATH
+6) source ~/.bash_profile
+
+
+Kibana
+Download and install
+============================
+wget https://artifacts.elastic.co/downloads/kibana/kibana-7.15.0-darwinx86_64.tar.gz
+
+Configure environment variables
+.................................
+tar -xzvf kibana-7.15.0-darwin-x86_64.tar.gz
+mv kibana-7.15.0-darwin-x86_64 kibana-7.15.0
+vim ~/.zshrc
+KIBANA_HOME=/Users/Shared/kibana-7.15.0
+export PATH=$PATH:$KIBANA_HOME/bin
+source ~/.zshrc
+start up
+
+nohup kibana >/var/logs/kibana.log 2>&1 &
+
+
+Elashticsearch installation
+Download and unzip the installation package
+=============================================
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.15.0-darwin-x86_64.tar.gz
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.15.0-darwin-x86_64.tar.gz.sha512 shasum -a 512 -c elasticsearch-7.15.0-darwin-x86_64.tar.gz.sha512
+tar -xzf elasticsearch-7.15.0-darwin-x86_64.tar.gz
+Configure environment variables
+
+vim ~/.zshrc
+ELASTICSEARCH_HOME=/Users/Shared/elasticsearch-7.15.0
+export PATH=$PATH:$ELASTICSEARCH_HOME/bin
+Change setting
+
+cd elasticsearch-7.15.0/
+vim elasticsearch.yml
+#新增action.auto_create_index: .monitoring*,.watches,.triggered_watches,.watcherhistory*,.ml*
+run es
+
+elasticsearch -d -p /Users/Shared/elasticsearch-7.15.0/elasticsearch.pid
+
+Check es running status
+........................
+curl -X GET "localhost:9200/?pretty"
