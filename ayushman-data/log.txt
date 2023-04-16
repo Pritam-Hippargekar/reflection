@@ -283,12 +283,10 @@ filter {
 
 input {
         file {
-
         path => "/root/mult.log"
         start_position => "beginning"
         sincedb_path => "/dev/null"
         codec => multiline{
-
                  pattern => "^ -%{SPACE}%{TIMESTAMP_ISO8601}"
                  negate => true
                  what => "previous"
@@ -712,6 +710,321 @@ Log file configuration
 
 
 
+
+
+
+
+
+input {
+  file{
+    path => "C:/temp/*.logs"
+    start_position => "beginning"
+    sincedb_path => "NUL"
+    codec => json
+  }
+}
+filter {
+  mutate {
+    add_field => {"source" => "Medium"}
+  }
+}
+output {
+ file {
+   path => "c:/temp/logstash_out.log"
+ }
+}
+
+
+
+
+
+
+
+
+
+
+input {
+    file {
+        path => ["/Users/huan/soft/elastic-stack/logstash/logstash/pipeline.conf/multi-input/redis.log"]
+        start_position => "beginning"
+        sincedb_path => "/Users/huan/soft/elastic-stack/logstash/logstash/pipeline.conf/multi-input/sincedb.db"
+        type => "redis"
+	      mode => "read"
+        stat_interval => "1 second"
+        discover_interval => 15
+        sincedb_write_interval => 15
+        add_field => {
+            "custom_mode" => "tail"
+        }
+    }
+
+    file {
+        path => ["/Users/huan/soft/elastic-stack/logstash/logstash/pipeline.conf/multi-input/springboot.log"]
+        start_position => "end"
+        sincedb_path => "/Users/huan/soft/elastic-stack/logstash/logstash/pipeline.conf/multi-input/sincedb.db"
+	      mode => "tail"
+        type => "springboot"
+    }
+}
+
+
+
+  stdout {
+    codec =>  rubydebug {
+      metadata => true
+    }
+  }
+
+stdout {
+    codec => line {
+        charset => "UTF-8"
+    }
+  }
+
+
+input {
+  file {
+    path => "/var/log/messages"
+    tags => ["sys", "logstash_messages", "%{host}" ]
+    type => syslog
+  }
+  file {
+    path => "/var/log/cron"
+    tags => ["sys", "logstash_cron", "%{host}" ]
+    type => syslog
+  }
+  file {
+    path => "/var/log/secure"
+    tags => ["sys", "logstash_secure", "%{host}" ]
+    type => syslog
+  }
+}
+
+filter {
+  if [type] == "syslog" {
+    grok {
+      match => { "message" => "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+      add_field => [ "received_at", "%{@timestamp}" ]
+      add_field => [ "received_from", "%{host}" ]
+    }
+    date {
+      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+    }
+  }
+}
+output {
+  if [tags][1] == "logstash_messages" {
+    elasticsearch {
+      hosts => ["localhost:9200"]
+      index => "%{tags[0]}.%{tags[1]}-%{+YYYY.MM.dd}"
+    }
+    file {
+      path => "/var/log/logstash/%{tags[0]}/%{tags[1]}.log"
+    }
+  } else if [tags][1] == "logstash_cron" {
+    elasticsearch {
+      hosts => ["localhost:9200"]
+      index => "%{tags[0]}.%{tags[1]}-%{+YYYY.MM.dd}"
+    }
+    file {
+      path => "/var/log/logstash/others/%{tags[1]}.log"
+    }
+  } else {
+    file {
+      path => "/var/log/logstash/others/other.log"
+    }
+  }
+}
+
+
+
+# logstash/pipeline/logstash.conf
+input {
+    beats {
+        port => 5044
+    }
+}
+filter {
+    grok {
+        match => {
+            "message" => "%{JAVACLASS:exception}:\s%{GREEDYDATA:stacktrace}"
+        }
+        add_tag => ["stacktrace"]
+    }
+    grok {
+        patterns_dir => ["/usr/share/logstash/pipeline/patterns"]
+        match => {
+            "message" => "%{TIMESTAMP_ISO8601:log_timestamp}\s*%{LOGLEVEL:log_level}\s*%{POSINT:logged_for_pid}\s*--- \[+%{NOTSPACE:logged_for_thread}+\]\s*%{JAVACLASS:logger}%{GREEDYDATA:loggercd}\s*%{MSG:log_message}"
+        }
+        add_tag => ["spring_boot_log"]
+    }
+    if [loggercd] {
+        mutate {
+            replace => { "logger" => "%{logger}%{loggercd}" }
+            strip => ["logger"]
+            remove_field => ["loggercd"]
+        }
+    }
+    if "stacktrace" in [tags] or "spring_boot_log" in [tags] {
+        mutate {
+            remove_tag => ["_grokparsefailure"]
+        }
+    }
+}
+output {
+    elasticsearch {
+        hosts => ["${ELASTIC_HOSTS}"]
+        user => "${ELASTIC_USER}"
+        password => "${ELASTIC_PASSWORD}"
+        index => "spring-boot-app-logs-%{+YYYY.MM.dd}"
+    }
+}
+
+
+1) These specify the logging level (INFO)                     https://logback.qos.ch/manual/layouts.html#conversionWord
+2) the appenders (where to log)  (Console)                     https://logback.qos.ch/manual/layouts.html#conversionWord
+3) the format of the log messages.
+%clr(%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}}){faint}
+%clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint}
+%clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint}
+%m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}
+
+
+%clr specifies a colour.
+%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} is the current date, ${VARIABLE}:- we should use the $VARIABLE environment variable for the format, if it is available, and if not, fall back to default.
+${LOG_LEVEL_PATTERN:-%5p} will print the log level with right padding up to 5 characters (E.g “INFO” becomes “INFO “ but “TRACE” will not have the trailing space).
+${PID:- } The environment variable $PID, if it exists. If not, space.
+t	The name of the thread triggering the log message.
+logger	The name of the logger (up to 39 characters), in our case this is the class name.
+%m	The log message.
+%n	The platform-specific line separator.
+%wEx	If one exists, wEx is the stack trace of any exception, formatted using Spring Boot’s ExtendedWhitespaceThrowableProxyConverter.
+%msg - outputs the actual log message.
+%n - line break
+%M - outputs the name of the method that the log message occurred in
+%logger{36} The number inside the brackets represents the maximum length of the package + class name. If the output is longer than the specified length it will take a substring of the first character of each individual package starting from the root package until the output is below the maximum length.
+%ex{short/short/any-number}
+
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>
+        %d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger{36}.%M - %msg%n
+      </pattern>
+    </encoder>
+  </appender>
+
+  <root level="info">
+    <appender-ref ref="STDOUT"/>
+  </root>
+</configuration>
+logging.level.root=info
+logging.pattern.console=%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n
+
+Package level logging can also be defined by simply using the package name instead of the class name in the logger tag.
+logging.level.com.lankydan.service=debug
+<logger name="com.lankydan.service" additivity="false" level="debug">
+  <appender-ref ref="STDOUT" />
+</logger>
+
+
+
+
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Default logback configuration provided for import
+-->
+<included>
+	<conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />
+	<conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter" />
+	<conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter" />
+	<property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:-%clr(%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+	<property name="FILE_LOG_PATTERN" value="${FILE_LOG_PATTERN:-%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+
+	<logger name="org.apache.catalina.startup.DigesterFactory" level="ERROR"/>
+	<logger name="org.apache.catalina.util.LifecycleBase" level="ERROR"/>
+	<logger name="org.apache.coyote.http11.Http11NioProtocol" level="WARN"/>
+	<logger name="org.apache.sshd.common.util.SecurityUtils" level="WARN"/>
+	<logger name="org.apache.tomcat.util.net.NioSelectorPool" level="WARN"/>
+	<logger name="org.eclipse.jetty.util.component.AbstractLifeCycle" level="ERROR"/>
+	<logger name="org.hibernate.validator.internal.util.Version" level="WARN"/>
+	<logger name="org.springframework.boot.actuate.endpoint.jmx" level="WARN"/>
+</included>
+
+
+(Logback is a logging framework for Java, and a successor to the old log4j.)
+How to customise Spring Boot’s logging configuration
+You can customise the default logging configuration in one of these ways:
+1) Setting some Spring Boot logging properties – which can go in your application.properties, application.yml, or as environment variables in your shell
+    # Examples for Spring Boot 2.x
+    logging.file.path=.             # write logs to the current directory
+    logging.file.path=/home/logs    # write logs to /home/logs
+    logging.file.path=/mnt/logdir   # write logs to /mnt/logdir
+    # Example for Spring Boot 2.x
+    logging.file.name=myapp.log
+
+    Just convert each property to upper-case, and change dots to underscores.
+2) Adding a logback.xml onto the classpath, which Spring Boot will detect, and use to configure Logback
+3) Adding a logback-spring.xml onto the classpath, which Spring Boot will detect, and use to configure Logback
+
+
+
+
+
+How the magic works
+How does Spring detect Logback and abstract it away from us?
+
+1) Looking around the source code, I found these relevant clues (hunted down in Spring Boot v2.6.6):
+2) Logback should appear on the classpath in most Spring Boot projects because… spring-boot-starter-web includes the dependency spring-boot-starter-logging, which includes logback as a dependency.
+3) Spring’s logging system detects Logback because… The abstract class LoggingSystem contains some code which detects and returns the logging system that’s currently in use. It checks which classes are present in the classloader.
+4) Spring knows how to write logs with Logback because… There’s a subclass of LoggingSystem, called LogbackLoggingSystem, which basically configures and works with Logback.
+We don’t need to configure Logback ourselves because… Inside DefaultLogbackConfiguration, Spring Boot does some programmatic auto-configuration of Logback for us, so we don’t need to configure it manually.
+
+Push log entries from a Spring Boot application
+By default, Spring Boot uses Logback for logging which can be fine-tuned by creating a logback-spring.xml configuration:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <appender name="logstashNetworkAppender" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>localhost:5000</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        </encoder>
+        <keepAliveDuration>5 minutes</keepAliveDuration>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="logstashNetworkAppender"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
+This snippet adds the LogstashTcpSocketAppender which sends the log entries in JSON format to the Logstash node and it also keeps using the default Console Appender.
+
+
+
+logging:
+  level:
+    root: INFO
+    com.abc.demo: DEBUG
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%8.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %X{REQUEST_ID} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+
+"%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+2020-04-23 21:09:44.107 - INFO 3240 --- ApiLoggingFilter: 1234 HTTP GET "/posts" , parameters={requestId=1234}, body=, remote_address=0:0:0:0:0:0:0:1
+2020-04-23 21:09:44.110 - INFO 3240 --- ApiLoggingFilter: 1234 HTTP RESPONSE [{"id":1,"title":"Spring Boot","body":"All about Spring boot microservice"},{"id":2,"title":"Java","body":"Learn Streams in Java"},{"id":3,"title":"JavaScript","body":"Whats new in ES6"}]
 
 
 
