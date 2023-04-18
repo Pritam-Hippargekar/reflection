@@ -1028,7 +1028,230 @@ logging:
 
 
 
+tags => [ “technical”, “log”]
+mutate {
+        add_field => { "instance_name" => "%{app_name}-%{host}:%{app_port}" }
+    }
+
+
+# build the project
+mvn clean install -DskipTests
+
+# Start author services
+java -jar target/author-services-0.0.1-SNAPSHOT.jar
+
+Around Advice  - It wraps actual method call and provides interception point for both before and after execution of this method
+Before Advice - It provides interception point before method call
+After Advice - It provides interception point after method call
+After Throwing Advice - It provides interception point after method call only if an exception is thrown
+
+
+
+<dependency>
+  <groupId>net.logstash.logback</groupId>
+  <artifactId>logstash-logback-encoder</artifactId>
+  <version>6.3</version>
+</dependency>
+Create a file called logback-spring.xml in ./src/main/resources:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+<configuration scan="true">
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <springProperty scope="context" name="app_name" source="spring.application.name"/>
+    <springProperty scope="context" name="app_port" source="server.port"/>
+    <springProperty scope="local" name="logstash_host" source="logstash.host"/>
+    <springProperty scope="local" name="logstash_port" source="logstash.port"/>
+    <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <param name="Encoding" value="UTF-8"/>
+        <remoteHost>${logstash_host}</remoteHost>
+        <port>${logstash_port}</port>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="logstash"/>
+    </root>
+</configuration>
+The above uses spring.application.name, server.port as well as two custom variables: logstash.host and logstash.port to configure the appender, so make sure they exist in your application.properties file:
+
+server.port=8080
+spring.application.name=spring-boot-kibana-demo
+logstash.host=localhost
+logstash.port=5000
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Get the property for app name from the properties file -->
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+
+    <!-- Configuration when the profile is staging or prod -->
+    <springProfile name="staging,prod">
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/${appName}.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <!-- daily rollover -->
+                <fileNamePattern>logs/%d{yyyy-MM-dd,aux}/${appName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <!-- keep 30 days' worth of history -->
+                <maxHistory>30</maxHistory>
+                <timeBasedFileNamingAndTriggeringPolicy
+                        class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                    <!-- or whenever the file size reaches 80MB -->
+                    <maxFileSize>80MB</maxFileSize>
+                </timeBasedFileNamingAndTriggeringPolicy>
+            </rollingPolicy>
+            <encoder>
+                <pattern>%d %5p | %t | %-54logger{55} | %m %n</pattern>
+            </encoder>
+        </appender>
+
+        <logger name="${appName}-logger">
+            <level value="INFO"/>
+        </logger>
+
+        <root>
+            <level value="INFO"/>
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- Configuration when the profile is dev -->
+    <springProfile name="dev">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d %5p | %t | %-55logger{55} | %m %n</pattern>
+            </encoder>
+        </appender><springProperty scope="context" name="appName" source="spring.application.name"/>
+        <logger name="${appName}-logger">
+            <level value="INFO"/>
+        </logger>
+        <root>
+            <level value="INFO"/>
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+</configuration>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="logfiledirectory" source="logging.directory" defaultValue="/var/log"/> 
+    <springProperty scope="context" name="logfile" source="logging.spring-customer-service.file" defaultValue="spring-customer-service.log"/> 
+    <springProperty scope="context" name="logstashhost" source="logging.logstash.host" defaultValue="localhost:5043"/>
+    <springProperty scope="context" name="maxFileSize" source="logging.filesize.max" defaultValue="100MB"/>
+    <springProperty scope="context" name="maxArchiveSize" source="logging.archivesize.max" defaultValue="10GB"/>
+    <springProperty scope="context" name="maxHistory" source="logging.history.max" defaultValue="60"/>
+    <springProperty scope="context" name="devLogLevel" source="logging.dev.loglevel" defaultValue="DEBUG"/>
+    <springProperty scope="context" name="stagingLogLevel" source="logging.staging.loglevel" defaultValue="DEBUG"/>
+    <springProperty scope="context" name="productionLogLevel" source="logging.production.loglevel" defaultValue="INFO"/>
+        <appender name="logStashAppender"
+			class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+			<destination>${logstashhost}</destination>
+			<!-- encoder is required -->
+			<encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+		</appender>
+	
+		<appender name="consoleOut" class="ch.qos.logback.core.ConsoleAppender">
+			<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder 
+				by default -->
+			<encoder>
+				<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+			</encoder>
+		</appender>
+		
+		<appender name="rolling"
+			class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<file>${logfiledirectory}/${logfile}</file>
+			<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+		      <!-- rollover daily -->
+		      <fileNamePattern>${logfile}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+		       <!-- each file should be at most 100MB, keep 60 days worth of history, but at most 20GB -->
+		       <maxFileSize>${maxFileSize}</maxFileSize>    
+		       <maxHistory>${maxHistory}</maxHistory>
+		       <totalSizeCap>${maxArchiveSize}</totalSizeCap>
+		    </rollingPolicy>
+			<!-- <encoder class="net.logstash.logback.encoder.LogstashEncoder" /> -->
+			<encoder>
+				<pattern>%d{dd-MMM-yy HH:mm:ss.SSS} %-5level [%thread] %logger{10} [%file:%line] %msg%n</pattern>
+			</encoder>
+		</appender>
+
+	<springProfile name="dev"> 
+		<root level="${devLogLevel}">
+			<appender-ref ref="logStashAppender" />
+		</root>      
+		<logger name="org" level="${devLogLevel}">
+			<appender-ref ref="consoleOut" />
+		</logger>
+		<logger name="org.appfabs.sample.logaggregation" level="${devLogLevel}">
+			<appender-ref ref="rolling" />
+		</logger>
+	</springProfile>
+	
+	<springProfile name="staging"> 
+		<root level="${stagingLogLevel}">
+			<appender-ref ref="logStashAppender" />
+		</root>      
+		<logger name="org" level="${stagingLogLevel}">
+			<appender-ref ref="consoleOut" />
+		</logger>
+		<logger name="org.appfabs.sample.logaggregation" level="${stagingLogLevel}">
+			<appender-ref ref="rolling" />
+		</logger>
+	</springProfile>
+	
+	<springProfile name="production"> 
+		<root level="${productionLogLevel}">
+			<appender-ref ref="logStashAppender" />
+		</root>      
+		<logger name="org" level="${productionLogLevel}">
+			<appender-ref ref="consoleOut" />
+		</logger>
+		<logger name="org.appfabs.sample.logaggregation" level="${productionLogLevel}">
+			<appender-ref ref="rolling" />
+		</logger>
+	</springProfile>
+</configuration>

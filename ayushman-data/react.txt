@@ -1,3 +1,78 @@
 How to Build a Multi-Step Registration App with Animated Transitions Using the MERN Stack
 https://www.freecodecamp.org/news/build-a-multi-step-registration-app-with-animated-transitions-using-mern-stack/
 https://blog.devgenius.io/create-a-multi-step-form-with-reactjs-322aa97a2968
+
+
+
+
+improve performance
+======================https://www.copycat.dev/blog/react-forwardref/==
+such as shouldComponentUpdate, React.memo, forwardRef and Ref
+
+ useRef is used to create a mutable reference
+
+ forwardRef is a higher-order component that allows you to forward a ref from a parent component to one of its children.
+ This is useful when you need to access the underlying DOM node or component instance of a child component from a parent component.
+ forwardRef to create a higher-order component that accepts a ref prop and forwards it to the child component. 
+
+When MyComponent mounts, React will call the useImperativeHandle callback with the ref as its argument.
+
+function ParentComponent() { 
+    const myComponentRef = React.useRef(null); 
+    const handleClick = () => { myComponentRef.current.doSomething(); }; 
+    return ( 
+            <div> 
+                <button onClick={handleClick}>Do Something</button> 
+                <MyComponent ref={myComponentRef} /> 
+            </div> 
+        ); 
+}
+
+const MyComponent = React.forwardRef((props, ref) => { 
+    const doSomething = () => { 
+        console.log('doing something') 
+    }; 
+
+    React.useImperativeHandle(ref, () => ({ doSomething,XXXX }));
+
+    //React.useImperativeHandle(ref, () => ({
+    //    getDOMNode: () => fancyButtonRef.current,
+    //    doSomething: () => fancyButtonRef.current.doSomething(),
+    //}));
+
+    return <div>My Component</div>; 
+});
+
+
+
+Ex:
+import FancyButtonWrapper from './FancyButtonWrapper';
+import { useRef, useState } from 'react';
+
+function ParentComponent() {
+  const fancyButtonRef = React.useRef(null);
+ 
+  const handleClick = () => {
+    console.log(fancyButtonRef.current);
+  };
+ 
+  return (
+    <div>
+      <button onClick={handleClick}>Log FancyButton DOM Node</button>
+      <FancyButtonWrapper ref={fancyButtonRef} />
+    </div>
+  );
+
+import FancyButton from 'third-party-library';
+import { forwardRef, useRef, useImperativeHandle } from 'react';
+
+const FancyButtonWrapper = forwardRef((props, ref) => {
+  const fancyButtonRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    getDOMNode: () => fancyButtonRef.current,
+    doSomething: () => fancyButtonRef.current.doSomething(),
+  }));
+ 
+  return <FancyButton {...props} ref={fancyButtonRef} />;
+});

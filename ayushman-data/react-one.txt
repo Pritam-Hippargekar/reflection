@@ -34,6 +34,119 @@ increment() {
 
 
 
+React state not updating immediately?
+--------------
+The reason why the state doesn’t update immediately is because for each render, the state is immutable.
+function App(){
+    const [count, setCount] = useState(1);
+
+    function onClick(){
+        setCount(count + 1)
+        console.log(count);  
+    // First time the button is clicked this will log 1, not 2
+    // This console logged count will always "lag behind"
+    }
+
+    console.log(count) 
+    //This will log 1 on first render 
+    //before clicking the button.
+    //After the first button click, the state 
+    //will be updated which triggers a second 
+    //render and then this will log 2
+
+    return(
+        <button onClick={onClick}>increment count</button>
+    )	
+}
+setCount tells React to re-render the component later with the updated value.
+but
+What if you need to use the future state you just updated ?
+solutation
+//Do this:
+function onChange(){
+  const newCount = count + 1;
+  setCount(newCount);
+  getData(newCount); 
+  //now you can be sure you call getData
+  //with the state you just set
+}
+
+
+
+event.target ==  work only for accessing event not for DOM.
+
+
+
+return myFunction() // returns a promise
+  .catch(e => {
+    return errorFunction()  // returns a promise
+  })
+  .then(v => {
+    return anotherFunction(); // returns a promise
+  })
+  .then(x => {
+    return anotherFunction() // returns a promise
+  });
+
+
+
+
+
+
+
+
+
+
+
+Why an immediately resolved promise is processed faster than an immediate timer?
+-------------------------------------------------------------------------------
+MacroTasks are called Tasks, and MicroTasks are called Jobs.
+Because of the event loop priorities dequeuing jobs 
+                from the job queue (which stores the fulfilled promises' callbacks) 
+over the tasks from the task queue (which stores timed out setTimeout() callbacks).
+
+
+
+
+
+
+
+Co-Bank 
+-------
+MethodName                      ClassName                                               Entity
+save                       YPSorPrepaidProgramService                                (YPSorPrepaidProgram)
+save                       YPLiteWebMenuService                                      (YPLiteWebMenu)
+updateProfile              CobAppApiService                                          (QRupayUser)
+
+Retail 
+-------
+MethodName                                  ClassName                                               Entity
+createBillerCategoryList                 BillerCategoryListResource                    (BillerCategoryList)
+updateBillerCategoryList                 BillerCategoryListResource                    (BillerCategoryList)
+save                                     BillerCategoryListService                     (BillerCategoryList)
+updateBbpsBiller                         BbpsBillerResource                             (BbpsBiller)
+save                                     BbpsBillerService                              (BbpsBiller)
+
+System 
+------              
+MethodName                         ClassName                                               Entity                              
+save                  UploadedReportsService                                             (UploadedReports)
+save                  BannersService                                                       (Banners)
+
+Kyc 
+------ 
+MethodName                              ClassName                                               Entity                                           
+uploadFileToS3Bucket                 AmazonS3ClientServiceImpl
+uploadFileToS3BucketAndGetUrl        AmazonS3ClientServiceImpl
+
+Gift-Card 
+------   
+MethodName                  ClassName                                               Entity                                         
+save                      GiftCardImageService                                          (GiftCardImage)
+createGiftCardImage       GiftCardImageResource                                         (GiftCardImage)
+updateGiftCardImage       GiftCardImageResource                                         (GiftCardImage)
+
+
 
 public static <T> Stream<T> getStream(T[] arr) {
     return Arrays.stream(arr);
@@ -98,22 +211,6 @@ public class Box<T> {
     }
 }
 
-
-PA_ADD_MERCHANT
-PA_EDIT_MERCHANT
-PA_EDIT_MERCHANT_SETTLEMENT_ACCOUNT
-PA_COMMISSION_LIMIT_BALANCE
-PA_MERCHANT_LIMIT_BALANCE
-PA_BULK_DISBURSEMENT_STATUS
-PA_MERCHANT_TRANSACTIONS
-PA_REFUND_SETTLEMENT
-PA_REFUND_VA_CREDIT
-PA_COMMISSION_SETTLEMENT
-PA_COMMISSION_SETTLEMENT_STATUS
-PA_MERCHANT_DISBURSEMENT
-PA_SETTLEMENT_STATUS
-PA_MERCHANT_SETTLEMENT
-PA_BULK_DISBURSEMENT
 
 
 Variables aren’t values; variables are references to values.

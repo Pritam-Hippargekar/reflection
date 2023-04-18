@@ -1,0 +1,27 @@
+===================START P_AGG_PA_EDIT_MERCHANT===================LIMIT     
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_EDIT_MERCHANT, "YPP", "", "PA082")));       
+  
+===================START P_AGG_PA_BULK_DISBURSEMENT_STATUS===================DISB     
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA003")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA024")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA025")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA026")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA027")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA028")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA029")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA030")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA047")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT_STATUS, "YPP", "", "PA080")));    
+     
+===================START P_AGG_PA_SETTLEMENT_STATUS===================DISB  
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "PA002")));       
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_SETTLEMENT_STATUS, "YPP", "", "PA051")));    
+  
+===================START P_AGG_PA_BULK_DISBURSEMENT===================DISB       
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "PA070")));    
+ return new PartnerApisResponse(ErrorCodeService.getMappedErrorCodeAndMessage(new ErrorCode(P_AGG_PA_BULK_DISBURSEMENT, "YPP", "", "PA072"))); 
+
+
+
+
+ List<SftpDetailsDto> listOfData = Arrays.asList(mapper.readValue(partnerPAConfigDTO.getSftpDetails(), SftpDetailsDto[].class));   
