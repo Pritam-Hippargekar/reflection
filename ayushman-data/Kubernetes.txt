@@ -28,3 +28,23 @@ https://aws.plainenglish.io/dynamodb-creating-a-table-and-assigning-permissions-
 
 2) Now let’s SSH into our Bastion Host.https://towardsaws.com/deploy-a-3-tier-architecture-with-aws-cloudformation-3a7179f82d1f
     $ssh -i <path_to_key_pair> ec2-user@<public_ip>
+
+3)  Once we have connected via SSH, lets attempt to SSH into one of our private EC2 instances.
+    $ chmod 400 <path_key_pair>
+    $ ssh -i <path_to_key_pair> ec2-user@<web_tier_ec2_private_ip>
+
+4) Let’s do a TCP ping via nping to see if we can get a response on TCP port 80 or 22.
+   $ nping -p 22 <app_tier_ec2_private_ip>
+   $ nping -p 80 <app_tier_ec2_private_ip>
+   $ nping -p 3306 <database_endpoint_address>
+
+5) To exit our SSH remote session on our Web tier EC2 instance and go back to our SSH session on the Bastion Host simply enter “exit”.
+   $ exit
+   The “Principle of Least Privilege” recommends that you grant users/resources the mininum privileges necessary to perform a task.
+
+6) Step 6-Verify Database Tier Access
+   $ ssh -i <path_to_key_pair> ec2-user@<web_tier_ec2_private_ip>
+   $ sudo apt update -y # Update package index
+   $ sudo apt install -y mysql-client
+   $ mysql --host=<database_endpoint_address> --user=<admin_name> --password=<password>
+   In the 3-Tier architecture diagram, the RDS MySQL database was shown to have been deployed in a Multi-AZ configuration.

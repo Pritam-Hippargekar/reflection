@@ -76,3 +76,24 @@ const FancyButtonWrapper = forwardRef((props, ref) => {
  
   return <FancyButton {...props} ref={fancyButtonRef} />;
 });
+
+
+
+
+const items = [1, 2, 3]
+
+items.reduce((combos, item) => {
+  const newCombos = combos.map((combo) => combo.concat(item))
+  combos.push([item], ...newCombos)
+  return combos
+}, [])
+//=> [[1],  [2],  [1, 2],  [3],  [1, 3],  [2, 3],  [1, 2, 3]]
+
+// versus  https://mtsknn.fi/blog/js-array-item-combinations/
+
+items.reduce((combos, item) => {
+  const newCombos = combos.map((combo) => combo.concat(item))
+  combos.push(...newCombos, [item])
+  return combos
+}, [])
+//=> [[1],  [1, 2],  [2],  [1, 3],  [1, 2, 3],  [2, 3],  [3]]
