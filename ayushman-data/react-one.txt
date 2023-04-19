@@ -108,44 +108,142 @@ over the tasks from the task queue (which stores timed out setTimeout() callback
 
 
 
+what is Error Boundaries and which cycle is used for in reactjs?
+for functional components == react-error-boundary
+life cycle method componentDidCatch(error, info) == for class components
+you can use the static function getDerivedStateFromError(error) to update the state and use the render() method to display a fallback UI if an error occurs.
+
+
+drawbacks of Error Boundaries
+-----------------------------
+- it catches only the errors which occur during the life-cycle of a component
+- error boundaries do not handle errors in:
+    event handlers,
+    asynchronous code (e.g., setTimeout or requestAnimationFrame callbacks),
+    server-side rendering; or
+    the error boundary itself (rather than its children).
+- the componentDidCatch(error, info) life cycle method is called only if an error occurs while rendering, 
+  in lifecycle methods, or constructors of any child component of the component.
+- As a result, error boundaries, cannot handle errors in event handlers, asynchronous callbacks, or server-side rendering.
+because such errors happen outside of the React rendering lifecycle
+- Errors happening inside of handleSubmit() function won’t be caught by React rendering lifecycle.
+
+react-error-boundary : is the most effective solution to overcome the limitations of the basic error boundaries.
+- It enables you to display a fallback component
+- log errors just like in the basic error boundaries
+- reset the application’s state, so the error does not occur again
+- you can now handle errors in event handlers and asynchronous code using the useErrorHandler(error) custom hook
+- will propagate that to the nearest error boundary
+- You can use a third-party client-side logging service to log errors persistently.
+- properly catch errors and provide a retry mechanism
+- resetErrorBoundary is a callback to reset the error state and re-render the children's components
+- react-error-boundary has us covered by providing a handleError() hook that helps with catching event-related and asynchronous errors
+- we use the handleError function provided by react-error-boundary’s useErrorHandler() to rethrow the error in the React lifecycle so that the nearest ErrorBoundary can catch it.
 
 
 
-Co-Bank 
--------
-MethodName                      ClassName                                               Entity
-save                       YPSorPrepaidProgramService                                (YPSorPrepaidProgram)
-save                       YPLiteWebMenuService                                      (YPLiteWebMenu)
-updateProfile              CobAppApiService                                          (QRupayUser)
+What Happens When You Cancel an HTTP Request?
+Before the request is sent: If the cancellation occurs before the request is sent, the HTTP request is immediately discarded, and no further action is taken.
+During the request transmission: If the cancellation occurs during the transmission of the request, the HTTP request is aborted, and no further data is sent to the server. The server may still receive and process the data it received before the cancellation, but the client will not wait for any response from the server.
+After the request has been sent: If the cancellation occurs after the request is sent but before a response is received, the client will stop waiting for a response to that request. The server will process the HTTP request and send a response, but the client will not expect a response from it. So, the client is allowed to move on to new requests.
 
-Retail 
--------
-MethodName                                  ClassName                                               Entity
-createBillerCategoryList                 BillerCategoryListResource                    (BillerCategoryList)
-updateBillerCategoryList                 BillerCategoryListResource                    (BillerCategoryList)
-save                                     BillerCategoryListService                     (BillerCategoryList)
-updateBbpsBiller                         BbpsBillerResource                             (BbpsBiller)
-save                                     BbpsBillerService                              (BbpsBiller)
+Cancelling HTTP Requests in Axios
+1) With CancelToken: Deprecated in Axios since v0.22.0. 
+            useEffect(() => {
+            const cancelToken = axios.CancelToken;
+            const source = cancelToken.source();
+            setAxiosRes("axios request created");
+            getReq(source).then((res) => { setAxiosRes(res);});
+            
+            return () => {
+            source.cancel("axios request cancelled");
+            };
+            }, [axiosClick]);
 
-System 
-------              
-MethodName                         ClassName                                               Entity                              
-save                  UploadedReportsService                                             (UploadedReports)
-save                  BannersService                                                       (Banners)
+            // perform the HTTP GET request you want to cancel
+            axios.get('https://your-server.com/products', {
+                // specify the cancelToken to use
+                // for cancelling the request
+                cancelToken: cancelTokenSource.token
+            }).catch(function (e) {
+                // if the reason behind the failure 
+                // is a cancellation
+                if (axios.isCancel(e)) {
+                    console.error(e.message);
+                } else {
+                    // handle HTTP error...
+                }
+            })
 
-Kyc 
------- 
-MethodName                              ClassName                                               Entity                                           
-uploadFileToS3Bucket                 AmazonS3ClientServiceImpl
-uploadFileToS3BucketAndGetUrl        AmazonS3ClientServiceImpl
+2) With AbortController: Introduced in Axios v0.22.0.
 
-Gift-Card 
-------   
-MethodName                  ClassName                                               Entity                                         
-save                      GiftCardImageService                                          (GiftCardImage)
-createGiftCardImage       GiftCardImageResource                                         (GiftCardImage)
-updateGiftCardImage       GiftCardImageResource                                         (GiftCardImage)
+import axios from "axios"
+// initialize an AbortController instance
+const abortController = new AbortController()
 
+// perform the HTTP GET request you want to cancel
+axios.get('https://your-server.com/products', {
+  // specify the AbortController signal to use for cancelling the request
+  signal: abortController.signal
+}).catch(function (e) {
+  // if the reason behind the failure is a cancellation
+  if (axios.isCancel(e)) {
+    console.error('Operation canceled');
+  } else {
+    // handle HTTP error...
+  }
+})
+
+// cancel all the HTTP requests with the same
+// signal read from abortController.signal
+abortController.abort()
+
+
+
+
+Response Timeout/ Cancel Requests
+---------------------------------------
+Let’s see how these HTTP clients handle response timeout for HTTP requests. With Axios, wecan add a timeout property in the configuration object and specify the time in milliseconds before the request terminates.
+In the following snippet, we aim to terminate the request if it takes longer than four seconds and then log an error in the console.
+
+const url = "https://jsonplaceholder.typicode.com/todos";
+
+axios.get(url, {
+  timeout: 4000, // default is `0` (no timeout)
+})
+  .then((response) => console.log(response.data))
+  .catch((err) => {
+    console.log(err.message);
+  });
+To cancel requests with Fetch, we can use the AbortController interface. See the usage below:
+
+const url = "https://jsonplaceholder.typicode.com/todos";
+
+const controller = new AbortController();
+const signal = controller.signal;
+setTimeout(() => controller.abort(), 4000);
+
+fetch(url, {
+  signal: signal
+})
+  .then((response) => response.json())
+  .then(console.log)
+  .catch((err) => {
+    if (err.name === "AbortError") {
+        console.error('Operation canceled');
+    }
+    console.error(err.message);
+  });
+
+useEffect(() => {
+ const controller = new AbortController();
+ const signal = controller.signal;
+ hitApi(signal).then((res) => {
+  setFetchRes(res);
+ });
+ //cleanup function
+ return () => {controller.abort();};
+}, [fetchClick]);
 
 
 public static <T> Stream<T> getStream(T[] arr) {
@@ -534,6 +632,12 @@ Output:
 In Map - Tom 
 In Map - Chris 
 In Map - Dave
+
+
+
+
+
+
 
 
 

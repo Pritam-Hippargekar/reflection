@@ -1,0 +1,30 @@
+Create a 3 Node Cluster
+...............................
+$ minikube start --nodes <number_of_nodes> -p <cluster_name>
+
+
+Label Nodes
+------------------
+we do not want deploy any pods to our control-plane
+$ kubectl label node <your_node_name> node-role.kubernetes.io/worker=worker
+
+Use the following command to apply a key:value label to the worker nodes:
+$ kubectl label nodes <node_name> role=worker
+
+To delete your cluster nodes, use the following command:
+---------------------------------------
+$ kubectl delete nodes <node_name> <node_name> <node_name>
+
+nodeSelector:
+    role: worker   # we can choose which node our containers will be deployed on
+
+
+
+
+https://aws.plainenglish.io/dynamodb-creating-a-table-and-assigning-permissions-86fb3f7fa7ce
+1) Before we SSH into our Bastion Host let’s use SCP to copy our key pair file to the Bastion Host.
+    $ chmod 400 <path_key_pair> 
+    $ scp -i <path_to_key_pair> <path_to_key_pair> ec2-user@<public_ip>:/home/ec2-user
+
+2) Now let’s SSH into our Bastion Host.https://towardsaws.com/deploy-a-3-tier-architecture-with-aws-cloudformation-3a7179f82d1f
+    $ssh -i <path_to_key_pair> ec2-user@<public_ip>
