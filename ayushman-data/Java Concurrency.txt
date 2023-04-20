@@ -1,1 +1,37 @@
 https://techblogstation.com/java/thread-pool-size/
+
+
+
+
+
+public class User {
+    private Long id;
+    private String name;
+    private String email;
+    private String phone;
+    private Double salary;
+}
+
+ List<User> users = Arrays.asList(new User(1l, "alpha", "alpha@email.sl", "+00-8976", 1000d),
+                new User(2l, "beta", "alpha@email.sl", "+300-5458976", 1500d),
+                new User(3l, "gama", "gama@email.sl", "+00-538976", 600d),
+                new User(3l, "peca", "peca@email.sl", "+500-538976", 400d),
+                new User(4l, "star", "star@email.sl", "+900-538976", 400d));
+
+System.out.println("Remove duplicates based on String(email) property of user");
+List<User> usersDistinctByEmail = users.stream().collect(
+        collectingAndThen(toCollection(() ->
+            new TreeSet<>(comparing(User::getEmail))), ArrayList::new));
+System.out.println("Result = " + usersDistinctByEmail + "\n");
+
+System.out.println("Remove duplicates based on Long(id)  property of user");
+List<User> usersDistinctById = users.stream().collect(
+        collectingAndThen(toCollection(() ->
+            new TreeSet<>(comparingLong(User::getId))), ArrayList::new));
+System.out.println("Result = " + usersDistinctById + "\n");
+
+System.out.println("Remove duplicates based on Double(Salary)  property of user");
+List<User> usersDistinctBySalary = users.stream().collect(
+        collectingAndThen(toCollection(() -> 
+            new TreeSet<>(comparingDouble(User::getSalary))), ArrayList::new));
+System.out.println("Result = " + usersDistinctBySalary + "\n");

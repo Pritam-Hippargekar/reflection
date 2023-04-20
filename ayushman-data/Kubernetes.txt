@@ -23,15 +23,15 @@ nodeSelector:
 
 https://aws.plainenglish.io/dynamodb-creating-a-table-and-assigning-permissions-86fb3f7fa7ce
 1) Before we SSH into our Bastion Host let’s use SCP to copy our key pair file to the Bastion Host.
-    $ chmod 400 <path_key_pair> 
-    $ scp -i <path_to_key_pair> <path_to_key_pair> ec2-user@<public_ip>:/home/ec2-user
+    $ chmod 400 <path_key_pair.pem> 
+    $ scp -i <path_to_key_pair.pem> <path_to_key_pair.pem> ec2-user@<public_ip>:/home/ec2-user
 
 2) Now let’s SSH into our Bastion Host.https://towardsaws.com/deploy-a-3-tier-architecture-with-aws-cloudformation-3a7179f82d1f
-    $ssh -i <path_to_key_pair> ec2-user@<public_ip>
+    $ssh -i <path_to_key_pair.pem> ec2-user@<public_ip>
 
 3)  Once we have connected via SSH, lets attempt to SSH into one of our private EC2 instances.
-    $ chmod 400 <path_key_pair>
-    $ ssh -i <path_to_key_pair> ec2-user@<web_tier_ec2_private_ip>
+    $ chmod 400 <path_key_pair.pem>
+    $ ssh -i <path_to_key_pair.pem> ec2-user@<web_tier_ec2_private_ip>
 
 4) Let’s do a TCP ping via nping to see if we can get a response on TCP port 80 or 22.
    $ nping -p 22 <app_tier_ec2_private_ip>
@@ -43,8 +43,82 @@ https://aws.plainenglish.io/dynamodb-creating-a-table-and-assigning-permissions-
    The “Principle of Least Privilege” recommends that you grant users/resources the mininum privileges necessary to perform a task.
 
 6) Step 6-Verify Database Tier Access
-   $ ssh -i <path_to_key_pair> ec2-user@<web_tier_ec2_private_ip>
+   $ ssh -i <path_to_key_pair.pem> ec2-user@<web_tier_ec2_private_ip>
    $ sudo apt update -y # Update package index
    $ sudo apt install -y mysql-client
-   $ mysql --host=<database_endpoint_address> --user=<admin_name> --password=<password>
+   $ mysql --host=<database_endpoint_address> -P 3306 --user=<admin_name> --password=<password>
+   $ mysql --host=<rds_hostname> --user=<username> --password=<password> <db_name> < mysql_backup.sql
    In the 3-Tier architecture diagram, the RDS MySQL database was shown to have been deployed in a Multi-AZ configuration.
+
+
+
+YPHUB collections settlement
+YPHUB Transfer funds back to current account
+Merchant/Refund Disbursement
+Merchant/Commission/Refund Settlement
+YPHUB beneficiary fund transfer upload
+YPHUB adhoc fund transfer
+
+
+https://aws.plainenglish.io/building-a-3-tier-architecture-in-aws-dfcb93047a19
+https://aws.plainenglish.io/aws-building-a-3-tier-architecture-456246bb6ee6
+We need a total of 6 subsets spread across 2 availability zone:https://aws.plainenglish.io/aws-building-a-3-tier-architecture-456246bb6ee6
+US-EAST-1A & US-EAST-1B
+create vpc (with Enable DNS hostnames)
+2 public subsets for our Web Tier(we will want to make sure that we 'enable auto-assign public IPv4 address')
+4 private subnets for Application Tier and Database Tier
+Create the NAT gateway
+- Our private networks within our VPC will need to access resources from outside of the VPC
+- We do this by placing the NAT gateway in one of the public subnets.
+- allocate an Elastic IP
+
+
+
+
+                                                                               [Attach the internet gateway to our VPC]
+                                                                               [Attach the internet gateway to our route table]
+              US-EAST-1A                                                       igw-pub-3tier(attach all public route table)
+              public-web-A                   public-rt-web(attach/associate all web tier public subnets)
+              private-app-A                  private-rt-app(attach/associate all app tier private subnets)
+              private-db-A                   private-rt-db(attach/associate all db tier private subnets)
+
+3-tier-vpc(10.0.0.0/16)
+              US-EAST-1A                                                      nat-gw-app-db(attach all private route table)
+              public-web-B                   
+              private-app-B                  
+              private-db-B                   
+
+
+- Web Tier ALB(Security Group)(unique securitygroup name) IB_Web_ALB: Select HTTP for your inbound rule and select anywhere as the source == “HTTP →TCP →Port 80 →Source”= 0.0.0.0/0
+                                                                       outbound rules to accept “ALL TRAFFIC” → 0.0.0.0/0
+- Web Tier(SG) IB_Web: We want to set our Web tier to only accept traffic from our ALB 'IB_WEB_ALB'
+                       Add in an inbound role that only allows HTTP traffic from our 'Web Tier ALB'
+- Application Tier ALB(SG)   IB_APP_ALB: We will allow HTTP traffic from our 'Web tier'
+- Application Tier(SG)   IB_APP_FROM_WEB: We will allow HTTP traffic from our 'Application tier ALB'
+                        We will open SSH (port 22)
+                        inbound MySQL/Aurora →TCP →Port range=3306
+                        -- We will also set a rule for ICPM so we can ping the server.
+                        -- set a rule allowing access from our Web Tier security group as the source we want to keep this as secure as possible.
+- Database Tier(SG)     IB_DB_FROM_APP: We will allow port 3306 for MySQL access to our RDS database and test connection later on       
+
+
+Before we can launch an auto scaling group of EC2 instances, we have to create a launch template.
+
+
+
+
+##Step 5: Create an RDS Database
+#DB Subnet Group
+We need to create a DB subnet group to add our Database subsets.
+Add both AZ: us-east-1a & us-east-1b
+Add both: “Private_DB_Subnet_A” & “Private_DB_Subnet_B”
+This is a logical grouping where we can point our RDS basement to be deployed
+
+#Create Database
+After creating the DB subnet group, we can now create our Database.
+Makes we use the “free tier” so that we don’t get charged.
+Select the instance type for the database(burstable classes), and be sure us a “db.t2.micro”
+Select the DB subnet group we create earlier “private_db_subnetgroup”
+Add our database security group “IB_DB_FROM_APP”
+Ensure that the port we’re using for our database port is: 3306
+To authenticate with our Database, we will choose the password option for now

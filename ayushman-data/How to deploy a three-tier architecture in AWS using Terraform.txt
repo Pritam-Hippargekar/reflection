@@ -270,15 +270,21 @@ ex: $ kubectl get pods --selector app=mock-app
 
 
 NodePort: The K8s services are like any other K8s objects, one of the use case of services is to listen to the Node port and forward the request to a target pod port.
+          fixed virtual IP
+          NodePort is used to enable external traffic to communicate with pods inside your Cluster.
           (App is now accessible at http://node-ip:38080.)
           Create a NodePort service to make app1-service accessible to outside world.
           This type of Service is useful for exposing a microservice to the internet or to other services outside the cluster.
            This type of service is called a NodePort service as this service listens to a pod of Node and forwards to a pod port.(30000 to 32767)
-ClusterIP: This type of service create a virtual IP inside the cluster to enable communication b/w sets of services within the cluster itself.
+ClusterIP: This type of service create a virtual IP inside the cluster to enable communication b/w sets of services within the cluster itself(intra-cluster communication).
            (clusterIp services provide us a single interface that group pods together to access the pods of similar types.)
+           The ClusterIP service provides a static, virtual IP address for pods to utilize.
+           Pods are exposed via a specific ClusterIP service through labels and selectors.
            Create a cluster-ip service to make DB pod accessible.
            is ideal for microservices that need to communicate with each other but do not need to be exposed to the outside world.
            A ClusterIP Service provides a stable IP address and DNS name for a set of Pods within a cluster.
+Ingress:  The Kubernetes ingress object defines the path routing rules. A Kubernetes ingress manifest file will contain all the various routing rules and paths that will direct incoming traffic to various pods.
+          The Kubernetes ingress controller accompanies the ingress object and has the responsibility of executing the path routing rules defined in the ingress manifest file. There are many types of ingress controllers that can be used, but perhaps the most popular ingress controller is nginx.           
 LoadBalancer: This type of service distributes the load across the web servers that it caters to.
 
 
