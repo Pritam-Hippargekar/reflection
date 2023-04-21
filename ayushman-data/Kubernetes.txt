@@ -38,9 +38,9 @@ https://aws.plainenglish.io/dynamodb-creating-a-table-and-assigning-permissions-
    $ nping -p 80 <app_tier_ec2_private_ip>
    $ nping -p 3306 <database_endpoint_address>
 
-5) To exit our SSH remote session on our Web tier EC2 instance and go back to our SSH session on the Bastion Host simply enter “exit”.
+5) To exit our SSH remote session on our Web tier EC2 instance and go back to our SSH session on the Bastion Host simply enter 'exit'.
    $ exit
-   The “Principle of Least Privilege” recommends that you grant users/resources the mininum privileges necessary to perform a task.
+   The 'Principle of Least Privilege' recommends that you grant users/resources the mininum privileges necessary to perform a task.
 
 6) Step 6-Verify Database Tier Access
    $ ssh -i <path_to_key_pair.pem> ec2-user@<web_tier_ec2_private_ip>
@@ -69,8 +69,9 @@ create vpc (with Enable DNS hostnames)
 4 private subnets for Application Tier and Database Tier
 Create the NAT gateway
 - Our private networks within our VPC will need to access resources from outside of the VPC
-- We do this by placing the NAT gateway in one of the public subnets.
+- We do this by placing the NAT gateway in one of the public subnets(public-web-A).
 - allocate an Elastic IP
+- we have the NAT gateway, we are going to edit the private route table to make use of the NAT gateway to access the internet.
 
 
 
@@ -78,47 +79,142 @@ Create the NAT gateway
                                                                                [Attach the internet gateway to our VPC]
                                                                                [Attach the internet gateway to our route table]
               US-EAST-1A                                                       igw-pub-3tier(attach all public route table)
+              ............
               public-web-A                   public-rt-web(attach/associate all web tier public subnets)
               private-app-A                  private-rt-app(attach/associate all app tier private subnets)
               private-db-A                   private-rt-db(attach/associate all db tier private subnets)
 
 3-tier-vpc(10.0.0.0/16)
-              US-EAST-1A                                                      nat-gw-app-db(attach all private route table)
+
+              US-EAST-1A                                                      nat-gw-app-db(attach all private route table) NAT gateway for Availability Zone 2
+                                                                              nat-gw-db-app(attach all private route table) NAT gateway for Availability Zone 1
+              ...........
               public-web-B                   
               private-app-B                  
               private-db-B                   
 
 
-- Web Tier ALB(Security Group)(unique securitygroup name) IB_Web_ALB: Select HTTP for your inbound rule and select anywhere as the source == “HTTP →TCP →Port 80 →Source”= 0.0.0.0/0
-                                                                       outbound rules to accept “ALL TRAFFIC” → 0.0.0.0/0
-- Web Tier(SG) IB_Web: We want to set our Web tier to only accept traffic from our ALB 'IB_WEB_ALB'
-                       Add in an inbound role that only allows HTTP traffic from our 'Web Tier ALB'
-- Application Tier ALB(SG)   IB_APP_ALB: We will allow HTTP traffic from our 'Web tier'
-- Application Tier(SG)   IB_APP_FROM_WEB: We will allow HTTP traffic from our 'Application tier ALB'
+- Web Tier ALB(Security Group)(unique securitygroup name) Web_ALB_SG: Select HTTP for your inbound rule and select anywhere as the source 
+                                                                       'HTTP →TCP →Port 80 →Source'= 0.0.0.0/0
+                                                                       outbound rules to accept 'ALL TRAFFIC' → 0.0.0.0/0
+- Web Tier(Security Group) Web_Tier_SG: We want to set our Web tier to only accept traffic from our ALB 'Web_ALB_SG'
+                           Add in an inbound role that only allows HTTP traffic from our 'Web Tier ALB'
+- Application Tier ALB(Security Group)   APP_ALB_SG: We will allow HTTP traffic from our 'Web tier'
+- Application Tier(Security Group)   APP_FROM_WEB_SG: We will allow HTTP traffic from our 'Application tier ALB'
                         We will open SSH (port 22)
-                        inbound MySQL/Aurora →TCP →Port range=3306
+                        - allows inbound AND outbound traffic to and from the database tier Security Group(MySQL/Aurora →TCP →Port range=3306)
                         -- We will also set a rule for ICPM so we can ping the server.
                         -- set a rule allowing access from our Web Tier security group as the source we want to keep this as secure as possible.
-- Database Tier(SG)     IB_DB_FROM_APP: We will allow port 3306 for MySQL access to our RDS database and test connection later on       
+- Database Tier(Security Group)     DB_FROM_APP_SG: We will allow TCP port 3306 for MySQL access to our RDS database and test connection later on 
+                                    - create an inbound rule to only allow traffic for TCP port 3306 from our AppTier-NSG.
+                                    - allows inbound AND outbound traffic to and from the application tier Security Group(MySQL/Aurora →TCP →Port range=3306)    
 
 
+Port 22- Inbound traffic to SSH
+Port 80- Inbound traffic to HTTP
+Port 443-Inbound traffic to HTTPS
+
+# A database security group that allows outbound and inbound mySQL requests to and from our app servers.
+# A DB subnet group to ensure the database is created in the proper subnets.
+
+Why two Elastic Load Balancer required ?
+- our frontend tier can only accept traffic from the elastic load balancer which connects directly with the internet gateway
+- our backend tier will receive traffic through the internal load balancer
+Ans IMP- If however, the application is using sessions, then the application needs to be rewritten such that sessions can be stored in either the Elastic Cache or the DynamoDB.
+
+Select internet facing(Load Balancer public subnets) for the load balancer that we will use to communicate with the frontend
+Select internal(Load Balancer private subnet) for the one we will use for our backend
+- For instance, we need to allow HTTP port 80 and/or HTTPS port 443 on our internet facing load balancer
+- For the internal load balancer, we only open the port that the backend runs on (eg: port 3000) and make such port only open to the security group of the frontend. This will allow only the frontend to have access to that port within our architecture
 Before we can launch an auto scaling group of EC2 instances, we have to create a launch template.
 
-
+why two NAT gateways required ?
+--------------------------------
+Ans IMP- It’s best practice to maintain high availability and deploy two NAT gateways in our public subnets (one in each AZ)
 
 
 ##Step 5: Create an RDS Database
 #DB Subnet Group
 We need to create a DB subnet group to add our Database subsets.
 Add both AZ: us-east-1a & us-east-1b
-Add both: “Private_DB_Subnet_A” & “Private_DB_Subnet_B”
+Add both: 'Private_DB_Subnet_A' & 'Private_DB_Subnet_B'
 This is a logical grouping where we can point our RDS basement to be deployed
 
-#Create Database
+#Create Database(Let’s create database in private subnets)
 After creating the DB subnet group, we can now create our Database.
-Makes we use the “free tier” so that we don’t get charged.
-Select the instance type for the database(burstable classes), and be sure us a “db.t2.micro”
-Select the DB subnet group we create earlier “private_db_subnetgroup”
-Add our database security group “IB_DB_FROM_APP”
+Makes we use the 'free tier' so that we don’t get charged.
+Select the instance type for the database(burstable classes), and be sure us a 'db.t2.micro'
+Multi-AZ deployment: Create an Aurora Replica or Reader node in a different AZ
+Select the DB subnet group we create earlier 'private_db_subnetgroup'
+Public access: No
+Add our database security group 'IB_DB_FROM_APP'
 Ensure that the port we’re using for our database port is: 3306
 To authenticate with our Database, we will choose the password option for now
+
+https://medium.com/@stephenneke/building-a-3-tier-architecture-for-a-web-app-in-aws-27b2d53a9f22
+
+What is an Auto Scaling Group?
+-------------------------------
+- An auto scaling group adds, removes, or replaces EC2 instances across multiple availability zones based on need or changing demand
+1) Create an EC2 launch template
+2) Create an auto scaling group
+   - add the launch template we created in the previous step
+
+
+
+
+ The 3 kinds of load balancers offered by AWS are:
+—Application Load Balancer (HTTP / HTTPS only) – Layer 7
+—Network Load Balancer (ultra-high performance, allows for TCP) – Layer 4
+—Classic Load Balancer (slowly retiring) – Layer 4 & 7
+
+Application Load Balancer
+--------------------------------
+1) Create an Application Load Balancer
+before creating Application Load Balancer make sure that ASG(Auto Scaling Group) up and running
+There are two main components of an ALB: the Listener and the Target.
+ - The Listener checks what type of connection request is coming from the client.
+ - The load balancer then routes the request to the proper target/target group based on predetermined rules or policie
+1.1) Create the target group
+1.2) Create the ALB
+   - For our 'Listener', we are going to listen for HTTP requests and forward them to our target group
+1.3) Connect the ALB to the ASG   
+
+
+
+
+
+
+
+
+ID = Long
+partnerId = Long
+purpose = String
+txnType = Enum      ?,?,?,?
+txnSubType = Enum   IMPS,MW_IMPS,NEFT,RTGS,UPI
+ownerType = Enum    PARTNER,PARTNER_TRANSACTIONS
+ownerId = Long
+callBackUrl = String
+callbackConfirmation = Boolean
+callbackAttempts = Integer
+maxCallbackAttempts = Integer
+callbackRequest (column type JSON) = String
+callbackError = String
+
+
+PartnerCallbackDetails
+
+ID = Long
+partnerId = Long (M2O)
+purpose = String
+txnType = Enum      TransactionTypeEnum            REFUND,RECTIFY
+txnSubType = Enum   TransactionSubType IMPS,MW_IMPS,NEFT,RTGS,UPI
+ownerType = Enum    PartnerCallbackOwnerType PARTNER,PARTNER_TRANSACTIONS
+ownerId = Long
+callBackUrl = String
+callbackConfirmation = Boolean defailt false
+callbackAttempts = Integer default 0
+maxCallbackAttempts = Integer defailt null
+callbackRequest (column type JSON) = String (size 500)
+callbackError = String
+
