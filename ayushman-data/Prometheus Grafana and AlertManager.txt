@@ -1,0 +1,10 @@
+There are 4 components in the above architecture:
+---------------------------------------------
+1) A microservice developed using using spring boot, actuator, micrometer etc to expose metrics as an endpoint like /prometheus.
+   - Adding Micrometer Prometheus Registry to your Spring Boot application
+2) Prometheus service with configurations necessary to scrape the /prometheus endpoint and integrate with AlertManager.
+   - A data scraper that pulls metrics data over HTTP periodically at a configured interval.
+   - A time-series database to store all the metrics data.
+   - A simple user interface where you can visualize, query, and monitor all the metrics.
+3) Grafana service which will be pulling data from Prometheus and use it for data visualizations.
+4) AlertManager service which will be purely used for alerting based on alert rules defined in Prometheus.
