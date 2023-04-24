@@ -1,12 +1,28 @@
 <pattern>
+    <pattern>{ "trace": "%mdc{X-B3-TraceId:-}" }</pattern>
+</pattern>
+<mdc>
+    <excludeMdcKeyName>X-B3-SpanId</excludeMdcKeyName>
+    <excludeMdcKeyName>X-B3-TraceId</excludeMdcKeyName>
+    <excludeMdcKeyName>X-B3-ParentSpanId</excludeMdcKeyName>
+    <excludeMdcKeyName>X-Span-Export</excludeMdcKeyName>
+</mdc>
+
+
+
+<pattern>
     <pattern>
         {
-        "timestamp": "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}",  
+        "timestamp": "%d{\"yyyy-MM-dd'T'HH:mm:ss.SSSZ\",UTC}",
+         "timestamp": "%date{ISO8601}",
         "severity": "%level",
         "service": "${springAppName:-}",
+                                        "trace": "%X{trace_id:-}",
+                                        "span": "%X{span_id:-}",
         "trace": "%X{X-B3-TraceId:-}",
         "span": "%X{X-B3-SpanId:-}",
         "exportable": "%X{X-Span-Export:-}",
+         "parent": "%X{X-B3-ParentSpanId:-}",
         "pid": "${PID:-}",
         "thread": "%thread",
         "class": "%logger{40}",
@@ -15,11 +31,14 @@
         "level":"%p",
         "logger": "%logger",
         "host": "%property",
-        "appname":"springcloud_consume",
+        "appname":"${springcloud_consume}",
         "serverName":"${server-name}"
         "stackTrace":"%ex",
+        "stack_trace":"%xEx",
+        "stack_trace": "%exception{10}"
         "ip": "%X{ip}",
         "url": "%X{url}",
+        "method": "%method",
         "method": "%X{method}",
         "arg": "%X{arg}",
         "throwable": "%X{throwable}",
@@ -1013,7 +1032,18 @@ By default, Spring Boot uses Logback for logging which can be fine-tuned by crea
 </configuration>
 This snippet adds the LogstashTcpSocketAppender which sends the log entries in JSON format to the Logstash node and it also keeps using the default Console Appender.
 
-
+application-name is the name of the application in the application.properties or application.yml/yaml file.
+- zipkin-export indicates whether the logs can be exported to Zipkin server or not.
+- The default value is false and if you want to export it to Zipkin server you need to make it true.
+- Sleuth helps not only to track timing, but also to catch errors so that they can be analyzed or correlated with logs.
+[application-name,trace-id,span-id,zipkin-export]
+- The traceId and spanId in the trace information of Spring Cloud Sleuth will be automatically added to the MDC of Slf4j.
+- The default log framework of spring is logback.
+EX:-
+@GetMapping("/hello")
+public String hello(@RequestParam String name, @RequestHeader Map<String, String> headers) {
+    log.info("headers:{}", headers);
+}// headers:{x-b3-traceid=6dd57dc2ad55c58f, x-b3-spanid=b5e6de658b261ac7, x-b3-parentspanid=6dd57dc2ad55c58f, x-b3-sampled=1, accept=*/*, user-agent=Java/1.8.0_202, host=localhost:8081, connection=keep-alive}
 
 logging:
   level:
@@ -1255,3 +1285,953 @@ logstash.port=5000
 		</logger>
 	</springProfile>
 </configuration>
+
+
+
+===========================================================================================
+ <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <p>
+        <timestamp>
+          <timeZone>UTC</timeZone>
+        </timestamp>
+        <p>
+          <p>
+            {
+            "severity": "%level",
+            "service": "${springAppName:-}",
+            "trace": "%X{X-B3-TraceId:-}",
+            "span": "%X{X-B3-SpanId:-}",
+            "parent": "%X{X-B3-ParentSpanId:-}",
+            "exportable": "%X{X-Span-Export:-}",
+            "pid": "${PID:-}",
+            "thread": "%thread",
+            "pvai.userId": "%X{context.userId:-}",
+            "pvai.moduleId": "%X{context.moduleId:-}",
+            "pvai.caseId": "%X{context.caseId:-}",
+            "class": "%logger{40}",
+            "rest": "%message"
+            }
+          </pattern>
+        </pattern>
+      </providers>
+    </encoder>
+
+
+filter {
+  if [message] =~ "timestamp" {
+    grok {
+      match => ["message", "^(timestamp)"]
+      add_tag => ["stacktrace"]
+    }
+  }
+}
+
+
+    <!-- logback-spring.xml -->
+    <configuration>
+        <springProfile name="dev">
+            <include resource="org/springframework/boot/logging/logback/base.xml"/>
+        </springProfile>
+        <springProfile name="test">
+            <include resource="org/springframework/boot/logging/logback/base.xml"/>
+        </springProfile>
+
+        <springProfile name="default">
+            <appender name="jsonConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                    <includeMdc>true</includeMdc>
+                </encoder>
+            </appender>
+            <root level="INFO">
+                <appender-ref ref="jsonConsoleAppender"/>
+            </root>
+        </springProfile>
+    </configuration>
+
+
+    <!-- logback-spring.xml -->
+    <configuration>
+
+        .. dev and test as above ...
+
+        <springProfile name="default">
+            <appender name="jsonConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                    <providers>
+                        <timestamp/>
+                        <version/>
+                        <message/>
+                        <loggerName/>
+                        <threadName/>
+                        <logLevel/>
+                        <mdc/>
+                        <!-- repeats log arguments as root json fields -->
+                        <arguments/>
+                        <pattern>
+                            <pattern>
+                                {
+                                  "myField": {
+                                    "mySubField": "%mdc{abc}"
+                                  },
+                                  "myField2": "%mdc{abc}"
+                                }
+                            </pattern>
+                            <omitEmptyFields>true</omitEmptyFields>
+                        </pattern>
+                        <logstashMarkers/>
+                    </providers>
+                </encoder>
+            </appender>
+            <root level="INFO">
+                <appender-ref ref="jsonConsoleAppender"/>
+            </root>
+        </springProfile>
+    </configuration>
+
+
+
+
+
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder" charset="UTF-8">
+              <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <pattern>
+                    <pattern>
+                        {
+                            "app": "${APP_NAME}",
+                            "level": "%level",
+                            "pid": "${PID:-}",
+                            "thread": "%thread",
+                            "class": "%logger{40}",
+                            "message": "%message",
+                            "stack_trace": "%exception{10}"
+                        }
+                    </pattern>
+                </pattern>
+              </providers>
+            </encoder>
+
+============================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <contextName>${HOSTNAME}</contextName>
+  <property name="LOG_PATH" value="phantom-log" />
+  <springProperty scope="context" name="appName" source="spring.application.name" />
+  <springProperty scope="context" name="ip" source="spring.cloud.client.ipAddress" />
+  <property name="CONSOLE_LOG_PATTERN"
+            value="[%d{yyyy-MM-dd HH:mm:ss.SSS} ${ip} ${appName} %highlight(%-5level) %yellow(%X{X-B3-TraceId}),%green(%X{X-B3-SpanId}),%blue(%X{X-B3-ParentSpanId}) %yellow(%thread) %green(%logger) %msg%n"/>
+
+  <appender name="FILEERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>../${LOG_PATH}/${appName}/${appName}-error.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>../${LOG_PATH}/${appName}/${appName}-error-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>2MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+    <append>true</append>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+      <charset>utf-8</charset>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>error</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+  </appender>
+
+  <appender name="FILEWARN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>../${LOG_PATH}/${appName}/${appName}-warn.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>../${LOG_PATH}/${appName}/${appName}-warn-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>2MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+    <append>true</append>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+      <charset>utf-8</charset>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>warn</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+  </appender>
+
+  <appender name="FILEINFO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>../${LOG_PATH}/${appName}/${appName}-info.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>../${LOG_PATH}/${appName}/${appName}-info-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>2MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+    <append>true</append>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+      <charset>utf-8</charset>
+    </encoder>
+
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>info</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+  </appender>
+
+  <appender name="logstash" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>../${LOG_PATH}/${appName}/${appName}.json</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>../${LOG_PATH}/${appName}/${appName}-%d{yyyy-MM-dd}.json</fileNamePattern>
+      <maxHistory>7</maxHistory>
+    </rollingPolicy>
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <timestamp>
+          <timeZone>UTC</timeZone>
+        </timestamp>
+        <pattern>
+          <pattern>
+            {
+            "ip": "${ip}",
+            "app": "${appName}",
+            "level": "%level",
+            "trace": "%X{X-B3-TraceId:-}",
+            "span": "%X{X-B3-SpanId:-}",
+            "parent": "%X{X-B3-ParentSpanId:-}",
+            "thread": "%thread",
+            "class": "%logger{40}",
+            "message": "%message",
+            "stack_trace": "%exception{10}"
+            }
+          </pattern>
+        </pattern>
+      </providers>
+    </encoder>
+  </appender>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+      <charset>utf-8</charset>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>debug</level>
+    </filter>
+  </appender>
+
+  <logger name="org.springframework" level="INFO" />
+  <logger name="org.hibernate" level="INFO" />
+  <logger name="com.kingboy.repository" level="DEBUG" />
+
+  <root level="INFO">
+    <appender-ref ref="FILEERROR" />
+    <appender-ref ref="FILEWARN" />
+    <appender-ref ref="FILEINFO" />
+    <appender-ref ref="logstash" />
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>
+
+=========================================================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property resource="application.yml" />
+    <contextName>${spring.application.name}</contextName>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>timeStamp</fieldName>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <loggerName>
+                    <fieldName>logger</fieldName>
+                </loggerName>
+                <logLevel>
+                    <fieldName>level</fieldName>
+                </logLevel>
+                <threadName>
+                    <fieldName>thread</fieldName>
+                </threadName>
+                <mdc />
+                <message>
+                    <fieldName>message</fieldName>
+                </message>
+                <arguments>
+                    <includeNonStructuredArguments>false</includeNonStructuredArguments>
+                </arguments>
+                <stackTrace>
+                    <fieldName>stack</fieldName>
+                </stackTrace>
+            </providers>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+</configuration>
+
+
+
+
+
+
+
+
+
+
+
+<configuration>
+    <appender name="out-json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>ts</fieldName>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <loggerName>
+                    <fieldName>logger</fieldName>
+                </loggerName>
+                <logLevel>
+                    <fieldName>severity</fieldName>
+                </logLevel>
+                <callerData>
+                    <classFieldName>class</classFieldName>
+                    <methodFieldName>method</methodFieldName>
+                    <lineFieldName>line</lineFieldName>
+                    <fileFieldName>file</fileFieldName>
+                </callerData>
+                <threadName>
+                    <fieldName>thread</fieldName>
+                </threadName>
+                <mdc/>
+                <arguments>
+                    <includeNonStructuredArguments>false</includeNonStructuredArguments>
+                </arguments>
+                <stackTrace>
+                    <fieldName>stack</fieldName>
+                </stackTrace>
+                <message>
+                    <fieldName>message</fieldName>
+                </message>
+            </providers>
+        </encoder>
+    </appender>
+
+    <appender name="out-console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <!--
+        Can be custom your own environment (LOG_APPENDER)
+        to load a specify appender ( out-json or out-console ).
+        Default value: out-json
+        -->
+        <appender-ref ref="${LOG_APPENDER:-out-json}"/>
+    </root>
+</configuration>
+
+
+
+
+
+
+
+
+
+
+
+
+<configuration debug="true" scan="true" scanPeriod="10 minutes">
+<!--    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%green(example-project) - %cyan(%date [%thread] %-5level %logger{36}) - %message : %magenta([DEVICE_ID=%X{device_id}] [DEVICE_NAME=%X{device_name}] [DEVICE_OS=%X{device_os}] [APP_VER=%X{app_version}] [DEVICE_LANG=%X{device_language}] [IP=%X{ip}] [PORT=%X{port}] [USER_AGENT=%X{user_agent}] [AUTH=%X{auth}] [TX_ID=%X{tx_id}] [CLIENT_ID=%X{client_id}]%n)
+            </pattern>
+        </encoder>
+    </appender>     -->
+
+   <appender name="DAILY_APP_LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/Users/tcnseri/Documents/applogs.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/Users/senoritadev/Documents/applogs.%d{yyyy-MM-dd}.log</fileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%green(example-project) - %cyan(%date [%thread] %-5level %logger{36}) - %message : %magenta([DEVICE_ID=%X{device_id}] [DEVICE_NAME=%X{device_name}] [DEVICE_OS=%X{device_os}] [APP_VER=%X{app_version}] [DEVICE_LANG=%X{device_language}] [IP=%X{ip}] [PORT=%X{port}] [USER_AGENT=%X{user_agent}] [AUTH=%X{auth}] [TX_ID=%X{tx_id}] [CLIENT_ID=%X{client_id}]%n)
+            </pattern>
+        </encoder>
+    </appender>
+
+
+    <appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>localhost:4560</destination>
+        <!-- You can add multiple destination values -->
+<!--        <destination>100.100.10.100:55525</destination>
+        <destination>100.100.10.101:55525</destination>       -->
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <version/> <!-- Logstash json format version, the @version field in the output-->
+                <mdc/> <!-- MDC variables on the Thread will be written as JSON fields-->
+                <context/> <!--Outputs entries from logback's context -->
+                <logLevel/>
+                <loggerName/>
+                <pattern> <!-- we can add some custom fields to be sent with all the log entries. make filtering easier in Logstash-->
+                    <pattern>
+                        {
+                            "appName": "example-project"
+                        }
+                    </pattern>
+                </pattern>
+                <threadName/>
+                <message/>
+                <logstashMarkers/> <!-- Useful so we can add extra information for specific log lines as Markers-->
+                <arguments/> <!--or through StructuredArguments-->
+                <stackTrace/>
+            </providers>
+        </encoder>
+    </appender>
+
+    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+
+    <logger name="com.yaanimail.eventsocket" level="DEBUG" additivity="false">
+        <appender-ref ref="DAILY_APP_LOG_FILE" />
+        <appender-ref ref="STASH" />
+    </logger>
+
+    <logger name="org.springframework" level="INFO"  additivity="false" >
+        <appender-ref ref="DAILY_APP_LOG_FILE" />
+    </logger>
+
+    <logger name="org.springframework.data" level="DEBUG"  additivity="false" >
+        <appender-ref ref="DAILY_APP_LOG_FILE" />
+    </logger>
+
+    <logger name="org.springframework.transaction" level="DEBUG"  additivity="false" >
+        <appender-ref ref="DAILY_APP_LOG_FILE" />
+    </logger>
+
+    <logger name="org.hibernate" level="INFO"  additivity="false" >
+        <appender-ref ref="DAILY_APP_LOG_FILE" />
+    </logger>
+
+    <root level="TRACE">
+        <!--<appender-ref ref="STDOUT"/>-->
+        <appender-ref ref="Sentry"/>
+        <appender-ref ref="DAILY_APP_LOG_FILE"/>
+    </root>
+</configuration>
+
+
+
+
+
+<providers>
+        <mdc/>
+        <context/>
+        <version/>
+        <logLevel/>
+        <loggerName/>
+        <threadName/>
+        <provider class="com.foreach.across.modules.logging.request.RequestLoggerJsonProvider"/>
+        <logstashMarkers/>
+        <arguments/>
+        <stackTrace/>
+        <pattern>
+            <pattern>
+                {
+                "application": "${logging.logstash.application}",
+                "appender": "requests"
+                }
+            </pattern>
+        </pattern>
+</providers>
+
+
+
+<providers>
+        <mdc/>
+        <context/>
+        <version/>
+        <logLevel/>
+        <loggerName/>
+        <threadName/>
+        <message/>
+        <logstashMarkers/>
+        <arguments/>
+        <stackTrace/>
+        <pattern>
+            <pattern>
+                {
+                "application": "${logging.logstash.application}",
+                "appender": "errors"
+                }
+            </pattern>
+        </pattern>
+</providers>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+How Is Docker Logging Different: = https://skillfield.com.au/blog/monitoring-kubernetes-and-docker-container-logs/
+Most conventional log analysis methods don’t work on containerized logging – t
+roubleshooting becomes more complex compared to traditional hardware-centric apps that run on a single node and need less troubleshooting. You need more data to work with so you must extend your search to get to the root of the problem.
+
+Here’s why:
+Containers are Ephemeral
+Docker containers emit logs to the stdout and stderr output streams. Because containers are stateless, the logs are stored on the Docker host in JSON files by default. Why?
+The default logging driver is JSON-file.
+The logs are then annotated with the log origin, either stdout or stderr, and a timestamp. Each log file contains information about only one container.
+
+You can find these JSON log files in the/var/lib/docker/containers/directory on a Linux Docker host. Here’s how you can access them:
+
+That’s where logging comes into play. You can collect the logs with a log aggregator and store them in a place where they’ll be available forever.
+It’s dangerous to keep logs on the Docker host because they can build up over time and eat into your disk space.
+That’s why you should use a central location for your logs and enable log rotation for your Docker containers.
+
+
+Get Started with Docker Container Logs
+When you’re using Docker, you work with two different types of logs: daemon logs and container logs.
+
+What Are Docker Container Logs?
+Docker container logs are generated by the Docker containers. They need to be collected directly from the containers.
+Any messages that a container sends to stdout or stderr is logged then passed on to a logging driver that forwards them to a remote destination of your choosing.
+
+Here are a few basic Docker commands to help you get started with Docker logs and metrics:
+-------------------------------------------------------------------------------------------https://skillfield.com.au/blog/monitoring-kubernetes-and-docker-container-logs/
+Show container logs: docker logs containerName
+Show only new logs: docker logs -f containerName
+Show CPU and memory usage: docker stats
+Show CPU and memory usage for specific containers: docker stats containerName1 containerName2
+Show running processes in a container: docker top containerName
+Show Docker events: docker events
+Show storage usage: docker system df
+
+- Watching logs in the console is nice for development and debugging,
+- however in production you want to store the logs in a central location for search, analysis, troubleshooting and alerting.
+
+
+
+public class Example {
+    final Logger log = LoggerFactory.getLogger(Example.class);
+}
+OR=========
+@Slf4j
+public class Example {
+}
+- log.debug("Found {} results", list.size());// log.debug("Found [{}] results", list.size());
+- Logback, by default, will produce logs in plain text.
+
+How to use Sleuth?
+-----------------
+Sleuth is part of spring cloud libraries. It can be used to generate the traceid, spanid and add this information to the service calls in headers
+and mapped diagnostic context (MDC).
+These ids can be used by the tools such as Zipkin, ELK to store, index and process the log file.
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-sleuth</artifactId>
+    </dependency>
+- The default pattern set by Spring Cloud Sleuth is: logging.pattern.level=%5p [${spring.zipkin.service.name:${spring.application.name:-}},%X{X-B3-TraceId:-},%X{X-B3-SpanId:-},%X{X-Span-Export:-}]
+- logging.pattern.level=%5p [${spring.zipkin.service.name:${spring.application.name:-}},%X{X-B3-TraceId:-}]
+- logging.pattern.level: set to %5p [${spring.zipkin.service.name:${spring.application.name:-}},%X{X-B3-TraceId:-},%X{X-B3-SpanId:-},%X{X-Span-Export:-}]
+
+How to use Zipkin?
+Zipkin contains two components:
+-------------------------------
+Zipkin Client
+Zipkin Server
+
+To use zipkin client following dependency needs to be added in the application
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-zipkin</artifactId>
+    </dependency>
+
+Download and run zipkin server : java -jar zipkin-server-2.12.9-exec.jar
+
+spring.zipkin.base-url=http://localhost:9411
+spring.zipkin.enabled=true
+spring.zipkin.service.name=xyz-service
+spring.sleuth.enabled=true
+spring.sleuth.integration.enabled=true
+spring.sleuth.sampler.rate=100
+spring.sleuth.sampler.probability=1.0
+spring.zipkin.sender.type=web
+
+Export logs in JSON:
+- we can use the Logstash Logback Encoder or LoggingEventCompositeJsonEncoder.
+- In general, the microservices will run in Docker containers so that we can leave the responsibility of writing the log files to Docker.
+
+- Instead of managing log files directly, our microservices could log to the standard output using the ConsoleAppender.
+- As the microservices will run in Docker containers, we can leave the responsibility of writing the log files to Docker.
+- Docker writes the container logs in files. FileBeat then reads those files and transfer the logs into ElasticSearch.
+  FileBeat is used as a replacement for Logstash. It was created because Logstash requires a JVM and tends to consume a lot of resources.
+  Although FileBeat is simpler than Logstash, you can still do a lot of things with it.
+- ElasticSearch has a volume to keep its data. Kibana does not need a volume as it uses ElasticSearch to persist its configuration.
+- Also containers are immutable and ephemeral, which means they have a shorter life span.
+- In Linux by default docker logs can be found in this location:  /var/lib/docker/containers/<container-id>/<container-id>-json.log
+- Filebeat will then extract logs from that location and push them towards Logstash
+
+
+Filebeat
+--------------
+FileBeat on the other hand needs a specific configuration file to achieve what we want.
+- By default standard output(stdout) off all docker containers is written into json files.
+- These log files are stored on the host where the docker engine is running
+- can be found under the following path /var/lib/docker/containers/{container-id}/{container-id}-json.log
+- To share this configuration file with the container, we need a read-only volume /usr/share/filebeat/filebeat.yml:ro.
+- FileBeat also needs to have access to the docker log files.
+- You can usually find them in /var/lib/docker/containers but that may depends on your docker installation.
+- The docker socket /var/run/docker.sock is also shared with the container.
+- FileBeat to use the docker daemon to retrieve information and enrich the logs with things that are not directly in the log files, such as the name of the image or the name of the container.
+- The user running FileBeat needs to be able to access all these shared elements. Unfortunately, the user filebeat used in the official docker image does not have the privileges to access them.
+  That is why the user was changed to root in the docker compose file.
+- Filebeat has to be run in background in the compute Nodes that are running K8s.
+- To make sure that a Filebeat Pod is scheduled on each and every Node, another K8s construct called DaemonSet has to be used.
+- A DaemonSet makes sure that the Filebeat Pods are scheduled in every Node with a count of 1.
+
+STEP 1 - INSTALL FILEBEAT
+STEP 2 - LOCATE THE CONFIGURATION FILE
+$ /etc/filebeat/filebeat.yml
+Change the owner of the filebeat.yml file to root to allow access to the docker container logs.
+$ sudo chown root:root filebeat.yml
+$ ls -la
+STEP 3 - CONFIGURE THE INPUTS
+On Linux we want filebeat to read the container logs from /var/lib/docker/containers/*/*.log which is where docker's container logs are stored, this is handled by default.
+Add to your filebeat.inputs section the docker type.
+------------------------
+filebeat.inputs:
+- type: docker
+  containers.ids:
+    - '*'
+STEP 4 - ENABLE THE INPUT
+STEP 5 - CONFIGURE OUTPUT
+STEP 6 - VALIDATE CONFIGURATION
+$ sudo filebeat -e -c /etc/filebeat/filebeat.yml
+STEP 7 - START FILEBEAT
+
+
+
+# The Logging driver has been set to JSON-file. In the future, if the labels is set to true the logs generated would store as a json file format.
+logging:
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "2"
+
+
+
+
+
+So we must change the ownership of our config file
+$ sudo chown root conf/filebeat.docker.yml
+
+and revoke all write permissions, but that of the owner:
+$ sudo chmod go-w conf/filebeat.docker.yml
+
+Install Filebeat
+To add filebeat to our compose file, we'll have to add the following volume mounts:
+------------------------------------------------------------------------
+binding our configuration to /usr/share/filebeat/filebeat.yml
+binding the location of docker container directory /var/lib/docker/containers to the container
+binding our docker socket /var/run/docker.sock to the container
+In order for the container to access these resources, it must use the root user.
+
+Add the following service to your compose file:
+
+version: "2.4"
+services:
+  filebeat/log-shipper:
+    image: "docker.elastic.co/beats/filebeat:7.2.0"
+    user: root
+    volumes:
+      - /MY_WORKDIR/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./filebeat/data:/usr/share/filebeat/data:rw
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    restart: unless-stopped
+    container_name: filebeat
+    labels:
+      co.elastic.logs/enabled: "false"   #for the filebeat container to prevent the logs generated from this container from being ingested
+
+/MY_WORKDIR/filebeat.docker.yml:
+======================================https://coralogix.com/blog/filebeat-configuration-best-practices-tutorial/
+filebeat.inputs:
+- type: container
+  paths:
+    - '/var/lib/docker/containers/*/*.log'
+processors:
+- add_docker_metadata:
+    host: "unix:///var/run/docker.sock"
+- decode_json_fields:
+    fields: ["message"]
+    target: "json"
+    overwrite_keys: true
+output.console:
+   pretty: true
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  protocol: "https"
+  username: "elastic_username"
+  password: "elastic_password"
+  indices:
+    - index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+logging.json: true
+logging.metrics.enabled: false
+
+With this, the Filebeat image and the configuration has been set up. Let’s go ahead and create a Dockerfile in the same directory.
+Dockerfile
+----------------------
+FROM docker.elastic.co/beats/filebeat:9.0.1
+#Copy our custom configuration file
+COPY filebeat.docker.yml /usr/share/filebeat/filebeat.yml:ro
+USER root
+#Create a directory to map volume with all docker log files
+RUN mkdir /usr/share/filebeat/dockerlogs
+RUN chown root:filebeat /usr/share/filebeat/filebeat.yml                      #RUN chown -R root /usr/share/filebeat/
+RUN chmod go-w /usr/share/filebeat/filebeat.yml                               #RUN chmod -R go-w /usr/share/filebeat/
+
+EX:
+Span span = tracer.currentSpan();
+logger.info("MDC context map: {}", MDC.getCopyOfContextMap());
+if (span != null) {
+    logger.info("Trace ID hex {}", span.context().traceIdString());
+    logger.info("Trace ID decimal {}", span.context().traceId());
+    logger.info("Span ID hex {}", span.context().spanIdString());
+    logger.info("Span ID decimal {}", span.context().spanId());
+}
+EX:
+@GetMapping("/hello")
+public String hello(@RequestParam String name, @RequestHeader Map<String, String> headers) {
+    log.info("headers:{}", headers);
+}// headers:{x-b3-traceid=6dd57dc2ad55c58f, x-b3-spanid=b5e6de658b261ac7, x-b3-parentspanid=6dd57dc2ad55c58f, x-b3-sampled=1, accept=*/*, user-agent=Java/1.8.0_202, host=localhost:8081, connection=keep-alive}
+
+
+
+###you could use a different log shipper, such as Fluentd or Filebeat, to send the Docker logs to Elasticsearch.
+###Or, you could add an additional layer comprised of a Kafka or Redis container to act as a buffer between Logstash and Elasticsearch.
+
+Note = If you use a custom logback-spring.xml, you must pass the spring.application.name in the bootstrap rather than the application property file.
+       Otherwise, your custom logback file does not properly read the property.
+resources/logback-spring.xml
+==============================https://cassiomolin.com/2019/06/30/log-aggregation-with-spring-boot-elastic-stack-and-docker/#logging-in-json-format
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="application_name" source="spring.application.name"/>
+
+    <appender name="jsonConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="jsonConsoleAppender"/>
+    </root>
+</configuration>
+
+output:
+---------------------------https://cassiomolin.com/2019/06/30/log-aggregation-with-spring-boot-elastic-stack-and-docker/#logging-in-json-format
+{
+   "@timestamp": "2019-06-29T23:01:38.967+01:00",
+   "@version": "1",
+   "message": "Finding details of post with id 1",
+   "logger_name": "com.cassiomolin.logaggregation.post.service.PostService",
+   "thread_name": "http-nio-8001-exec-3",
+   "level": "INFO",
+   "level_value": 20000,
+   "application_name": "post-service",
+   "traceId": "c52d9ff782fa8f6e",
+   "spanId": "c52d9ff782fa8f6e",
+   "spanExportable": "false",
+   "X-Span-Export": "false",
+   "X-B3-SpanId": "c52d9ff782fa8f6e",
+   "X-B3-TraceId": "c52d9ff782fa8f6e"
+}
+- When Spring Cloud Sleuth is in the classpath,
+  the following properties will added to MDC and will be logged: traceId, spanId, spanExportable, X-Span-Export, X-B3-SpanId and X-B3-TraceId.
+- If we need more flexibility in the JSON format and in data included in log, we can use LoggingEventCompositeJsonEncoder.
+- The composite encoder has no providers configured by default, so we must add the providers we want to customize the output
+- The Logstash Logback Encoder was originally written to support output in Logstash’s JSON format,
+
+
+resources/logback-spring.xml
+==============================
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="application_name" source="spring.application.name"/>
+
+    <appender name="jsonConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <version/>
+                <logLevel/>
+                <message/>
+                <loggerName/>
+                <threadName/>
+                <context/>
+                <pattern>
+                    <omitEmptyFields>true</omitEmptyFields>
+                    <pattern>
+                        {
+                            "trace": {
+                                "trace_id": "%mdc{X-B3-TraceId}",
+                                "span_id": "%mdc{X-B3-SpanId}",
+                                "parent_span_id": "%mdc{X-B3-ParentSpanId}",
+                                "exportable": "%mdc{X-Span-Export}"
+                            }
+                        }
+                    </pattern>
+                </pattern>
+                <mdc>
+                    <excludeMdcKeyName>traceId</excludeMdcKeyName>
+                    <excludeMdcKeyName>spanId</excludeMdcKeyName>
+                    <excludeMdcKeyName>parentId</excludeMdcKeyName>
+                    <excludeMdcKeyName>spanExportable</excludeMdcKeyName>
+                    <excludeMdcKeyName>X-B3-TraceId</excludeMdcKeyName>
+                    <excludeMdcKeyName>X-B3-SpanId</excludeMdcKeyName>
+                    <excludeMdcKeyName>X-B3-ParentSpanId</excludeMdcKeyName>
+                    <excludeMdcKeyName>X-Span-Export</excludeMdcKeyName>
+                </mdc>
+                <stackTrace/>
+            </providers>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="jsonConsoleAppender"/>
+    </root>
+</configuration>
+
+output
+------------------------
+{
+   "@timestamp": "2019-06-29T22:01:38.967Z",
+   "@version": "1",
+   "level": "INFO",
+   "message": "Finding details of post with id 1",
+   "logger_name": "com.cassiomolin.logaggregation.post.service.PostService",
+   "thread_name": "http-nio-8001-exec-3",
+   "application_name": "post-service",
+   "trace": {
+      "trace_id": "c52d9ff782fa8f6e",
+      "span_id": "c52d9ff782fa8f6e",
+      "exportable": "false"
+   }
+}
+
+Field	        Description
+@version	    standard Elasticsearch field set by Logstash
+@timestamp	    standard Elasticsearch field set by Logback
+host	        set by Logstash
+port	        set by Logstash
+HOSTNAME	    set by Logback
+@app	        custom field set by configuration (the name of the origin microservice)
+@type	        custom field set by configuration (type of the log)
+logger_name	    set by Logback
+level	        set by Logback
+level_value	    set by Logback
+message	        set by Logback
+thread_name 	set by Logback
+stack_trace	    set by Logback, content valuated by the ShortenedThrowableConverter component
+stack_hash	    custom field set by the StackHashJsonProvider component
+userId	        custom MDC field set by the PrincipalFilter component
+sessionId	    custom MDC field set by the SessionIdFilter component
+X-B3-TraceId	MDC field set by Spring Cloud Sleuth for logs correlation
+X-B3-SpanId	    MDC field set by Spring Cloud Sleuth for logs correlation
+X-Span-Export	MDC field set by Spring Cloud Sleuth for logs correlation
+
+
+filter {
+   # pattern matching logback pattern
+   grok {
+          match => { "message" => "(?m)OUT\s+%{TIMESTAMP_ISO8601:timestamp}\s+%{LOGLEVEL:severity}\s+\[%{DATA:service},%{DATA:trace},%{DATA:span},%{DATA:exportable}\]\s+%{DATA:pid}\s+---\s+\[%{DATA:thread}\]\s+%{DATA:class}\s+:\s+%{GREEDYDATA:rest}" }
+   }
+}
+
+filter {
+   # pattern matching logback pattern
+   grok {
+          match => { "message" => "%{TIMESTAMP_ISO8601:timestamp}\s+%{LOGLEVEL:severity}\s+\[%{DATA:service},%{DATA:trace},%{DATA:span},%{DATA:exportable}\]\s+%{DATA:pid}\s+---\s+\[%{DATA:thread}\]\s+%{DATA:class}\s+:\s+%{GREEDYDATA:rest}" }
+   }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Deploying Filebeat DaemonSet
+https://systemadminspro.com/logs-collection-and-parsing-using-filebeat/
+
+Elasticsearch Dockerfile
+FROM docker.elastic.co/elasticsearch/elasticsearch:6.5.2
+COPY --chown=elasticsearch:elasticsearch elasticsearch.yml /usr/share/elasticsearch/config/
+CMD ["elasticsearch", "-Elogger.level=INFO"]
+
+Logstash Dockerfile
+FROM docker.elastic.co/logstash/logstash:6.5.2
+RUN rm -f /usr/share/logstash/pipeline/logstash.conf
+COPY pipeline/ /usr/share/logstash/pipeline/
+
+Logstash conf
+input {
+    beats {
+        port => 5044
+        host => "0.0.0.0"
+      }
+    }
+
+output {
+    elasticsearch {
+        hosts => elasticsearch
+        manage_template => false
+            index => "%{[@metadata][beat]}-%{[@metadata][version]}-%{+YYYY.MM.dd}"
+    }
+   stdout { codec => rubydebug }
+}
