@@ -42,7 +42,7 @@ Unit	Equivalent
 1 terabyte (TB)	1,099,511,627,776 bytes           
 1 petabyte (PB)	1,125,899,906,842,624 bytes        
 
-
+FT3APIResponseDto
 
 
 entity = DTO = QueryService = Criteria = then .xml file changeset.
@@ -1436,3 +1436,72 @@ https://www.elastic.co/blog/lost-in-translation-boolean-operations-and-filters-i
 
 
 https://naiveskill.com/kubernetes-custom-resource/
+
+
+
+
+
+
+
+
+
+
+
+
+public abstract class VendorCalibration {
+    public abstract double calibrate(Double rawdata);
+}
+
+public class HuwCalibration extends VendorCalibration {
+  @Override
+  public double calibrate(Double rawdata) {
+    return rawdata * 0.945;
+  }
+}
+
+public class BrocadeCalibration extends VendorCalibration {
+  @Override
+  public double calibrate(Double rawdata) {
+    return rawdata * 0.967;
+  }
+}
+
+public abstract class GroupCalibration {
+    private VendorCalibration vendorCalibration;
+    public GroupCalibration(VendorCalibration vendorCalibration){
+      this.vendorCalibration = vendorCalibration;
+    }
+    public VendorCalibration getVendorCalibration() {
+        return vendorCalibration;
+    }
+    public void setVendorCalibration(VendorCalibration vendorCalibration) {
+        this.vendorCalibration = vendorCalibration;
+    }
+    public abstract double applyCorrection(Double rawdata);
+}
+
+public class Group1 extends GroupCalibration {
+
+  public Group1(VendorCalibration vendorCalibration) {
+      super(vendorCalibration);
+  }
+
+  @Override
+  public double applyCorrection(Double rawdata) {
+    Double groupCalibrated = rawdata * 0.9889 + 0.0345;
+    return vendorCalibration.calibrate(groupCalibrated);
+  }
+}
+
+public class Group2 extends GroupCalibration {
+  
+  public Group2(VendorCalibration vendorCalibration) {
+    super(vendorCalibration);
+  }
+  
+  @Override
+  public double applyCorrection(Double rawdata) {
+    Double groupCalibrated = rawdata * 0.9289 + 0.0445;
+    return vendorCalibration.calibrate(groupCalibrated);
+  }
+}
