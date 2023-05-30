@@ -1,3 +1,13 @@
+Tracing with Spring Cloud Sleuth
+# The trace-id is created when the request hits the very first service in the chain. For subsequent calls, an already existing trace-id is passed along, typically as an http header attribute.
+# We do not need to write any custom code to create or propagate the trace contexts, as it is done automatically by Spring Cloud Sleuth. It typically intercepts the requests to do it. It also configures the logging context to include trace-id and other variables.
+# Spring Cloud Sleuth can send trace information to Zipkin either synchronously over HTTP or asynchronously using a message broker such as "Kafka" or "RabbitMQ".
+# Zipkin comes with native support for storing trace information either in memory or in a database such as Apache Cassandra, Elasticsearch, or MySQL.
+
+$$ The scope of the SpanId is limited to service only.
+
+
+
 <pattern>
     <pattern>{ "trace": "%mdc{X-B3-TraceId:-}" }</pattern>
 </pattern>
@@ -17,6 +27,7 @@
          "timestamp": "%date{ISO8601}",
         "severity": "%level",
         "service": "${springAppName:-}",
+        "service": "${APP_NAME:-}",
                                         "trace": "%X{trace_id:-}",
                                         "span": "%X{span_id:-}",
         "trace": "%X{X-B3-TraceId:-}",
@@ -24,18 +35,25 @@
         "exportable": "%X{X-Span-Export:-}",
          "parent": "%X{X-B3-ParentSpanId:-}",
         "pid": "${PID:-}",
+        "pid": "%X{PID:-}",
         "thread": "%thread",
+        "class": "%logger{40}",
         "class": "%logger{40}",
         "rest": "%message",
         "message": "%msg",
+        "file":"%file",
+            "line":"%line",
+         "line_number": "%line",    
         "level":"%p",
+        "level": "%level",
+        "severity": "%level",
         "logger": "%logger",
         "host": "%property",
         "appname":"${springcloud_consume}",
         "serverName":"${server-name}"
         "stackTrace":"%ex",
         "stack_trace":"%xEx",
-        "stack_trace": "%exception{10}"
+        "stack_trace": "%exception{full}"
         "ip": "%X{ip}",
         "url": "%X{url}",
         "method": "%method",
@@ -2075,7 +2093,7 @@ public String hello(@RequestParam String name, @RequestHeader Map<String, String
 
 Note = If you use a custom logback-spring.xml, you must pass the spring.application.name in the bootstrap rather than the application property file.
        Otherwise, your custom logback file does not properly read the property.
-resources/logback-spring.xml
+resources/logback-spring.xml  https://cassiomolin.com/2019/06/30/log-aggregation-with-spring-boot-elastic-stack-and-docker/
 ==============================https://cassiomolin.com/2019/06/30/log-aggregation-with-spring-boot-elastic-stack-and-docker/#logging-in-json-format
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
@@ -2090,7 +2108,7 @@ resources/logback-spring.xml
     </root>
 </configuration>
 
-output:
+output:                    https://cassiomolin.com/2019/06/30/log-aggregation-with-spring-boot-elastic-stack-and-docker/
 ---------------------------https://cassiomolin.com/2019/06/30/log-aggregation-with-spring-boot-elastic-stack-and-docker/#logging-in-json-format
 {
    "@timestamp": "2019-06-29T23:01:38.967+01:00",

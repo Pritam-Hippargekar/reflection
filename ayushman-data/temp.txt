@@ -33,6 +33,20 @@ admin
 pritam.h@sodelsolutions.com
 admin
 
+partnerDASetup       bbps_recharge_config
+partnerDaApiAccess   bbps_api_access
+
+
+
+ A topic with 3 partitions and 2 replicas spread across 3 brokers.   
+
+
+
+
+
+
+
+
 
 
 Unit	Equivalent
@@ -45,17 +59,84 @@ Unit	Equivalent
 FT3APIResponseDto
 
 
-entity = DTO = QueryService = Criteria = then .xml file changeset.
-<changeSet author="jhipster" id="202312040329000-33">
-        <validCheckSum>ANY</validCheckSum>
-        <insert tableName="parameter_management">
-            <column name="name" value="BBPS_MASTER_CATEGORY"/>
-            <column name="value" value="Recharges,Utilities"/>
-            <column name="data_type" value="STRING"/>
-            <column name="comments" value="BBPS Master Category"/>
-            <column name="unit" value="String"/>
-        </insert>
-    </changeSet>
+  spring.datasource.mysql.hikari.jdbc-url=jdbc:mysql://localhost:3306/schema_mysql?useSSL=false&allowPublicKeyRetrieval=true
+  spring.datasource.mysql.hikari.username=root
+  spring.datasource.mysql.hikari.password=root
+  spring.datasource.mysql.hikari.driver-class-name=com.mysql.cj.jdbc.Driver
+  spring.datasource.mysql.hikari.connection-timeout=60000
+  spring.datasource.mysql.hikari.minimum-idle=11
+  spring.datasource.mysql.hikari.maximum-pool-size=17 
+  spring.datasource.mysql.hikari.idle-timeout=10000
+  spring.datasource.mysql.hikari.max-lifetime=300000
+  spring.datasource.mysql.hikari.auto-commit=true
+  spring.datasource.mysql.hikari.type=com.zaxxer.mysql.hikari.HikariDataSource
+  spring.datasource.mysql.hikari.pool-name=MysqlPool
+
+  spring.jpa.properties.mysql.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+  spring.jpa.properties.mysql.hibernate.hbm2ddl.auto=update
+  spring.jpa.properties.mysql.hibernate.show_sql=true
+  spring.jpa.properties.mysql.hibernate.use_sql_comments=true
+  spring.jpa.properties.mysql.hibernate.format_sql=true
+  spring.jpa.properties.mysql.hibernate.type=trace
+
+
+
+
+
+#spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+#spring.datasource.url=jdbc:mysql://<ip-address>:<port>/<database-name>?useUnicode=true&characterEncoding=utf8
+#spring.datasource.username=<username>
+#spring.datasource.password=<password>
+#
+## Use spring.jpa.properties.* for Hibernate native properties (the prefix is stripped before adding them to the entity manager)
+#spring.jpa.hibernate.ddl-auto=update
+#spring.jpa.show-sql=true
+#spring.jpa.hibernate.naming.physical-strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+#spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+
+
+
+
+AvailableSettings
+https://blogs.ashrithgn.com/multiple-data-source-in-spring-boot-using-spring-boot-data-starter/
+
+
+https://attacomsian.com/blog/java-compare-dates
+isAfter() — Return true if this date is after the specified date.
+isBefore() — Return true if this date is before the specified date.
+isEqual() — Return true if this date is equal to the specified date.
+compareTo() — Returns the comparator value, negative if less, positive if greater.
+
+LocalDate date1 = LocalDate.parse("2018-04-12");
+LocalDate date2 = LocalDate.parse("2019-07-17");
+// compare `LocalDate` instances
+
+System.out.println(date1 + " is BEFORE " + date2 + ": " + date1.isBefore(date2));      
+System.out.println(date1 + " is AFTER " + date2 + ": " + date1.isAfter(date2));        
+System.out.println(date1 + " is EQUAL to " + date2 + ": " + date1.isEqual(date2));
+
+The above code will print the following on the console:
+2018-04-12 is BEFORE 2019-07-17: true
+2018-04-12 is AFTER 2019-07-17: false
+2018-04-12 is EQUAL to 2019-07-17: false
+
+
+LocalDate date1 = LocalDate.of(2018, Month.JULY, 12);
+LocalDate date2 = LocalDate.of(2016, Month.AUGUST, 25);
+// compare dates
+
+int diff = date1.compareTo(date2);
+if (diff == 0) {
+    System.out.println(date1 + " is EQUAL to " + date2);
+} else if (diff > 0) {
+    System.out.println(date1 + " is AFTER " + date2);
+} else {
+    System.out.println(date1 + " is BEFORE " + date2);
+}
+
+You will see the following output if you execute the above code:
+2018-07-12 is AFTER 2016-08-25
+
 
 
 public class Base {
@@ -1505,3 +1586,88 @@ public class Group2 extends GroupCalibration {
     return vendorCalibration.calibrate(groupCalibrated);
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+select partnertra0_.id as id1_50_, partnertra0_.created_by as created_2_50_, partnertra0_.created_date as created_3_50_, 
+       partnertra0_.last_modified_by as last_mod4_50_, partnertra0_.last_modified_date as last_mod5_50_, 
+       partnertra0_.amount as amount6_50_, partnertra0_.approved_by as approved7_50_, partnertra0_.commission_receivable as commissi8_50_, 
+       partnertra0_.commission_receivable_gst as commissi9_50_, partnertra0_.failure_code as failure10_50_, 
+       partnertra0_.failure_message as failure11_50_, partnertra0_.fees as fees12_50_, partnertra0_.fees_gst as fees_gs13_50_,
+       partnertra0_.field_1 as field_14_50_, partnertra0_.field_2 as field_15_50_, partnertra0_.field_3 as field_16_50_, 
+       partnertra0_.field_4 as field_17_50_, partnertra0_.field_5 as field_18_50_, partnertra0_.gefu_id as gefu_id42_50_, 
+       partnertra0_.hold_expiry_date as hold_ex19_50_, partnertra0_.is_ignored as is_igno20_50_, 
+       partnertra0_.is_neutralized as is_neut21_50_, partnertra0_.is_pool_wallet_debited as is_pool22_50_, 
+       partnertra0_.merchant_payable as merchan23_50_, partnertra0_.merchant_reference_number as merchan24_50_, 
+       partnertra0_.owner_id as owner_i25_50_, partnertra0_.owner_type as owner_t26_50_, partnertra0_.partner_id as partner43_50_, 
+       partnertra0_.partner_mobile_number as partner27_50_, partnertra0_.partner_reference_number as partner28_50_, 
+       partnertra0_.purpose as purpose29_50_, partnertra0_.service_charge as service30_50_, 
+       partnertra0_.service_consumption_state as service31_50_, partnertra0_.settlement_cycle as settlem32_50_, 
+       partnertra0_.settlement_date as settlem33_50_, partnertra0_.settlement_status as settlem34_50_, 
+       partnertra0_.transaction_remarks as transac35_50_, partnertra0_.transaction_sub_type as transac36_50_, 
+       partnertra0_.transaction_type as transac37_50_, partnertra0_.tsp_info_id as tsp_inf44_50_, 
+       partnertra0_.txn_date as txn_dat38_50_, partnertra0_.txn_reference_number as txn_ref39_50_, 
+       partnertra0_.txn_status as txn_sta40_50_, partnertra0_.updated_by as updated41_50_, 
+       partnertra0_.virtual_system_accounts_id as virtual45_50_ 
+    from 
+       partner_transactions partnertra0_ 
+    cross join 
+       virtual_system_accounts virtualsys1_ 
+       ON partnertra0_.virtual_system_accounts_id=virtualsys1_.id 
+       WHERE partnertra0_.txn_status=? 
+       and partnertra0_.settlement_status=? 
+       and virtualsys1_.account_type=? 
+       and (partnertra0_.field_1 is ? or partnertra0_.field_1<>?) 
+       and partnertra0_.created_date<=? 
+       and partnertra0_.id>? 
+       order by partnertra0_.id asc limit ?
+
+
+
+
+
+ON partnertra0_.virtual_system_accounts_id=virtualsys1_.id 
+WHERE partnertra0_.txn_status=? 
+and partnertra0_.settlement_status=? 
+and virtualsys1_.account_type=? 
+and (partnertra0_.field_1 is ? or partnertra0_.field_1<>?) 
+and partnertra0_.created_date<=? 
+and partnertra0_.id>? 
+order by partnertra0_.id asc limit ?
+
+
+
+
+
+
+
+
+
+
+
+OTP Validation Api action_name = VERIFYMODBENE
+
+
+"transaction_type" :
+fundTransferToBankAccount
+fund-transfer-to-bankAccount

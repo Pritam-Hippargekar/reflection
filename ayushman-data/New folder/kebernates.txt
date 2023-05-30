@@ -1,0 +1,57 @@
+Tools Used:
+
+GitHub — Source Code Management
+Maven — Build Tool
+Jenkins — Continuous Integration (CI/CD)
+Artifactory — Artifact Repository Manager
+SonarQube — Code Quality and Code Analysis
+Docker — Container Engine
+Ansible — Configuration Management Tool
+Terraform —
+AWS —
+Grafana and Prometheus — monitoring and alerting(Network I/O, Cluster Memory Usage, Cluster CPU usage)
+Elastic stack —
+Kubernetes — Container Orchestration
+Tomcat — Application Server
+
+
+Which One to Use for Your Application?
+
+Deployments are suitable for stateless applications where data is not stored on the local disk of a pod. 
+They provide a way to perform rolling updates and rollbacks of your application without downtime. 
+
+DaemonSets are useful for running system daemons or log collectors that need to run on every node. 
+They are also useful for running applications that require low latency, such as monitoring agents or load balancers. 
+
+StatefulSets are suitable for stateful applications that require stable network identities and persistent storage. 
+They provide guarantees about the ordering and uniqueness of pod startup and shutdown.
+
+
+
+
+Best Practices for Kubernetes Logging:
+
+Here are some best practices for logging in a Kubernetes environment:
+
+= Use a centralized logging solution — A centralized logging solution allows you to store and analyze logs in a central location, making it easier to troubleshoot issues and monitor application performance. Elasticsearch, Splunk, and Loggly are some popular centralized logging solutions used with Kubernetes.
+= Implement log rotation — Log rotation is the process of deleting or archiving old logs to prevent disk space from filling up. It is essential to configure log rotation for your Kubernetes logs to avoid running out of disk space.
+= Use structured logging — Structured logging formats log messages in a structured way, making it easier to search, filter, and analyze log data. Use JSON or other structured logging formats instead of plain text to make it easier to extract information from logs.
+= Avoid logging sensitive information — Avoid logging sensitive information such as passwords, API keys, and other credentials in your Kubernetes logs. Instead, use environment variables or secrets to store this information securely.
+= Include contextual information — Including contextual information such as timestamps, hostnames, and request IDs in your logs makes it easier to correlate log events and troubleshoot issues.
+
+
+Types of Probes:
+
+Kubernetes have three types probes for health check of pods.
+
+1) Liveness
+   The kubelet uses liveness probes to know when to restart a container. For example, liveness probes could catch a deadlock, where an application is running, but unable to make progress.
+   Restarting a container in such a state can help to make the application more available despite bugs.
+2) Readiness
+   The kubelet uses readiness probes to know when a container is ready to start accepting traffic.
+   A Pod is considered ready when all of its containers are ready. One use of this signal is to control which Pods are used as backends for Services. When a Pod is not ready, it is removed from Service load balancers.
+3) Startup
+   The kubelet uses startup probes to know when a container application has started. If such a probe is configured, it disables liveness and readiness checks until it succeeds, making sure those probes don’t interfere with the application startup.
+   This can be used to adopt liveness checks on slow starting containers, avoiding them getting killed by the kubelet before they are up and running.
+
+

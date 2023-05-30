@@ -1,0 +1,182 @@
+#!/bin/bash
+# This script monitors CPU and memory usage
+while :                                       ### Infinite While Loop in Shell Script
+do 
+  # Get the current usage of CPU and memory
+  cpuUsage=$(top -bn1 | awk '/Cpu/ { print $2}')
+  memUsage=$(free -m | awk '/Mem/{print $3}')
+
+  # Print the usage
+  echo "CPU Usage: $cpuUsage%"
+  echo "Memory Usage: $memUsage MB"
+ 
+  # Sleep for 1 second
+  sleep 1
+done
+
+
+
+
+
+
+1) Bash Script to Check How Long the High CPU Consumption Processes Runs on Linux
+# vi /opt/scripts/long-running-cpu-proc.sh
+---------------------------------------------------
+#!/bin/bash
+ps -eo pid,user,ppid,%mem,%cpu,cmd --sort=-%cpu | head | tail -n +2 | awk '{print $1}' > /tmp/long-running-processes.txt
+echo "--------------------------------------------------"
+echo "UName     PID  CMD            Process_Running_Time"
+echo "--------------------------------------------------"
+for userid in `cat /tmp/long-running-processes.txt`
+do
+username=$(ps -u -p $userid | tail -1 | awk '{print $1}')
+pruntime=$(ps -p $userid -o etime | tail -1)
+ocmd=$(ps -p $userid | tail -1 | awk '{print $4}')
+echo "$username $userid $ocmd $pruntime"
+done | column -t
+echo "--------------------------------------------------"
+
+
+2) Bash Script to Check How Long the High Memory Consumption Processes Runs on Linux
+# sh /opt/scripts/long-running-memory-proc.sh
+------------------------------------------------
+#!/bin/bash
+ps -eo pid,user,ppid,%mem,%cpu,cmd --sort=-%mem | head | tail -n +2 | awk '{print $1}' > /tmp/long-running-processes-1.txt
+echo "--------------------------------------------------"
+echo "UName     PID  CMD          Process_Running_Time"
+echo "--------------------------------------------------"
+for userid in `cat /tmp/long-running-processes-1.txt`
+do
+username=$(ps -u -p $userid | tail -1 | awk '{print $1}')
+pruntime=$(ps -p $userid -o etime | tail -1)
+ocmd=$(ps -p $userid | tail -1 | awk '{print $4}')
+echo "$username $userid $ocmd $pruntime"
+done | column -t
+echo "--------------------------------------------------"
+
+
+
+
+
+
+$ sudo vi /opt/script/kill-user-sessions.sh
+--------------------------------------------------
+#!/bin/bash
+## usession=$(w | grep -v "root|ansible" | awk '{if (NR!=1) {print $2 }}' | tail -n +2) ## if you want to exclude any of the users in the system.
+usession=$(w | awk '{if (NR!=1) {print $2 }}' | tail -n +2)
+for i in $usession
+do
+pkill -9 -t $i
+done
+
+$ sudo chmod +x /opt/script/kill-user-sessions.sh
+Finally, add a cronjob to automate this script which runs daily at 3AM.
+
+$ sudo crontab -e
+0 3 * * * /bin/bash /opt/script/kill-user-sessions.sh           
+
+
+
+Cron Table File
+Crontab (Cron Table) is a file format that defines the frequency of Cron tasks. It includes the documents classifying as:
+------------------------------------
+A) System wide Crontab files
+B) Individual user Crontab Files
+
+## <Minute> <Hour> <Day_of_the_Month> <Month_of_the_Year> <Day_of_the_Week> <command>
+Astrics (*) – Matches anything
+Multiple values – Use the command (,) to define multiple values like 2,4,8 or sun,fri or jan,oct,dec etc.
+Define range – You can define range using the hyphen like: 1-10 or 20-30 or sun-fri or feb-apr
+Define multiple ranges – You can define multiple ranges with commands separated like: jan-mar,jul-sep
+
+@hourly will run cron jobs once an hour.
+@daily will run cron jobs every day.
+@weekly will run cron jobs once a week.
+@monthly will run cron jobs on the first day of every month.
+@yearly will run cron jobs once a year on 1st January.
+@reboot will run cron jobs at system reboot.
+
+ex: 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+ex: * * * * * echo ‘Run this command every minute’ >> /directory/path/file.log
+ex: * * * * * /usr/bin/php /var/www/domain.com/backup.php > /dev/null 2>&1
+
+This cron job also redirects standard error — represented by 2 — to standard output (>&1). 
+Because standard output is already being redirected to /dev/null, this essentially allows the script to run silently.
+$(date)
+
+
+
+
+show Cron Job of the other user:
+$ sudo crontab –u username –l
+
+How to List Cron Jobs Running by System
+$ less /etc/crontab
+
+
+
+
+
+
+
+
+How to Automate MySQL Database Backup Using Cron Jobs
+nano /opt/mysql-backup.sh
+---------------------------------
+#!/bin/bash
+
+export PATH=/bin:/usr/bin:/usr/local/bin
+TODAY=`date +"%d%b%Y"`
+
+################## Update below values  ########################
+
+DB_BACKUP_PATH='/mnt/dbbackup'
+MYSQL_HOST='localhost'
+MYSQL_PORT='3306'
+MYSQL_USER='root'
+MYSQL_PASSWORD='your-mysql-root-password'
+DATABASE_NAME='mysqldb'
+BACKUP_RETAIN_DAYS=30   ## Number of days to keep local backup copy
+
+#################################################################
+
+mkdir -p ${DB_BACKUP_PATH}/${TODAY}
+echo "Backup started for database - ${DATABASE_NAME}"
+
+
+mysqldump -h ${MYSQL_HOST} \
+		  -P ${MYSQL_PORT} \
+		  -u ${MYSQL_USER} \
+		  -p${MYSQL_PASSWORD} \
+		  ${DATABASE_NAME} | gzip > ${DB_BACKUP_PATH}/${TODAY}/${DATABASE_NAME}-${TODAY}.sql.gz
+
+if [ $? -eq 0 ]; then
+  echo "Database backup successfully completed"
+else
+  echo "Error found during backup"
+fi
+
+##### Remove backups older than {BACKUP_RETAIN_DAYS} days  #####
+
+DBDELDATE=`date +"%d%b%Y" --date="${BACKUP_RETAIN_DAYS} days ago"`
+
+if [ ! -z ${DB_BACKUP_PATH} ]; then
+      cd ${DB_BACKUP_PATH}
+      if [ ! -z ${DBDELDATE} ] && [ -d ${DBDELDATE} ]; then
+            rm -rf ${DBDELDATE}
+      fi
+fi
+
+Save and close the file then set the executable permission to run it properly:
+chmod +x /opt/mysql-backup.sh
+
+Schedule Backup Script Using Crontab
+Next, you will need to create a Cron Jobs to schedule the script that run on a daily basis and complete MySQL database backup.
+
+Run the following command to create a new Cron jobs:
+
+crontab -e
+Add the following configuration to run backup script daily at 6:00 AM.
+0 6 * * * root /opt/mysql-backup.sh
+
+Save and close the file when you are finished.

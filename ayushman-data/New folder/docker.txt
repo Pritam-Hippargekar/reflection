@@ -1,0 +1,89 @@
+
+
+ENTRYPOINT ["executables", "parameter1", "parameter2", ...]
+CMD ["executables", "parameter1", "parameter2:, ...]
+
+
+
+ENTRYPOINT <command> "parameter1"
+CMD <command> "parameter1"
+
+
+.................
+..................
+FROM ubuntu:20.04
+# CMD Instruction
+CMD ["echo", "Hello world"] # Exec Form
+CMD echo "Hello world"      # Shell Form
+# ENTRYPOINT Instruction
+ENTRYPOINT ["echo", "Hello world"] # Exec Form
+ENTRYPOINT echo "Hello world"      # Shell Form
+
+
+
+sudo docker build .
+
+To add the tag to the build use the below command:
+sudo docker build -t [tag_name] .
+
+
+explain  select * from emp;
+
+
+WORKDIR /a
+WORKDIR b
+WORKDIR c
+RUN pwd
+The output: of the final pwd command in this Dockerfile would be /a/b/c.
+
+
+ENV DIRPATH /path                           ## ENV <key> <value>
+WORKDIR $DIRPATH/$DIRNAME
+RUN pwd
+The output of the final pwd command in this Dockerfile would be /path/$DIRNAME.
+The environment variables set using ENV will persist when a container is run from the resulting image. We can view the values using docker inspect, and change them using docker run --env <key>=<value>.
+
+
+
+
+
+
+
+
+
+
+FROM debian:latest
+MAINTAINER k@bogotobogo.com
+
+# 1 - RUN
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq apt-utils
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -yq htop
+RUN apt-get clean
+
+# 2 - CMD
+#CMD ["htop"]
+#CMD ["ls", "-l"]
+
+# 3 - WORKDIR and ENV
+WORKDIR /root
+ENV DZ version1
+
+# 4 - ADD
+ADD run.sh /root/run.sh
+RUN chmod +x run.sh
+#CMD ["./run.sh"]
+
+# 5 - ENTRYPOINT (vs CMD)
+ENTRYPOINT ["./run.sh"]
+CMD ["arg1"]
+
+
+
+
+IMP:
+=======
+Keep in mind that each form has its own advantages and disadvantages, and we should explore them according to our needs. 
+-  The SHELL form, of course, gives you shell features like sub commands, I/O redirection, environment variables substitution
+-  that the EXEC form doesn’t offer
+
+Note: -d flag in our run command allows us to run container in the background and frees out terminal for further usage.

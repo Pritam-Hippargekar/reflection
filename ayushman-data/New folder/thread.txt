@@ -1,0 +1,25 @@
+1: ThreadLocal
+2: Volatile keyword and atomic variables in Java
+3: Syn Blocks and Syn Methods
+5: BlockingQ in java : BlockingQueue implementations such as ArrayBlockingQueue, LinkedBlockingQueue, PriorityBlockingQueue
+6: Lock Interface in Java : Types of Locks Implementation in Java ReentrantLock, ReentrantReadWriteLock
+7: CountDownLatch in Java
+8: ThreadPools in java
+9: Executor Interface
+10: Futures in Java
+
+Ways to stop a thread :
+1) Use ExcecuterService and submit the Runnables to them and use exectors.shutDown()
+2) If you are using Callable and Future .then there is future.cancel(true).
+3) In Simple Thread class there is kill( ) or stop( ) methods but they are deprecated.
+
+Lock vs Synchronised in Java :
+1) Having a timeout trying to get access to a synchronized block is not possible. Using Lock.tryLock(long timeout, TimeUnit timeUnit), it is possible.
+2) The synchronized block must be fully contained within a single method. A Lock can have it’s called to lock() and unlock() in separate methods.
+
+
+A) It’s possible that both static synchronized and non-static synchronized method 
+can run simultaneously or concurrently because they lock on different object.
+B) Java synchronized keyword is re-entrant in nature it means if a synchronized method calls another 
+synchronized method which requires same lock then current thread which is holding lock can enter into 
+that method without acquiring lock.

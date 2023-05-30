@@ -1,0 +1,118 @@
+You can find the SSH key pair in the ~/.ssh directory which is a hidden directory in your home folder.
+$ ls .ssh    OR    ls -l ~/.ssh
+The private key is denoted by id_rsa while id_rsa.pub is the public key.
+
+1) Next, you need to copy and save the public key to the remote Linux system.
+   ssh-copy-id = It is a helper command used to copy the local user’s public key to a remote server’s
+                 It will append your public key to the remote server’s ~/.ssh/authorized_keys file.
+                 $ ssh-copy-id -i ~/.ssh/ravan.pub root@178.62.251.218
+   $ ssh-copy-id user@remote-ip           OR        $ scp C:\Users\Harry\.ssh\id_rsa.pub harry@165.232.177.116:~/.ssh/authorized_keys
+   OR  $ cat ~/.ssh/id_rsa.pub | ssh username@example.com "cat - >> ~/.ssh/authorized_keys"
+2) and the private key residing on the local system
+3) the public key is saved in the ~/.ssh/authorized_keys path.
+4) Disable password authentication
+$ sudo vim /etc/sshd_config
+  PasswordAuthentication no
+  PermitRootLogin yes
+  PubkeyAuthentication yes
+$ sudo systemctl restart ssh
+
+
+
+
+
+Generating SSH keys – RSA 4096 bits
+--------------------------------------
+$ ssh-keygen -t rsa -b 4096
+
+OR 
+$ ssh-keygen -b 2048 -f ravan -t rsa
+This will create two files
+.........................
+1) ravan
+2) ravan.pub
+Rename ravan to ravan.pem
+
+
+
+
+Automating whole thing!
+ssh-install-key
+-----------------
+echo "cat ~/.ssh/id_rsa.pub | ssh ${1} "cat - >> ~/.ssh/authorized_keys""  >  ~/.ssh/ssh-install-key
+$ chmod u+x ~/.ssh/ssh-install-key
+$ ~/.ssh/ssh-install-key username@example.com
+
+
+Making user passwordless to use sudo
+===========================================
+$ sudo visudo
+  $USER ALL=(ALL:ALL) NOPASSWD: ALL      ## Replace $USER with username in the above line
+Do make your new_user perform sudo operation without a password,
+
+
+
+$ ssh -i ravan.pem new_user@hostname
+
+
+
+
+
+
+
+
+
+
+
+
+
+with the remote machine, update the permissions of the .ssh directory and authorized_keys file in case they need it:
+---------------------------------------------------------------
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+
+
+
+
+
+
+
+
+
+1. Create new user
+$ sudo adduser ayushman
+
+If you want to create a user without password, use the following command
+$ sudo adduser ayushman — disabled-password
+
+2. Add user to sudo group
+$ sudo usermod -aG sudo ayushman
+
+3. Making user passwordless to use sudo
+Do make your ayushman perform sudo operation without a password
+$ sudo visudo
+  $USER ALL=(ALL:ALL) NOPASSWD: ALL     Replace $USER with ayushman in the above line
+
+4. Disable password authentication
+$ sudo vim /etc/sshd_config
+  PasswordAuthentication no
+  PermitRootLogin yes
+  PubkeyAuthentication yes
+
+5. Restart SSH service to load new keys
+$ sudo systemctl restart ssh
+
+6. Log in as a new user
+$ sudo su ayushman
+
+7. Go to home directory of ayushman
+$ cd ~
+
+8. Create public-private key files
+$ ssh-keygen -b 2048 -f ayushman -t rsa
+
+This will create two files
+-----------------------------
+ayushman
+ayushman.pub
+Rename ayushman to ayushman.pem

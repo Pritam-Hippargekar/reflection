@@ -1,0 +1,992 @@
+resources/application.yml
+
+spring:
+  datasource:
+    hikari:
+      master:
+        jdbc-url: jdbc:mysql://shoeauction.abcd1234.ap-northeast-2.rds.amazonaws.com:3306/shoeauction
+        username: username
+        password: password
+        driver-class-name: com.mysql.cj.jdbc.Driver
+      slave:
+        jdbc-url: jdbc:mysql://shoeauction-slave.abcd1234.ap-northeast-2.rds.amazonaws.com:3306/shoeauction
+        username: username
+        password: password
+        driver-class-name: com.mysql.cj.jdbc.Driver
+
+
+common/config/RoutingDataSourceConfig.java
+
+@RequiredArgsConstructor
+@Configuration
+@EnableTransactionManagement
+public class RoutingDataSourceConfig {
+
+    private final Environment env;
+
+    @ConfigurationProperties(prefix = "spring.datasource.hikari.master")
+    @Bean
+    public DataSource masterDataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @ConfigurationProperties(prefix = "spring.datasource.hikari.slave")
+    @Bean
+    public DataSource slaveDataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @DependsOn({"masterDataSource", "slaveDataSource"})
+    @Bean
+    public DataSource routingDataSource(
+        @Qualifier("masterDataSource") DataSource master,
+        @Qualifier("slaveDataSource") DataSource slave) {
+        DynamicRoutingDataSource routingDataSource = new DynamicRoutingDataSource();
+
+        Map<Object, Object> dataSourceMap = new HashMap<>();
+
+        dataSourceMap.put(MASTER, master);
+        dataSourceMap.put(SLAVE, slave);
+
+        routingDataSource.setTargetDataSources(dataSourceMap);
+        routingDataSource.setDefaultTargetDataSource(master);
+
+        return routingDataSource;
+    }
+
+    @DependsOn({"routingDataSource"})
+    @Bean
+    public DataSource dataSource(DataSource routingDataSource) {
+        return new LazyConnectionDataSourceProxy(routingDataSource);
+    }
+    
+        @Primary
+    @Bean
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
+        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+        em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        em.setDataSource(dataSource);
+        em.setPackagesToScan("com.flab.shoeauction.domain");
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("hibernate.physical_naming_strategy",
+            SpringPhysicalNamingStrategy.class.getName());
+        properties.put("hibernate.implicit_naming_strategy",
+            SpringImplicitNamingStrategy.class.getName());
+        properties.put("hibernate.hbm2ddl.auto", env.getProperty("spring.jpa.hibernate.ddl-auto"));
+        em.setJpaPropertyMap(properties);
+
+        return em;
+    }
+
+    @Primary
+    @Bean
+    public PlatformTransactionManager transactionManager(
+        EntityManagerFactory entityManagerFactory) {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(entityManagerFactory);
+
+        return transactionManager;
+    }
+}
+
+@Transactional(readOnly = true)
+    public Page<ThumbnailResponse> findProducts(SearchCondition condition,
+        Pageable pageable) {
+        return productRepository.findAllBySearchCondition(condition, pageable);
+    }
+
+
+    public enum DataSourceType {
+        READ_WRITE,
+        READ_ONLY, 
+        ;
+    }
+
+    DataSource master = masterDataSource();
+    DataSource slave = slaveDataSource();
+
+    Map<Object, Object> dataSourceMap = new HashMap<>();
+    dataSourceMap.put(DataSourceType.READ_WRITE, master);
+    dataSourceMap.put(DataSourceType.READ_ONLY, slave);
+
+
+ return TransactionSynchronizationManager
+                .isCurrentTransactionReadOnly() ?
+                DataSourceType.READ_ONLY :
+                DataSourceType.READ_WRITE
+
+return TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+        ? DataSourceType.SLAVE : DataSourceType.MASTER;
+
+
+
+==========================================================
+application.yml
+
+spring:
+  datasource:
+    master:
+      hikari:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://localhost:3306/sample
+        read-only: false
+        username: sample_user
+        password: password1!
+    slave:
+      hikari:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://localhost:3306/sample
+        read-only: true
+        username: sample_user
+        password: password1!
+
+DataSourceConfig.java
+package com.example.datasourcereplication.config;
+
+import com.zaxxer.hikari.HikariDataSource;
+import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+@Slf4j
+@Configuration
+public class DataSourceConfig {
+
+  private final String MASTER_DATA_SOURCE = "masterDataSource";
+  private final String SLAVE_DATA_SOURCE = "slaveDataSource";
+
+  @Primary
+  @Bean(MASTER_DATA_SOURCE)
+  @ConfigurationProperties(prefix = "spring.datasource.master.hikari")
+  public DataSource masterDataSource() {
+    return DataSourceBuilder
+        .create()
+        .type(HikariDataSource.class)
+        .build();
+  }
+
+  @Bean(SLAVE_DATA_SOURCE)
+  @ConfigurationProperties(prefix = "spring.datasource.slave.hikari")
+  public DataSource slaveDataSource() {
+    return DataSourceBuilder
+        .create()
+        .type(HikariDataSource.class)
+        .build();
+  }
+}
+
+
+DataSourceType.java
+package com.example.datasourcereplication.common.type;
+
+public enum DataSourceType {
+  MASTER, SLAVE
+}
+
+
+RoutingDataSource.java
+package com.example.datasourcereplication.config;
+
+import com.example.datasourcereplication.common.type.DataSourceType;
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+public class RoutingDataSource extends AbstractRoutingDataSource {
+
+  @Override
+  protected Object determineCurrentLookupKey() {
+    return TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+        ? DataSourceType.SLAVE : DataSourceType.MASTER;
+  }
+}
+
+RoutingDataSourceConfig.java
+package com.example.datasourcereplication.config;
+
+import com.example.datasourcereplication.common.type.DataSourceType;
+import java.util.HashMap;
+import java.util.Map;
+import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.JpaVendorAdapter;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.transaction.PlatformTransactionManager;
+
+@Slf4j
+@EnableJpaRepositories(
+    basePackages = "com.example.datasourcereplication.domain.repository",
+    entityManagerFactoryRef = "entityManagerFactory",
+    transactionManagerRef = "transactionManager"
+)
+@Configuration
+public class RoutingDataSourceConfig {
+
+  private final String ROUTING_DATA_SOURCE = "routingDataSource";
+  private final String MASTER_DATA_SOURCE = "masterDataSource";
+  private final String SLAVE_DATA_SOURCE = "slaveDataSource";
+  private final String DATA_SOURCE = "dataSource";
+
+  @Bean(ROUTING_DATA_SOURCE)
+  public DataSource routingDataSource(
+      @Qualifier(MASTER_DATA_SOURCE) final DataSource masterDataSource,
+      @Qualifier(SLAVE_DATA_SOURCE) final DataSource slaveDataSource) {
+
+    RoutingDataSource routingDataSource = new RoutingDataSource();
+
+    Map<Object, Object> dataSourceMap = new HashMap<>();
+    dataSourceMap.put(DataSourceType.MASTER, masterDataSource);
+    dataSourceMap.put(DataSourceType.SLAVE, slaveDataSource);
+
+    routingDataSource.setTargetDataSources(dataSourceMap);
+    routingDataSource.setDefaultTargetDataSource(masterDataSource);
+
+    return routingDataSource;
+  }
+
+  @Bean(DATA_SOURCE)
+  public DataSource dataSource(
+      @Qualifier(ROUTING_DATA_SOURCE) DataSource routingDataSource) {
+    return new LazyConnectionDataSourceProxy(routingDataSource);
+  }
+
+  @Bean("entityManagerFactory")
+  public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+      @Qualifier(DATA_SOURCE) DataSource dataSource) {
+    LocalContainerEntityManagerFactoryBean entityManagerFactory
+        = new LocalContainerEntityManagerFactoryBean();
+    entityManagerFactory.setDataSource(dataSource);
+    entityManagerFactory.setPackagesToScan("com.example.datasourcereplication.domain.entity");
+    entityManagerFactory.setJpaVendorAdapter(this.jpaVendorAdapter());
+    entityManagerFactory.setPersistenceUnitName("entityManager");
+    return entityManagerFactory;
+  }
+
+  private JpaVendorAdapter jpaVendorAdapter() {
+    HibernateJpaVendorAdapter hibernateJpaVendorAdapter = new HibernateJpaVendorAdapter();
+    hibernateJpaVendorAdapter.setGenerateDdl(false);
+    hibernateJpaVendorAdapter.setShowSql(false);
+    hibernateJpaVendorAdapter.setDatabasePlatform("org.hibernate.dialect.MySQL5InnoDBDialect");
+    return hibernateJpaVendorAdapter;
+  }
+
+  @Bean("transactionManager")
+  public PlatformTransactionManager platformTransactionManager(
+      @Qualifier("entityManagerFactory") LocalContainerEntityManagerFactoryBean entityManagerFactory) {
+    JpaTransactionManager jpaTransactionManager = new JpaTransactionManager();
+    jpaTransactionManager.setEntityManagerFactory(entityManagerFactory.getObject());
+    return jpaTransactionManager;
+  }
+}
+
+
+
+
+
+
+==================================================================================
+spring.datasource.master.jdbc-url=jdbc:mysql://localhost:3306/master?serverTimezone=Asia/Seoul
+spring.datasource.master.username=root
+spring.datasource.master.password=
+spring.datasource.slave.jdbc-url=jdbc:mysql://localhost:3306/slave?serverTimezone=Asia/Seoul
+spring.datasource.slave.username=root
+spring.datasource.slave.password=
+spring.jpa.database=mysql
+spring.jpa.hibernate.use-new-id-generator-mappings=false
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto=create-drop
+
+ReplicationRoutingDataSource.java
+public class ReplicationRoutingDataSource extends AbstractRoutingDataSource {
+    @Override
+    protected Object determineCurrentLookupKey() {
+        return TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+                ? "slave"
+                : "master";
+    }
+}
+
+
+DataSourceConfig.java
+
+@Configuration
+@EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class})
+@EnableTransactionManagement
+@EnableJpaRepositories(basePackages = {"com.mudchobo.example.masterslave"})
+public class DataSourceConfig {
+
+    @Bean
+    @ConfigurationProperties(prefix = "spring.datasource.master")
+    public DataSource masterDataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @Bean
+    @ConfigurationProperties(prefix = "spring.datasource.slave")
+    public DataSource slaveDataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @Bean
+    public DataSource routingDataSource(@Qualifier("masterDataSource") DataSource masterDataSource,
+                                        @Qualifier("slaveDataSource") DataSource slaveDataSource) {
+        var routingDataSource = new ReplicationRoutingDataSource();
+
+        var dataSourceMap = new HashMap<>();
+        dataSourceMap.put("master", masterDataSource);
+        dataSourceMap.put("slave", slaveDataSource);
+        routingDataSource.setTargetDataSources(dataSourceMap);
+        routingDataSource.setDefaultTargetDataSource(masterDataSource);
+
+        return routingDataSource;
+    }
+
+    @Primary
+    @Bean
+    public DataSource dataSource(@Qualifier("routingDataSource") DataSource routingDataSource) {
+        return new LazyConnectionDataSourceProxy(routingDataSource);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class MasterReplicaRoutingDataSource extends AbstractRoutingDataSource {
+    private static final ThreadLocal<Type> currentDataSource = new ThreadLocal<>();
+
+    MasterReplicaRoutingDataSource(DataSource master, DataSource slave) {
+        Map<Object, Object> dataSources = new HashMap<>();
+        dataSources.put(Type.MASTER, master);
+        dataSources.put(Type.REPLICA, slave);
+
+        super.setTargetDataSources(dataSources);
+        super.setDefaultTargetDataSource(master);
+    }
+
+    static void setReadonlyDataSource(boolean isReadonly) {
+        currentDataSource.set(isReadonly ? Type.REPLICA : Type.MASTER);
+    }
+
+    @Override
+    protected Object determineCurrentLookupKey() {
+        return currentDataSource.get();
+    }
+
+    private enum Type {
+        MASTER, REPLICA;
+    }
+}
+
+
+Next is transaction manager implementation that will inform underlying data source which database connection should be used:
+
+class ReplicaAwareTransactionManager implements PlatformTransactionManager {
+    private final PlatformTransactionManager wrapped;
+
+    ReplicaAwareTransactionManager(PlatformTransactionManager wrapped) {
+        this.wrapped = wrapped;
+    }
+
+    @Override
+    public TransactionStatus getTransaction(TransactionDefinition definition) throws TransactionException {
+        MasterReplicaRoutingDataSource.setReadonlyDataSource(definition.isReadOnly());
+        return wrapped.getTransaction(definition);
+    }
+
+    @Override
+    public void commit(TransactionStatus status) throws TransactionException {
+        wrapped.commit(status);
+    }
+
+    @Override
+    public void rollback(TransactionStatus status) throws TransactionException {
+        wrapped.rollback(status);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    database: mysql
+    hibernate:
+      ddl-auto: create-drop
+      use-new-id-generator-mappings: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL57Dialect
+        dialect.storage_engine: innodb
+        default_batch_fetch_size: 500
+        format_sql: true
+    open-in-view: false
+  datasource:
+    master:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      jdbc-url: jdbc:mysql://localhost:3307/replication?serverTimezone=UTC
+      username: master_usr
+      password: root
+    slave:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      jdbc-url: jdbc:mysql://localhost:3308/replication?serverTimezone=UTC
+      username: slave_usr
+      password: root
+
+
+@Component
+public class DataSourceKey {
+    private static final String MASTER_KEY = "master";
+    private static final String SLAVE_KEY = "slave";
+
+    private static final String INDENT = "_";
+    private static final int DEFAULT_SLAVE_NUMBER = 1;
+
+
+    public String getMasterKey() {
+        return MASTER_KEY;
+    }
+
+    public String getSlaveKeyByNumber(int idx) {
+        return SLAVE_KEY + INDENT + idx;
+    }
+
+    public String getDefaultSlaveKey() {
+        return SLAVE_KEY + INDENT + DEFAULT_SLAVE_NUMBER;
+    }
+}
+
+
+@RequiredArgsConstructor
+public class ReplicationRoutingDataSource extends AbstractRoutingDataSource {
+
+    private final DataSourceKey dataSourceKey;
+
+    @Override
+    protected Object determineCurrentLookupKey() {
+        boolean isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
+        if (isReadOnly) {
+            logger.info("Connection Slave");
+            return dataSourceKey.getDefaultSlaveKey();
+        } else {
+            logger.info("Connection Master");
+            return dataSourceKey.getMasterKey();
+        }
+    }
+}
+
+@Configuration
+@RequiredArgsConstructor
+@EnableTransactionManagement
+@EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class})
+public class ReplicationDataSourceConfig {
+    private final DataSourceKey dataSourceKey;
+
+    @Bean
+    @ConfigurationProperties(prefix = "spring.datasource.master")
+    public DataSource masterDataSource() {
+        return DataSourceBuilder.create()
+                .type(HikariDataSource.class)
+                .build();
+    }
+
+    @Bean
+    @ConfigurationProperties(prefix = "spring.datasource.slave")
+    public DataSource slaveDataSource() {
+        return DataSourceBuilder.create()
+                .type(HikariDataSource.class)
+                .build();
+    }
+
+    @Bean
+    public DataSource routingDataSource(DataSource masterDataSource, DataSource slaveDataSource) {
+        ReplicationRoutingDataSource routingDataSource = new ReplicationRoutingDataSource(dataSourceKey);
+
+        Map<Object, Object> sources = Map.of(
+                dataSourceKey.getMasterKey(), masterDataSource,
+                dataSourceKey.getDefaultSlaveKey(), slaveDataSource
+        );
+
+        routingDataSource.setTargetDataSources(sources);
+        routingDataSource.setDefaultTargetDataSource(masterDataSource);
+
+        return routingDataSource;
+    }
+
+    @Bean
+    @Primary
+    public DataSource dataSource() {
+        return new LazyConnectionDataSourceProxy(routingDataSource(masterDataSource(), slaveDataSource()));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@Configuration
+@EnableTransactionManagement
+@EnableJpaRepositories(basePackages="com.example")
+public class ReplicationDataSourceApplicationConfig {
+
+    @Bean
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(@Qualifier("dataSource") DataSource dataSource) {
+        LocalContainerEntityManagerFactoryBean emfb = new LocalContainerEntityManagerFactoryBean();
+        emfb.setDataSource(dataSource);
+        emfb.setPackagesToScan("com.example");        
+        HibernateJpaVendorAdapter jpaVendorAdapter = new HibernateJpaVendorAdapter();
+        emfb.setJpaVendorAdapter(jpaVendorAdapter);
+
+        return emfb;
+    }
+
+    @Bean
+    public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(entityManagerFactory);
+        return transactionManager;
+    }
+
+    @Bean
+    public PersistenceExceptionTranslationPostProcessor exceptionTranslationPostProcessor() {
+        return new PersistenceExceptionTranslationPostProcessor();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+spring:
+  datasource:
+    driver-class-name: "com.mysql.jdbc.Driver"
+    url: "jdbc:mysql:replication://localhost:3306,localhost:3307/dev"
+    username: "dev"
+    password: "password"
+
+
+
+
+@Service
+class UserService(private val userRepository: UserRepository) {
+ 
+  @Transactional(readOnly = false)
+  fun findAllByMaster(): List<User> = this.userRepository.findAll()
+ 
+  @Transactional(readOnly = true)
+  fun findAllBySlave(): List<User> = this.userRepository.findAll()
+}
+
+
+https://sg-choi.tistory.com/598
+// DataSource를 직접 설정하는 방식이므로 자동 설정 클래스를 제외 처리
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+public class ReplicaExampleApplication { ... }
+
+application.properties
+...
+replica-datasource.master.url=jdbc:mysql://localhost:13306/test
+replica-datasource.master.username=im_master
+replica-datasource.master.password=123456
+replica-datasource.master.driver-class-name=com.mysql.cj.jdbc.Driver
+
+replica-datasource.slaves[0].url=jdbc:mysql://localhost:23306/test
+replica-datasource.slaves[0].username=im_slave
+replica-datasource.slaves[0].password=123456
+replica-datasource.slaves[0].driver-class-name=com.mysql.cj.jdbc.Driver
+
+replica-datasource.slaves[1].url=jdbc:mysql://localhost:33306/test
+replica-datasource.slaves[1].username=im_slave
+replica-datasource.slaves[1].password=123456
+replica-datasource.slaves[1].driver-class-name=com.mysql.cj.jdbc.Driver
+
+
+
+ReplicaDataSourceProperties.java
+@Data
+@Component
+@ConfigurationProperties("replica-datasource")
+public class ReplicaDataSourceProperties {
+    private DataSourceProperty master;
+    private List<DataSourceProperty> slaves;
+
+    @Data
+    public static class DataSourceProperty {
+        private String url;
+        private String username;
+        private String password;
+        private String driverClassName;
+    }
+}
+
+
+ReplicaDBConfig.java
+@Configuration
+public class ReplicaDBConfig {
+    @Bean
+    public DataSource routingDataSource(ReplicaDataSourceProperties replicaDataSourceProperties) {
+        Map<Object, Object> dataSources = createDataSources(replicaDataSourceProperties);
+        ReplicaRoutingDataSource replicaRoutingDataSource = new ReplicaRoutingDataSource(dataSources.size() - 1);
+        replicaRoutingDataSource.setTargetDataSources(dataSources);
+        replicaRoutingDataSource.setDefaultTargetDataSource(dataSources.get("master"));
+        return replicaRoutingDataSource;
+    }
+
+    @Bean
+    public DataSource dataSource(DataSource routingDataSource) {
+        // 트랜잭션 실행시에 Connection 객체를 가져오기 위해 LazyConnectionDataSourceProxy로 설정
+        return new LazyConnectionDataSourceProxy(routingDataSource);
+    }
+
+    private Map<Object, Object> createDataSources(ReplicaDataSourceProperties replicaDataSourceProperties) {
+        Map<Object, Object> dataSources = new LinkedHashMap<>();
+        dataSources.put("master", createDataSource(replicaDataSourceProperties.getMaster()));
+
+        IntStream.range(0, replicaDataSourceProperties.getSlaves().size()).forEach(i -> {
+            dataSources.put("slave-" + i, createDataSource(replicaDataSourceProperties.getSlaves().get(i)));
+        });
+
+        return dataSources;
+    }
+
+    private DataSource createDataSource(ReplicaDataSourceProperties.DataSourceProperty dataSourceProperty) {
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl(dataSourceProperty.getUrl());
+        dataSource.setDriverClassName(dataSourceProperty.getDriverClassName());
+        dataSource.setUsername(dataSourceProperty.getUsername());
+        dataSource.setPassword(dataSourceProperty.getPassword());
+        return dataSource;
+    }
+
+    @Slf4j
+    @RequiredArgsConstructor
+    private static class ReplicaRoutingDataSource extends AbstractRoutingDataSource {
+        private final int slaveSize;
+
+        @Override
+        protected Object determineCurrentLookupKey() {
+            String dataSourceName = TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+                ? "slave-" + hash()
+                : "master";
+
+            log.info("[DATA_SOURCE_NAME] : {}", dataSourceName);
+
+            return dataSourceName;
+        }
+
+        private int hash() {
+            return Math.abs(new Random().nextInt()) % slaveSize;
+        }
+    }
+}
+
+JpaConfig.java
+@Configuration
+public class JpaConfig {
+    @Bean
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
+        LocalContainerEntityManagerFactoryBean entityManagerFactory = new LocalContainerEntityManagerFactoryBean();
+        entityManagerFactory.setDataSource(dataSource);
+        entityManagerFactory.setPackagesToScan("com.example.replica");
+        entityManagerFactory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        entityManagerFactory.setJpaPropertyMap(Map.of(
+            "hibernate.show_sql", true,
+            "hibernate.format_sql", true,
+            "hibernate.use_sql_comments", false,
+            "hibernate.dialect", "org.hibernate.dialect.MySQL5InnoDBDialect"
+        ));
+        return entityManagerFactory;
+    }
+
+    @Bean
+    public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+application.properties
+spring.datasource.hikari.master.username=root  
+spring.datasource.hikari.master.password=master  
+spring.datasource.hikari.master.jdbc-url=jdbc:mysql://ip:13306/test\_schema?useSSL=false&useUnicode=yes&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true
+
+spring.datasource.hikari.slave.username=root  
+spring.datasource.hikari.slave.password=slave  
+spring.datasource.hikari.slave.jdbc-url=jdbc:mysql://ip:13307/test\_schema?useSSL=false&useUnicode=yes&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true
+
+
+ReplicationRoutingDataSource.java
+public class ReplicationRoutingDataSource extends AbstractRoutingDataSource {  
+  public static final String DATASOURCE\_KEY\_MASTER = "master";  
+  public static final String DATASOURCE\_KEY\_SLAVE = "slave";
+
+  @Override
+  protected Object determineCurrentLookupKey() {
+      boolean isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
+      return (isReadOnly)
+          ? DATASOURCE_KEY_SLAVE
+          : DATASOURCE_KEY_MASTER;
+  }
+}
+
+
+DataBaseConfig.java
+@Configuration  
+@EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class})  
+@EnableTransactionManagement  
+@EnableJpaRepositories(basePackages = {"nextstep.subway"})  
+class DataBaseConfig {
+  @Bean
+  @ConfigurationProperties(prefix = "spring.datasource.hikari.master")
+  public DataSource masterDataSource() {
+      return DataSourceBuilder.create().type(HikariDataSource.class).build();
+  }
+
+  @Bean
+  @ConfigurationProperties(prefix = "spring.datasource.hikari.slave")
+  public DataSource slaveDataSource() {
+      return DataSourceBuilder.create().type(HikariDataSource.class).build();
+  }
+
+  @Bean
+  public DataSource routingDataSource(@Qualifier("masterDataSource") DataSource master,
+                                      @Qualifier("slaveDataSource") DataSource slave) {
+      ReplicationRoutingDataSource routingDataSource = new ReplicationRoutingDataSource();
+
+      HashMap<Object, Object> sources = new HashMap<>();
+      sources.put(DATASOURCE_KEY_MASTER, master);
+      sources.put(DATASOURCE_KEY_SLAVE, slave);
+
+      routingDataSource.setTargetDataSources(sources);
+      routingDataSource.setDefaultTargetDataSource(master);
+
+      return routingDataSource;
+  }
+
+  @Primary
+  @Bean
+  public DataSource dataSource(@Qualifier("routingDataSource") DataSource routingDataSource) {
+      return new LazyConnectionDataSourceProxy(routingDataSource);
+  }
+}
+
+
+
+
+
+@Bean
+@Primary
+public DataSource dataSource() {
+    DataSource determinedDataSource = routingDataSource(sourceDataSource(), replicaDataSource());
+    return new LazyConnectionDataSourceProxy(determinedDataSource);
+}
+
+
+
+
+SendEmailResponse sendEmail(SendEmailRequest sendEmailRequest)
+---------------------------------------------------------------
+sesClient.sendEmail(
+    SendEmailRequest.builder()
+                    .destination(Destination.builder()
+                                            .toAddresses("to-email@domain.com")
+                                            .bccAddresses("bcc-email@domain.com")
+                                            .build())
+                    .replyToAddresses("reply-to@domain.com")
+                    .message(Message.builder()
+                                    .subject(Content.builder()
+                                                    .charset("UTF-8")
+                                                    .data("Subject Line")
+                                                    .build())
+                                    .body(Body.builder()
+                                              .text(Content.builder()
+                                                           .data("The body of the email")
+                                                           .charset("UTF-8")
+                                                           .build())
+                                              .build())
+                                    .build())
+                    .build());
+
+SendEmailResponse sendEmail(Consumer<SendEmailRequest.Builder> sendEmailRequest)
+---------------------------------------------------------------------------------
+sesClient.sendEmail(
+    email -> email.destination(d -> d.toAddresses("to-email@domain.com").bccAddresses("bcc-email@domain.com"))
+                  .replyToAddresses("reply-to@domain.com")
+                  .message(m -> m.subject(s -> s.charset("UTF-8").data("Subject Line"))
+                                 .body(b -> b.text(t -> t.data("The body of the email").charset("UTF-8")))));
+
+
+class Mailer {
+
+  String from;
+  String to;
+  String subject;
+  String content;
+
+  private Mailer(){} //Private to avoid people creating instances
+  
+  public Mailer from(String from){
+  	System.out.println("From: "+from);
+    return this;
+  }
+  
+  public Mailer to(String to){
+  	System.out.println("To: "+to);
+    return this;
+  }
+  
+  public Mailer subject(String subject){
+  	System.out.println("Subject: "+subject);
+    return this;
+  }
+  
+  public Mailer content(String content){
+  	System.out.println("content: "+content);
+    return this;
+  }
+  
+  public static void send(Consumer<Mailer> block){
+    Mailer mailer = new Mailer();
+    block.accept(mailer);
+  	System.out.println("Sending ...");
+  }
+
+  @Override
+  public String toString() {
+    return "Mailer = from: " + this.from + " — to: " + this.to  + " — subject: " + this.subject  + " — content: " + this.content;
+  }
+
+}
+
+public class Sample {
+  public static void main(String [] args){
+    Mailer.send(mailer ->
+      mailer          
+       .from("builder@adamgamboa.dev")
+       .to("adamgamboa@domain.dev")
+       .subject("This is better)
+       .content("This code is good, you did it better"));
+  }
+}
+
+
+final MapFunction<String, String[]> mapToWords = phrase -> phrase.split(" ");
+final var words = mapToWords.apply("Hi! My name is John"); // ["Hi!", "My", "name", "is", "John"]
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,243 @@
+A load balancer ensures that no single server is overloaded with traffic while others remain idle, 
+which can lead to better resource utilization and increased reliability of the overall system.
+
+Software load-balancer
+Hardware load-balancer
+
+Load balancers can help to increase the availability and scalability of the application and 
+that’s why they have been around for quite sometime even before the Microservices architecture.
+
+1. Purpose
+# The primary purpose of an API gateway is to provide a unified API for microservices, 
+# while the primary purpose of a load balancer is to distribute traffic evenly across multiple servers.
+
+2. Functionality
+# An API gateway can perform several functions, such as routing, security, load balancing, and API management, 
+# while a load balancer only handles traffic distribution.
+
+3. Routing
+# An API gateway routes requests based on a predefined set of rules, 
+# while a load balancer routes requests based on predefined algorithms, such as round-robin or least connections.
+
+4. Protocol Support
+# An API gateway typically supports multiple protocols, such as HTTP, WebSocket, and MQTT, 
+# while a load balancer only supports protocols at the transport layer, such as TCP and UDP.
+
+5. Security
+# An API gateway provides features such as authentication, authorization, and SSL termination, 
+# while a load balancer only provides basic security features such as SSL offloading.
+
+6. Caching
+# An API gateway can cache responses from microservices to improve performance, 
+# while a load balancer does not offer caching capabilities.
+
+7. Transformation
+# An API gateway can transform data between different formats, such as JSON to XML, 
+# while a load balancer does not provide data transformation capabilities.
+
+8. Service Discovery
+# An API gateway can integrate with service discovery mechanisms to dynamically discover microservices, 
+# while a load balancer relies on static configuration.
+
+9. Granularity
+# An API gateway can provide fine-grained control over API endpoints, 
+# while a load balancer only controls traffic at the server level.
+
+10. Scalability
+# An API gateway can handle a high number of API requests and manage the scaling of microservices, 
+# while a load balancer only provides horizontal scaling capabilities.
+
+
+
+/**
+ * Java Program to implement Singleton Patter using Double checked locking idiom
+ */
+public class JavaSingleton {
+private static volatile JavaSingleton _instance;
+    /**
+     * Double checked locking code on Singleton
+     * @return JavaSingleton instance
+     */
+    public static JavaSingleton getInstance() {
+        if (_instance == null) {
+            synchronized (JavaSingleton.class) {
+                if (_instance == null) {
+                    _instance = new JavaSingleton();
+                }
+            }
+        }
+        return _instance;
+    }
+}
+
+
+
+@Entity
+public class ABC {
+ @ManyToOne()
+ private XYZ xyz;
+}
+
+@Entity
+public class XYZ {
+  @OneToMany(mappedBy = "xyz")
+  private Set<ABC> abcList;
+  //XYZ has parent-child relationship
+  @OneToMany(mappedBy = "parentXYZ")
+  private Set<XYZ> xyzList;
+  @ManyToOne()
+  @JoinColumn(name = "parent_xyz_id")
+  private XYZ parentXYZ;
+}
+
+
+PA_BULK_DISBURSEMENT_STATUS PA080
+
+$ aws configure
+AWS Access Key ID: AKIA2ZFMGV7VQXYZABCDE
+Secret Access Key: fYi+iKNoW+tHisIsAfAkEkey+xyz123+abcde
+Default region name: us-east-1
+Default output format: json
+$ aws s3 ls
+
+
+
+
+
+
+
+The code for the DreamCar class is pretty simple:
+
+// package declaration and imports
+
+public class DreamCar {
+
+   private Color color;
+   private String brand;
+   private boolean leatherSeats;
+   private boolean fuelEfficient;
+   private int passengerCount = 2;
+
+   // getters and setters for each field
+} 
+Although creating a DreamCar is easy and the code is quite readable, we can create more compact code using a car builder:
+
+// package declaration and imports
+
+public class DreamCarBuilder {
+
+   public static DreamCarBuilder car() {
+     return new DreamCarBuilder();
+   }
+
+   private final DreamCar car;
+
+   private DreamCarBuilder() {
+     car = new DreamCar();
+   }
+
+   public DreamCar build() { return car; }
+
+   public DreamCarBuilder brand(String brand) {
+     car.setBrand(brand);
+     return this;
+   }
+
+   public DreamCarBuilder fuelEfficient() {
+     car.setFuelEfficient(true);
+     return this;
+   }
+
+   // similar methods to set field values
+} 
+
+
+
+
+HttpRequest request = HttpRequest.url(SOME_URL)
+.headers(HttpRequest.Headers
+        .header(ContentType, SOME_MIME_TYPE)
+        .header(SOME_CUSTOM_HEADER, SOME_CUSTOM_VALUE)
+        .build()
+        )
+.parameters(HttpRequest.Parameters
+           .parameter(SOME_KEY, SOME_VALUE)
+           .parameter(SOME_KEY_2, SOME_VALUE_2)
+           .build()
+           )
+.build();
+
+
+DataSourceMasterConfig              DataSourceConstants
+DataSourceReplicaConfig
+
+https://www.swtestacademy.com/java-functional-interfaces/
+Some of the key concepts and techniques used in functional programming include:
+------------------------------------------------------------
+Higher-order functions: Functions that take other functions as arguments or return functions as results. Higher-order functions are a powerful abstraction that allows code to be more modular and reusable.
+Pure functions: Functions that have no side effects and always return the same output for a given input. Pure functions are easier to test, reason about, and parallelize than impure functions.
+Immutability: The principle of not changing data once it has been created. Immutable data structures are thread-safe and can help prevent bugs related to shared mutable state.
+Recursion: A technique for defining functions in terms of themselves. Recursion can be used to express complex algorithms in a concise and elegant way.
+
+
+
+ //Supplier function declarations.
+    Supplier<String>  textSupplier     = () -> "Hello SW Test Academy!";
+    Supplier<Integer> numberSupplier   = () -> 1234;
+    Supplier<Double>  randomSupplier   = () -> Math.random();
+    Supplier<Double>  randomSupplierMR = Math::random; //With Method Reference (MR)
+
+
+//Consumer function declarations.
+    Consumer<String> upperCaseConsumer = (text) -> System.out.println(text.toUpperCase());
+    Consumer<String> lowerCaseConsumer = (text) -> System.out.println(text.toLowerCase());
+    Consumer<Double> logOfTenConsumer  = (number) -> System.out.println(Math.log10(number));
+
+//FunctionInterface function declarations. (Input Type, Return Type)
+    Function<String, String>  toUpperCase = (text) -> text.toUpperCase();
+    Function<String, String>  toLowerCase = (text) -> text.toLowerCase();
+    Function<Integer, Double> log10       = (number) -> Math.log10(number);
+//Method Reference Declarations (Input Type, Return Type)
+    Function<String, String>  toUpperCaseMR = String::toUpperCase;
+    Function<String, String>  toLowerCaseMR = String::toLowerCase;
+    Function<Integer, Double> log10MR       = Math::log10;
+
+List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+Function<List<Integer>, Integer> sum = list -> {
+    int result = 0;
+    for (int number : list) {
+        result += number;
+    }
+    return result;
+};
+int total = sum.apply(numbers);    
+
+
+//Predicate function declaration.
+    String            sampleText        = "Hello SW Test Academy";
+    Predicate<String> containsPredicate = (text) -> sampleText.contains(text);
+//BiPredicate function declaration.
+    BiPredicate<String, String> containsBiPredicate   = (text, pattern) -> text.contains(pattern);
+    BiPredicate<String, String> containsBiPredicateMR = String::contains; //Method reference version.
+
+//Calling Predicate functions.
+    boolean result = containsPredicate.test("SW");
+    boolean resultOfNegate = containsPredicate.negate().test("SW"); //negate is inverse operation like "does not contain".
+    boolean andResult = containsBiPredicate.and(containsBiPredicate.negate()).test("SW", "SW"); //Logical AND operation.
+    boolean orResult = containsBiPredicate.or(containsBiPredicate.negate()).test("SW", "SW"); //Logical OR operation.
+
+List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+Predicate<Integer> isEven = n -> n % 2 == 0;
+List<Integer> evenNumbers = numbers.stream()
+                                    .filter(isEven)
+                                    .collect(Collectors.toList());
+       
+
+
+        
+        
+
+    
+    
+
+

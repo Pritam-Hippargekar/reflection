@@ -2,7 +2,7 @@ https://www.metricstream.com/blog/improve-platform-resilience-kafka-based-system
 https://www.clairvoyant.ai/blog/unleash-kafka-producers-architecture-and-internal-workings
 
 
-
+A topic with 3 partitions and 2 replicas spread across 3 brokers.
 
 
 By default, the Spring Boot configuration will disable the following:

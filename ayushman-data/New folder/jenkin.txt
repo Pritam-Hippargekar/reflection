@@ -1,0 +1,315 @@
+How to handle inprogress status for SonarQube Quality gate?
+
+
+Declarative Pipeline
+--------------------
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+                sh 'jmeter -n -t my_test_plan.jmx'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                ansiblePlaybook credentialsId: 'my-ansible-credentials', inventory: 'my-inventory', playbook: 'deploy.yml'
+            }
+        }
+    }
+}
+
+
+
+
+Scripted Pipeline
+----------------------
+node {
+    stage('Build') {
+        sh 'mvn clean package'
+    }
+    stage('Test') {
+        parallel (
+            "unit-tests": {
+                sh 'mvn test'
+            },
+            "performance-tests": {
+                sh 'jmeter -n -t my_test_plan.jmx'
+            }
+        )
+    }
+    stage('Deploy') {
+        withCredentials([usernamePassword(credentialsId: 'my-ansible-credentials', usernameVariable: 'ANSIBLE_USER', passwordVariable: 'ANSIBLE_PASSWORD')]) {
+            sh "ansible-playbook -i my-inventory -u ${ANSIBLE_USER} -k -v deploy.yml"
+        }
+    }
+}
+
+https://thetechdarts.com/category/jenkins/page/4/
+https://www.eficode.com/blog/jenkins-groovy-tutorial
+Groovy will judge the type based on the value of the object.
+..............................................................
+def str = "Hello world"
+def num =0
+
+
+0..5 indicates that the integers 0,1,2,3,4,5 are included
+0..<5 means 0,1,2,3,5 and a..d means a,b,c,d:
+..................................................
+for(x in 1..5){
+  println x //0,1,2,3,4,5
+}
+
+Groovy also supports default parameter values:
+
+def repeat(val, x=10){
+  for(i in 0..<x){
+    println val
+  }
+}
+
+List methods available in Groovy are another benefit.
+........................................................
+Add( ) Append the new value to the end of this list.
+Get( ) Returns the element at the specified position in this list.
+Contains( ) Returns true if this list contains the specified value.
+Minus( ) Create a new list of original elements that removes the specified element
+Plus ( ) Create a new list of the original list elements and the specified elements.
+Pop( ) Remove the last item from this list
+Remove( ) Remove elements from the specified position in the list
+Reverse() Create a new list that is the opposite of the original list's elements
+Size( ) Get the number of elements in this list.
+
+Sort( ) Returns a sorted copy of the original list.
+def arg = ["Groovy","Java","Python",”nodeJS”]
+println arg.class
+println arg[1]
+def no = [1,2,3,4]
+def no2 = no +5 //=[1,2,3,4,5]
+def no3 = no - [2,3] //=[1,4]
+arg.add("Ruby")
+arg << "Smalltalk"
+arg[5] = "C++"
+
+
+
+Groovy implicitly creates getters, setter methods, and provides constructors with arguments.
+....................................................................
+class Person {
+  String name;
+  int ID;
+}
+class Test {
+  static void main(String) {
+    def emp = new emp(name: 'name’')
+    println emp.getName();
+    emp.setYR(2019);
+    println emp.getYR(); // 2019
+  }
+}
+
+
+Exception handling is the same as Java, using try, catch to catch exceptions in Groovy
+..............................................
+Try{
+.....
+}catch(Exception1 exp){
+.....
+}finally{
+......
+}
+
+
+
+Node/agent
+This defines where to execute the code on which machine.
+
+pipeline {
+  node any
+}
+or
+pipeline {
+  agent { node { label 'labelName' } }
+}
+The section must be defined at the top-level inside the pipeline block, but stage-level usage is optional.
+
+
+Parallel Stages
+.......................
+stage("Parallel") {
+  steps {
+    parallel (
+      "Taskone" : {
+        //do some stuff
+      },
+      "Tasktwo" : {
+        // Do some other stuff in parallel
+      }
+    )
+  }
+}
+
+
+
+
+When all the steps in the pipeline have successfully completed, the pipeline is considered to have successfully executed
+......................................
+stages {
+  stage('Build') {
+    steps {
+      sh 'echo "Step 1"'
+      sh 'echo "Step 2"'
+      sh 'echo "Step 3"'
+    }
+  }
+}
+
+Timeout and retries:
+...............................
+pipeline {
+  agent any
+  stages {
+    stage('Dev Deployment') {
+      steps {
+        retry(x) { // It Retries x number of times mentioned until its successful
+          sh './dev-deploy.sh'
+        }
+        timeout(time: x, unit: 'MINUTES') { // Time out option will make the step wait for x mins to execute if it takes more than that it will fail
+          sh './readiness-check.sh'
+        }
+      }
+    }
+  }
+}
+
+
+
+
+pipeline {   
+  agent{      
+    node { label 'slavefordocker'}     
+  }  
+  environment {     
+    DOCKERHUB_CREDENTIALS= credentials('dockerhubcredentials')     
+  }    
+  stages {         
+    stage("Git Checkout"){           
+      steps{                
+	git credentialsId: 'github', url: 'https://github.com/githubusername/githubreponame'                 
+	echo 'Git Checkout Completed'            
+      }        
+    }
+    stage('Build Docker Image') {         
+      steps{                
+	sh 'sudo docker build -t dockerhubusername/dockerhubreponame:$BUILD_NUMBER .'           
+        echo 'Build Image Completed'                
+      }           
+    }
+    stage('Login to Docker Hub') {         
+      steps{                            
+	sh 'echo $DOCKERHUB_CREDENTIALS_PSW | sudo docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'                 
+	echo 'Login Completed'                
+      }           
+    }               
+    stage('Push Image to Docker Hub') {         
+      steps{                            
+	sh 'sudo docker push dockerhubusername/dockerhubreponame:$BUILD_NUMBER'                 echo 'Push Image Completed'       
+      }           
+    }      
+  } //stages 
+  post{
+    always {  
+      sh 'docker logout'           
+    }      
+  }  
+} //pipeline
+
+
+
+
+Below are the steps to write stages.
+
+= Write stage for Checkout- This can be GitHub or RTC or any other version control
+= Write stage for Code Coverage- Here should mention exact path where the pom.xml stored
+= Write stage for SonarQube- Here should mention SonarQube version or without mentioning the version and need to mention java11 in tools
+= Write Stage for Build- Here should mention exact path where the pom.xml stored for clean install
+= Write Stage for Artifactory- This stage is for to upload the .jar, .war or .ear etc.. in Artifactory
+
+
+pipeline {
+    agent any
+    tools {
+        // Use Java 8 for the build
+        jdk 'Java8'
+    }
+}
+
+stage('Checkout') {
+    steps {
+        // Clone the GitHub repository
+        git branch: 'main', credentialsId: 'github-credentials', url: 'https://github.com/yourusername/your-repo.git'
+    }
+}
+
+stage('Code Coverage') {
+    steps {
+    echo 'current stage: code_coverage'
+    // Run the tests and generate code coverage report
+    sh 'mvn -f "You Should mention the path"
+       }
+}
+
+stage('SonarQube') {
+     tools {
+         jdk 'openjdk11'            
+     }
+     steps {
+        echo 'Current Stage: Sonar'
+            withSonarQubeEnv('sonarqube'){
+                // Add your SonarQube steps here
+                sh 'mvn sonar:sonar'
+            }
+        }
+}
+
+
+stages {
+        stage('Build') {
+            steps {
+                // Add your build steps here
+                sh 'mvn clean install'
+            }
+        }
+}
+
+stage 'upload to Artifactory' {
+    steps {
+        //setup for Jfrog CLI
+        withCredentials([usernamePassword(credentialsId: 'Artifactory-credentials', passwordVariable: 'ARTIFACTORY_PASSWORD', usernameVarible: 'ARTIFACTORY_USERNAME')]) {
+            sh 'curl  fL https:getcli.jfrog.io | sh'
+            sh 'export PATH=$PATH:~/.jfrog-cli-go/bin'
+            sh 'jfrog rt config --url=https://your-artifactory-url --user=$ARTIFACTORY_USERNAME --password=$ARTIFACTORY_PASSWORD --interactive=false'
+        }
+        //Upload Artifacts to artifactory
+        sh 'Jfrog rt upload --recursive target/*jar my-repository/'
+     }
+}
+
+
+Enter Artifactory url like given below:
+some name for server_id: http://public_dns_name:8081/artifactory
+admin/Admin123 as credentials
+
+
+
+TransactionalTypeEnum
+
+YPP-18262
+
+

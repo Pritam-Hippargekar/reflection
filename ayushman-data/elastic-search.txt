@@ -441,15 +441,38 @@ it become
 ============================END NESTED========================================
 
 
-“BigDecimal”
+BigDecimal (The compare method is the heart and soul of the Comparator interface)
 --------------------------
-When (this BigDecimal) == (BigDecimal ob), it returns 0.
-When (this BigDecimal) < (BigDecimal ob), it returns -1.
-When (this BigDecimal) > (BigDecimal ob), it returns 1.
+BigDecimal is zero means that it can store 0, 0.0 or 0.00 etc values.
+So you want to check Integer is zero and the precision is also zero.
+BigDecimal object has enum constant BigDecimal.ZERO to represent 0 value with zero scales.
+use BigDecimal.ZERO to check object is zero or not.
+
+equals: It does not use a scale for equality test
+compareTo: method checks zero value and zero scale value and returns 0. It is null-safe and more readable.
+
+equals is not considered the scale zero
+compareTo is null safe, readable, and considered scale zero
+signum is not readable, not null safe, and considered scale zero
+
+When (this BigDecimal) == (BigDecimal ob) [t1 == t2], it returns 0.(0 represents equal objects)
+When (this BigDecimal) < (BigDecimal ob) [t1 < t2], it returns -1.(a negative number represents less than)
+When (this BigDecimal) > (BigDecimal ob) [t1 > t2], it returns 1.(1 represents greater than)
 HashSet uses equals to check duplicates while TreeSet uses compareTo to check duplicates.
 CompareTo() must throw NullPointerException if current object get compared to null object as opposed to equals() which return false on such scenario.
 Use compareTo() instead of equals() to compare numeric values since equals() takes scale into consideration
 compares two objects of “BigDecimal” type and when both the objects are same in value but different in terms of the scale then it is treated to be equal.
+
+
+Comparator<Transaction> TIME_SORT = (Transaction t1, Transaction t2) -> t1.date().compareTo(t2.date());
+Sort using Collections class.
+Collections.sort(transactions, TIME_SORT);
+
+Sort using sort method in List interface.
+transactions.sort(TIME_SORT);
+
+
+
 
 Example: Calculate 10% of 800.
 10/100 * 80 = X
@@ -459,20 +482,46 @@ Example: Calculate 96.163 is what % of 3.7
 (96.163 * 100) / 3.7
 
 
-country
-state
-district
-postCode
+public BigDecimal calculateCommission(BigDecimal Pay1_Operator_Commisssion,BigDecimal txnAmount){
+  return pay1_operator_commisssion.divide(new BigDecimal(100)).multiply(txnAmount).setScale(2, BigDecimal.ROUND_HALF_UP);
+}
 
-buildingNumber
-houseNumber
-streetName
+    public BigDecimal getCommissionGst(BigDecimal txnAmount) {
+        if (txnAmount.compareTo(BigDecimal.ZERO) > 0) {
+            ParameterManagement parameterManagement = parameterManagementRepository.findByName(ParameterManagementEnum.GST_RATE.name());
+            BigDecimal gstPercentage = new BigDecimal(parameterManagement.getValue());
+            return gstPercentage.divide(new BigDecimal(100)).multiply(txnAmount).setScale(2, BigDecimal.ROUND_HALF_UP);
+        }
+        return BigDecimal.ZERO;
+    }
+
+Prior to Java 8 Comparator<T> interface had two methods 
+-----------------------------------
+boolean equals(Object obj)
+int compare(T o1, T o2)
+
+
+due date should be before current date.
 
 
 
+mobile circle operator
 
+PAY1_OPERATOR_COMMISSION
+    <changeSet id="2022110812121234" author="jhipster">
+        <sql>
+            INSERT INTO parameter_management (name, value, data_type, comments, unit) VALUES ('PAY1_OPERATOR_COMMISSION', 
+    '{"data": [{ "operator_code": "2", "operator_name": "Airtel", "commission": "0" },
+        { "operator_code": "3", "operator_name": "BSNL", "commission": "0" }, { "operator_code": "30", "operator_name": "MTNL", "commission": "0" },
+        { "operator_code": "83", "operator_name": "Reliance Jio", "commission": "0" }, { "operator_code": "15", "operator_name": "Vodafone Idea", "commission": "0" }
+    ]}' , 'STRING', 'PAY1 OPERATOR COMMISSION', 'STRING');
+        </sql>
+    </changeSet>
 
-
+employee hired — NewObject,
+employee fired — ObjectRemoved,
+salary change — ValueChange,
+boss change — ReferenceChange.
 
 
 

@@ -1,0 +1,277 @@
+lasticsearch does not support updates or even partial updates.
+https://luis-sena.medium.com/the-complete-guide-to-increase-your-elasticsearch-write-throughput-e3da4c1f9e92
+https://mkonda007.medium.com/elasticsearch-in-action-introducing-java-api-client-1-2-eadad7dca737
+https://spinscale.de/posts/2022-03-03-running-the-elasticcc-platform-part-2.html
+https://www.j-labs.pl/blog-technologiczny/elasticsearch-in-java-projects-index-and-read-documents/
+https://www.bytefish.de/blog/elasticsearch_java.html
+https://www.javatips.net/api/elasticsearch-java-client-examples-master/src/test/java/es/official/guide/modeling/NestedObjectMappingExamples.java
+
+{
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "name": {
+      "type": "text"
+    },
+    "created": {
+      "type": "date"
+    },
+    "priority": {
+      "type": "integer"
+    }
+  }
+}
+
+
+{
+    "mappings": {
+        "TYPE_NAME": {
+            "properties": {
+                "location": { 
+                    "type": "geo_point" 
+                } 
+            } 
+        } 
+    } 
+}
+
+
+"mappings": {
+      "properties": {
+        "language": {
+          "type":"nested"
+      }
+    }
+  }
+
+
+
+{
+   "mappings": {
+      "movie": {
+         "properties": {
+            "cast": {
+               "type": "nested",
+               "include_in_parent": true
+            }
+         }
+      }
+   }
+}
+
+
+
+{
+  "mappings": {
+    "blogpost": {
+      "properties": {
+        "comments": {
+          "type": "nested", 
+          "properties": {
+            "stars":   { "type": "short"   },
+            "date":    { "type": "date"    }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+put /my_index/_mapping/my_type 
+{
+ "person": {
+   "properties": {
+     "name" : {
+       "type": "text",
+       "analyzer": "string_lowercase",
+       "fields": {
+         "keyword": {
+           "type": "keyword"
+         }
+       }
+      },
+      "car": {
+        "type" : "nested",
+        "properties": {
+          "make": { 
+            "type": "text",
+            "analyzer": "string_lowercase",
+            "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+           }
+          },
+          "model": { 
+            "type": "text",
+            "analyzer": "string_lowercase",
+            "fields": {
+            "keyword": {
+              "type": "keyword"
+             }
+            }
+           }
+         }
+       }
+     }
+    }
+   }
+https://copyprogramming.com/howto/elastic-search-mapping-for-nested-json-objects
+PUT events
+{
+  "mappings": {
+    "properties": {
+      "events": {
+        "type": "nested",
+        "properties": {
+          "ecommerceData": {
+            "type": "nested",
+            "properties": {
+              "comments": {
+                "type": "nested",
+                "properties": {
+                  "recommendationType": {
+                    "type": "keyword"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+POST events/_doc
+{
+  "events": [
+    {
+      "eventId": "1",
+      "ecommerceData": [
+        {
+          "comments": [
+            {
+              "rank": 1,
+              "recommendationType": "abc"
+            },
+            {
+              "rank": 1,
+              "recommendationType": "abc"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+GET events/_search
+{
+  "size": 0,
+  "aggs": {
+    "genres": {
+      "nested": {
+        "path": "events.ecommerceData.comments"
+      },
+      "aggs": {
+        "nested_comments_recomms": {
+          "terms": {
+            "field": "events.ecommerceData.comments.recommendationType"
+          }
+        }
+      }
+    }
+  }
+}
+Each time you update a single field in your document, a new segment will be created and the information in the previous segment is marked as deleted.
+
+Mappings
+Standard
+{
+  "user" : {
+    "mappings" : {
+      "properties" : {
+        "follower_count" : {
+          "type" : "integer"
+        },
+        "followers" : {
+          "type" : "keyword"
+        },
+        "following" : {
+          "type" : "keyword"
+        },
+        "full_name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          },
+          "analyzer" : "standard"
+        },
+        "name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          },
+          "analyzer" : "standard"
+        },
+        "username" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          },
+          "analyzer" : "standard"
+        }
+      }
+    }
+  }
+}
+
+Mappings
+Ngram
+{
+  "user_gram" : {
+    "mappings" : {
+      "properties" : {
+        "follower_count" : {
+          "type" : "integer"
+        },
+        "followers" : {
+          "type" : "keyword"
+        },
+        "following" : {
+          "type" : "keyword"
+        },
+        "full_name" : {
+          "type" : "text",
+          "analyzer" : "ngramzier"
+        },
+        "name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          },
+          "analyzer" : "standard"
+        },
+        "username" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          },
+          "analyzer" : "standard"
+        }
+      }
+    }
+  }
+}

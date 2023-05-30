@@ -53,10 +53,12 @@ BigDecimal serviceCharge = BigDecimal.ZERO;
     serviceCharge = serviceChargesDetails.getServiceCharge().divide(new BigDecimal(100)).multiply(txnAmount).setScale(4, BigDecimal.ROUND_HALF_UP);
 
 
-            BigDecimal withdrawAbleAmount = partnerClient.getLimitAccount().getCurrentBalance().subtract(accountEntries.stream()
+            BigDecimal withdrawAbleAmount = partnerClient.getLimitAccount().getCurrentBalance()
+            .subtract(                      accountEntries.stream()
                                             .map(LimitAccountEntry::getAmount)
                                             .reduce(BigDecimal.ZERO, BigDecimal::add)
-                                            .setScale(2, BigDecimal.ROUND_HALF_UP));
+                                            .setScale(2, BigDecimal.ROUND_HALF_UP)
+                                            );
 
 ==============================================
 
