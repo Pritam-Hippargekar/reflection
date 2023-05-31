@@ -1,0 +1,238 @@
+https://devopscube.com/setup-efk-stack-on-kubernetes/
+https://ptrk.io/posts/2018/04/how-to-deploy-an-efk-stack-to-kubernetes/
+https://simplyopensource.blogspot.com/2020/05/setup-fully-configurable-efk-with-xpack.html
+
+
+# The user visits the URL into the browser that basically gets redirected to the ingress service.
+# Then service, forwards the request to the controller which then checks the rules, and based on these rules it takes a decision as to where the request has to be sent.
+# If it is geeksforgeeks.com, then we will go to this particular service and if it is tutorialspoint.com, then we will go to this service.
+# These services act as a load balancer to the pods and hence your request is being sent to the pod through the service.
+
+ClusterIP (default): the service gets an internal IP address in the cluster. This is the lowest level of exposure. 
+The service is only reachable from within the cluster. This is a good choice when the service is for internal assumption, such as database.
+
+
+http://k8sdemo.com/v1/ should provide access to version v1
+http://k8sdemo.com/v2/ should provide access to version v2
+http://api.k8sdemo-v1.com/ should provide access to version v1
+http://api.k8sdemo-v2.com/ should provide access to version v2
+
+ingress.yaml
+-------------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: k8s-boot-demo-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    -  host: "k8sdemo.com"
+       http:
+         paths:
+           - pathType: Prefix
+             path: "/v1"
+             backend:
+               service:
+                 name: k8s-boot-demo-v1-service
+                 port:
+                   number: 8080
+           - pathType: Prefix
+             path: "/v2"
+             backend:
+               service:
+                 name: k8s-boot-demo-v2-service
+                 port:
+                   number: 8080
+
+    - host: "api.k8sdemo-v1.com"
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: k8s-boot-demo-v1-service
+                port:
+                  number: 8080
+
+    - host: "api.k8sdemo-v2.com"
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: k8s-boot-demo-v2-service
+                port:
+                  number: 8080
+
+
+Kubernetes Ingress vs LoadBalancer vs NodePort
+..............................................
+These options all do the same thing. They let you expose a service to external network requests. 
+They let you send a request from outside the Kubernetes cluster to a service inside the cluster.
+
+NodePort Service(node:port)
+........................
+A NodePort Service asks Kubernetes to open a static port in every cluster node on a high port between 30,000 and 32,767 (by default). 
+It is exposed on the IP of each node and is automatically routed to a ClusterIP Service that it creates.
+- The name of the service can be used by other pods to access it.
+- If we only have to have a single service port we can use NodePort. 
+- In the case of multiple instances of the same service, we have to use the LoadBalancer.
+Note : But what if we have to add one more service to our node and access it from another URL. 
+       In this case, we will have to add another load balancer to our cluster. 
+       This means that each service exposed with a LoadBalancer will get its own IP address 
+       and we will have to pay for each of these load balancers which can be quite expensive.
+
+
+Ingress 
+................
+can be considered as the best way to expose multiple services under the same IP. 
+Also, we should only pay for a single load balancer.
+GCE and Nginx are currently being supported and maintained by the Kubernetes project.
+
+
+Kubernetes load balancer : L4
+Ingress : L7 
+
+
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: example-ingress
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+        - path: /apple
+          backend:
+            serviceName: apple-service
+            servicePort: 5678
+        - path: /banana
+          backend:
+            serviceName: banana-service
+            servicePort: 5678
+
+
+Single service ingress
+..............................https://banzaicloud.com/blog/k8s-ingress/.
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: echo-service
+  namespace: default
+spec:
+  rules:
+  - host: echo.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: echo
+          servicePort: 80
+        path: /
+
+Simple fanout
+................https://banzaicloud.com/blog/k8s-ingress/.
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-service
+  namespace: default
+spec:
+  rules:
+  - host: services.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: service1
+          servicePort: 80
+        path: /service1
+      - backend:
+          serviceName: service2
+          servicePort: 80
+        path: /service2
+
+
+Hostname based routing 
+--------------------------https://banzaicloud.com/blog/k8s-ingress/-
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: public-services
+  namespace: default
+spec:
+  rules:
+  - host: service1.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: service1
+          servicePort: 80
+        path: /
+  - host: service2.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: service2
+          servicePort: 80
+        path: /service2
+
+TLS
+Ingress can also provide TLS support, but it is limited to port 443 only. 
+If the TLS configuration section in an Ingress specifies different hosts, 
+they are multiplexed on the same port according to the hostname that’s been specified through the SNI TLS extension (if the Ingress controller supports SNI). 
+The TLS secret must contain keys named tls.crt and tls.key, which contain the certificate and private key for TLS.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: public-services-tls
+  namespace: default
+data:
+  tls.crt: base64 encoded cert
+  tls.key: base64 encoded key
+type: kubernetes.io/tls
+
+Referencing this secret in an Ingress tells the Ingress controller to secure the channel from the client to the load balancer using TLS. We need to make sure the TLS secret we have created came from a certificate that contains a Common Name (CN), also known as a Fully Qualified Domain Name (FQDN) for services.example.com.
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: services-with-tls
+  namespace: default
+spec:
+  tls:
+  - hosts:
+      - services.example.com
+    secretName: public-services-tls
+  rules:
+    http:
+      paths:
+      - backend:
+          serviceName: service1
+          servicePort: 80
+        path: /service1
+      - backend:
+          serviceName: service2
+          servicePort: 80
+        path: /service2
+
+
+
+
+
+
+
+
+= targetPort: The port on the pod where the actual web server is running, that is 80 in this case. Service forwards the requests to the target port. If no ports are provided in the spec, it will default to 80
+= port: Like all Kubernetes objects, the Service is a virtual server inside the node. Inside the cluster, it will have its own IP address. The ‘port’ is the port exposed to the NodePort service itself. This value is mandatory.
+= nodePort: The port on the node which is used to access the web server externally. These ports can only be in a valid range from 30000 to 32767. This is not a mandatory field, if it is not provided a free port from the range is selected.            
+
+
+ClusterIP: exposes the Service on a cluster-internal IP. Choosing this value makes the Service only reachable within the cluster. This is the default ServiceType.
+NodePort: exposes the Service on each Node’s IP at a static port. A ClusterIP Service towards the NodePort Service route is created automatically. We’ll be able to access the NodePort Service from outside the cluster by requesting <NodeIP>:<NodePort>.
+LoadBalancer: exposes the Service externally using a cloud provider’s load balancer. NodePort and ClusterIP Services, towards the external load balancer routes are automatically created.
