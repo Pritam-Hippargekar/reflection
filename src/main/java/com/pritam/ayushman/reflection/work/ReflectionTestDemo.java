@@ -10,7 +10,7 @@
 //        System.out.println(ReflectionTestDemo.class.getName());
 //        String FULLY_QUALIFIED_CLASS_NAME = "com.pritam.ayushman.reflection.work.Process";//Process.class.getName()
 //        Class<?> aClazz = Class.forName(FULLY_QUALIFIED_CLASS_NAME);
-////       Class<?> aClazz = Class.forName(Process.class.getName());
+////      Class<?> aClazz = Class.forName(Process.class.getName());
 //
 //        Class<?>[] constructorArgsTypes = {Department.class,String.class};
 //        Constructor<?> classConstructor = aClazz.getDeclaredConstructor(constructorArgsTypes);

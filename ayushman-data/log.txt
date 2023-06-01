@@ -2133,8 +2133,16 @@ output:                    https://cassiomolin.com/2019/06/30/log-aggregation-wi
 - The Logstash Logback Encoder was originally written to support output in Logstash’s JSON format,
 
 
+https://stacktobasics.com/correlation-ids
+.............................................
+By default, Spring Cloud Sleuth will add the trace ID as a header when calling other services, 
+which is how the distributed trace is tracked. 
+However, it does not automatically add the trace id to responses from our application. 
+This can easily be added with a filter, which we'll show below.
+
+
 resources/logback-spring.xml
-==============================
+=============================https://cassiomolin.com/2019/06/30/log-aggregation-with-spring-boot-elastic-stack-and-docker/=
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <springProperty scope="context" name="application_name" source="spring.application.name"/>
@@ -2296,7 +2304,21 @@ name:["9322221919","FT3"]
 
 
 
-
+Fetch menu API
+Request 
+{
+    "requestBody": "{\"deviceId\":\"2386fbaf05eaa2fc\"}",
+    "key": "fZP+0blgC8Au2Rb0PX0KsfM/u64R22D7zAc8apofN9Iq8NQBhKyrzrh4uDr55F07uXI+rIj2r25zppOnhf7I4Dt4bx7b5fI0Mz5V/SDJ9DJLiARyhzwrJBxO4LKVlE3mflFZTkQbyXxSwKYf1IcaQSyIYea0pE+t59EPoCYWcZc=",
+    "iv": "Y3NclUG6PqNrcW83FS4lvO/qX3pX0C0L43YpLiffsbqbVYE1f66BUVnb+gC2+ArRSgb+NOogSMeJXIZFMpfxmqjQW/yvgUJPDG0Qycgwo+1beObQILYGFkgv3v8E3kCAUy1ILD+GvOt7tVCDKI/J06TCkdUPMIz8j+ImSwP0JDk=",
+    "ivs": "AAAAAAAAAAAAAAAAAAAAAA=="
+}
+Response 
+    {
+      responseMessage: "Menu fetched successfully"
+      responseStatus = "SUCCESS";
+      responseCode: "00";
+      responseBody: "{\"createdDate\":\"2023-02-13T13:22:34Z\",\"lastModifiedDate\":\"2023-05-26T08:22:38Z\",\"id\":1,\"menuIdentifier\":\"CHALO\",\"menuCategory\":\"PREPAID_PROGRAMS\",\"menuTitle\":\"PhysicalCardTest\",\"menuDescription\":\"DontTrackyouBuslivewithChaloApp.Buyyourbusticketsorbuspassonyourmobileandjustscantotravel.\",\"bannerImageLink\":\"YesPayLiteEWallet.png\",\"bannerTextColorCode\":\"#40b7c4\",\"sequence\":\"13\",\"status\":\"ACTIVE\",\"ypSorPrepaidProgram\":{\"createdDate\":\"2023-02-13T13:19:30Z\",\"lastModifiedDate\":\"2023-05-25T07:55:31Z\",\"id\":1,\"name\":\"ProgramOne\",\"programIdentifier\":\"1\",\"cardImageLink\":\"card-bg_(1).png\",\"cardTextColorCode\":\"#000000\",\"cardBackgroundColorCode\":\"#cec224\",\"cardType\":\"PHYSICAL\",\"programInstruction\":\"TorechargeyourCardPleasetapcardtwiceonPOS.\",\"physicalCardSubType\":\"NCMC\",\"programDetails\":\"CHALOCARDFORBUSTRAVELLING|NoNeedtomaintainaseparatetravelpassforBusorMetro.|InstantlyLoadyourChalowalletthroughUPI\"},\"ypSorPrepaidProgramId\":null,\"ypSorPrepaidProgramName\":null,\"name\":null,\"file\":null,\"fileName\":null,\"imagePath\":null,\"imageUrl\":null}"
+    }
 
 
 

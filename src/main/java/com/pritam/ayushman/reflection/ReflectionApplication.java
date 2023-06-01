@@ -10,4 +10,32 @@ public class ReflectionApplication {
 		SpringApplication.run(ReflectionApplication.class, args);
 	}
 
+//	@Configuration
+//	@ComponentScan
+//	public class ApplicationConfiguration {
+//
+//	}
+
+//	private static void withConfigurationsInConstructor() {
+//		ConfigurableApplicationContext applicationContext =
+//				new AnnotationConfigApplicationContext(ApplicationConfiguration.class);
+//      Class<?> aClazz = Class.forName("com.pritam.ayushman.reflection.XYZ");
+//      final GreetService greetService = applicationContext.getBean(aClazz);
+//		final GreetService greetService = applicationContext.getBean(GreetService.class);
+//		greetService.greet();
+//
+//		applicationContext.close();
+//	}
+
+//	private static void withRegistration() {
+//		AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+//		applicationContext.register(ApplicationConfiguration.class);
+//		applicationContext.refresh();
+//
+//		final GreetService greetService = applicationContext.getBean(GreetService.class);
+//		greetService.greet();
+//
+//		applicationContext.close();
+//	}
+
 }

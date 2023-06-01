@@ -180,3 +180,155 @@ Add the following configuration to run backup script daily at 6:00 AM.
 0 6 * * * root /opt/mysql-backup.sh
 
 Save and close the file when you are finished.
+
+
+
+
+
+
+
+https://www.airplane.dev/blog/docker-cron-jobs-how-to-run-cron-inside-containers
+date-script.sh
+----------------------
+#!/bin/bash 
+echo "Current date and time is " "$(date +%D-%H:%M)"
+
+
+RUN mkdir -p /home/abc
+ENV HOME /home/abc
+WORKDIR ${HOME}
+
+USER root
+
+# Pulling Alpine image
+FROM ubuntu:latest
+
+# Updating packages and installing openssh-server
+RUN sudo apt update -y && sudo apt install openssh-server -y
+
+# Setting up work directory
+WORKDIR /cron
+
+# Copying script file into container
+COPY docker-entrypoint.sh .
+
+# Giving executable permission to script file
+RUN chmod +x docker-entrypoint.sh
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+nohup bash -c "/usr/local/bin/scrapyd 2>&1 &" && sleep 6
+
+
+
+
+
+
+
+================================================START=====================================================================
+Problem
+Imagine you’re creating a script that runs redis-server then redis-cli:
+.................................................................
+redis-server
+redis-cli
+
+redis-cli never starts since redis-server runs forever.
+
+
+
+Solution
+..................
+nohup redis-server redis.conf >/dev/null 2>&1 &      ==> To silence the nohup output in the command-line & run in  background
+
+But one problem is that redis-server never shuts down.
+Thus, save the pid:
+$ nohup redis-server &
+$ echo $! > /tmp/redis-server.pid
+
+And kill it before it runs (if applicable):
+$kill $(cat /tmp/redis-server.pid)
+
+
+Script
+Working example script:
+.............................
+# shut down redis-server (if applicable)
+REDIS_SERVER_PID_FILE=/tmp/redis-server.pid
+(kill $(cat $REDIS_SERVER_PID_FILE) 2>&1) >/dev/null
+sleep 0.1
+
+# start redis-server
+nohup redis-server redis.conf >/dev/null 2>&1 &
+sleep 0.1
+echo $! > $REDIS_SERVER_PID_FILE
+
+# start redis-cli
+redis-cli
+
+========================================================END================================================================
+
+
+
+
+
+
+
+$ vi dockerfile
+FROM ubuntu:latest
+RUN apt update && apt install  openssh-server sudo -y
+# Create a user “sshuser” and group “sshgroup”
+RUN groupadd sshgroup && useradd -ms /bin/bash -g sshgroup sshuser
+# Create sshuser directory in home
+RUN mkdir -p /home/sshuser/.ssh
+# Copy the ssh public key in the authorized_keys file. The idkey.pub below is a public key file you get from ssh-keygen. They are under ~/.ssh directory by default.
+COPY idkey.pub /home/sshuser/.ssh/authorized_keys
+# change ownership of the key file. 
+RUN chown sshuser:sshgroup /home/sshuser/.ssh/authorized_keys && chmod 600 /home/sshuser/.ssh/authorized_keys
+# Start SSH service
+RUN service ssh start
+# Expose docker port 22
+EXPOSE 22
+CMD ["/usr/sbin/sshd","-D"]
+
+
+$ docker build -t sshubuntu .
+$ docker run -d -p 2022:22 sshubuntu
+$ ssh -i idkey sshuser@localhost -p 2022
+$ docker exec -it <running_container_name_or_id> \bin\bash
+
+
+
+
+
+
+
+
+
+
+ENV PATH /code/tmp/
+COPY . $PATH
+
+
+
+Basic Definitions
+FROM: Define the base image, such as ubuntu or debian, used to start the build process. Required for each Dockerfile.
+MAINTAINER: Define the full name and email address of the image creator.
+
+Variables
+ENV: Set environment variables that persist when the container is deployed.
+ARG: Set a passable build-time variable. Can be used as an alternative to ENV to create a variable that does not persist when the container is deployed from the image.
+
+Command Execution
+RUN: Execute commands, such as package installation commands, on a new image layer.
+CMD: Execute a specific command within the container that is deployed with the image, or set default parameters for an ENTRYPOINT instruction. Only one is used per Dockerfile.
+ENTRYPOINT: Set a default application to be used every time a container is deployed with the image. Only one is used per Dockerfile.
+USER: Set the UID (the username) to run commands in the container.
+WORKDIR: Set the container path where subsequent Dockerfile commands are executed.
+
+Data Management
+ADD: Copy files from a source to the image’s filesystem at the set destination with automatic tarball and remote URL handling.
+COPY: Similar to ADD but without automatic tarball and remote URL handling.
+VOLUME: Enable access from a specified mount point in the container to a directory on the host machine.
+
+Networking
+EXPOSE: Expose a specific port to enable networking between the container and the outside world.

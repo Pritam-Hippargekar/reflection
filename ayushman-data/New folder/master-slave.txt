@@ -1008,45 +1008,6 @@ Payment Aggregator    partnerMerchantAccountSettlementTrigger
 
 
 
-	public LimitReconTransactions callFt2Api(String debitAccNo, String customerId, String beneficiaryAccNo, String beneficiaryIfsc, BigDecimal amount, LimitReconTransactions transaction, String beneficiaryName) {
-		try {
-			log.info("Calling FT2 API, for limit recon transaction, {}", transaction);
-			FundTransferApiResponse response = null;
-			String remiterToBeneValue = (!StringUtils.isEmpty(transaction.getPartnerReferenceNumber())) ? transaction.getPartnerReferenceNumber() : transaction.getTxnReferenceNumber();
-			// updated remiterToBene narration
-			remiterToBeneValue = transaction.getId() + " " + remiterToBeneValue; 
-			if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
-				response = fundTransferApiService.fundTransfer2R(beneficiaryAccNo, debitAccNo, beneficiaryIfsc, amount.toString(), "Mumbai", transaction.getTxnReferenceNumber(), customerId, remiterToBeneValue, beneficiaryName);
-			}
-			else {
-				String responseStr = dummyApiResponseRepository.findByKeyAndApiNameAndValue("GET_REALTIME_RESPONSE",
-						ApiNameEnum.REAL_TIME, "REAL_TIME").orElse(new DummyApiResponse())
-						.getApiResponse();
-				if (StringUtils.isBlank(responseStr)) {
-					response = fundTransferApiService.fundTransfer2R(beneficiaryAccNo, debitAccNo, beneficiaryIfsc, amount.toString(), "Mumbai", transaction.getTxnReferenceNumber(), customerId, remiterToBeneValue, beneficiaryName);
-				} else {
-					response = new ObjectMapper().readValue(responseStr, FundTransferApiResponse.class);
-				}
-			}
-			if (null != response && null != response.getTransferResponse() && null != response.getTransferResponse().getTransactionStatus() && null != response.getTransferResponse().getTransactionStatus().getStatusCode() && "COMPLETED".equalsIgnoreCase(response.getTransferResponse().getTransactionStatus().getStatusCode())) {
-				log.info("FT2 Api SettlementProcess succeeded ");//
-				transaction.txnStatus(TransactionStatus.SUCCESS).settlementStatus(SettlementStatus.SETTLED).merchantReferenceNumber(response.getTransferResponse().getTransactionStatus().getBankReferenceNo()).field1(response.getTransferResponse().getTransactionStatus().getStatusCode() + "|" + response.getTransferResponse().getUniqueResponseNo());
-			} else if (null != response && null != response.getTransferResponse() && null != response.getTransferResponse().getTransactionStatus() && null != response.getTransferResponse().getTransactionStatus().getStatusCode() && "FAILED".equalsIgnoreCase(response.getTransferResponse().getTransactionStatus().getStatusCode())) {
-				log.info("FT2 Transfer Api Failure: {}", response);
-				limitAccountEntryService.reversal(transaction, TransactionTypeEnum.REVERSAL);
-				transaction.txnStatus(TransactionStatus.SUCCESS).settlementStatus(SettlementStatus.REVERSED).field1(response.getTransferResponse().getTransactionStatus().getStatusCode() + "|" + response.getTransferResponse().getTransactionStatus().getSubStatusCode());
-			} else if (null != response && null != response.getFault()) {
-				log.info("FT2 Transfer Api Fault: {}", response);
-				limitAccountEntryService.reversal(transaction, TransactionTypeEnum.REVERSAL);
-				transaction.txnStatus(TransactionStatus.SUCCESS).settlementStatus(SettlementStatus.REVERSED).field1(response.getFault().getCode().getSubcode().getValue() + "|" + response.getFault().getReason().getText());
-			}
-			transaction = limitReconTransactionsRepository.save(transaction);
-		} catch(Exception ex) {
-			log.error("Exception in fundTransfer2R API ", ex);
-			limitReconTransactionsRepository.save(transaction.field1("999|Timeout"));
-		}
-		return transaction;
-	}
 
 
 
