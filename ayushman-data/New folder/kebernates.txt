@@ -55,3 +55,146 @@ Kubernetes have three types probes for health check of pods.
    This can be used to adopt liveness checks on slow starting containers, avoiding them getting killed by the kubelet before they are up and running.
 
 
+About External Name
+An ExternalName Service is a special case of Service that does not have selectors and uses DNS names instead
+........................
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-database-svc
+  namespace: prod
+spec:
+  type: ExternalName
+  externalName: my.database.example.com
+When looking up the service <my-database-svc>.<prod>.svc.cluster.local, 
+the cluster DNS Service returns a CNAME record for my.database.example.com.
+
+
+Ex:
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-server
+spec:
+  type: ExternalName
+  externalName: external.myservice.com
+When an application in the kubernetes cluster wants to communicate with the external service, 
+for example "external.myservice.com", 
+it looks up the address "<external-server>.svc.default.cluster" using DNS.
+
+Remark:
+The "external-server.svc.default.cluster" name becomes an alias for the external service "external.myservice.com".
+
+Use Cases
+This is commonly used to create a service within Kubernetes to represent an external datastore like a database that runs externally to Kubernetes.
+You can use that ExternalName service (as a local service) when Pods from one namespace to talk to a service in another namespace.
+
+
+https://www.ithands-on.com/2021/04/kubernetes-101-external-services.html
+Using the IP address to connect to an external service (servers):
+........................................................................
+To connect to an external service using it's IP address, 
+we create a clusterIP service, then we create an Endpoint(representing our external service) to which the service will send traffic to
+Remark:
+The Service and the Endpoint should have the same name "external-name".
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-name
+spec:
+  type: ClusterIP
+  - port: 32098
+    targetPort: 32098
+
+We also need to define the endpoint for the external service ( database for example ) because we didn't define any selectors.
+We create the endpoint that the above service will send traffic to.
+The IP address of the endpoint is the IP address of our database server.
+apiVersion: v1
+kind: Endpoint
+metadata:
+  name: external-name
+subsets:
+- addresses: 
+  - port: 32098
+    - ip: 10.20.54.10
+  port: 32098
+
+Remark:
+Kubernetes treats the IP addresses in the endpoint as if they were pods.
+The IP address in the endpoint "10.20.54.10" is the IP of our external service "database server".
+We can connect to our database server without specifying the port. kubernetes does the port mapping for us.
+
+
+
+
+
+
+
+
+
+
+
+
+
+cat helloworld-service.yaml
+................................
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld
+  labels:
+    app: helloworld
+spec:
+  type: ClusterIP # Optional field (default)
+  clusterIP: 10.10.0.1 # within service cluster ip range
+  ports:
+  - port: 8080
+    targetPort: http-server
+  selector:
+    app: helloworld
+
+- The spec defines a few important attributes for service discovery: labels, selector and port. 
+  The set of Pods that a Service targets, is determined by the selector and labels. 
+- When a Service has no selector, the corresponding Endpoints object is not created automatically.
+- The Service maps the incoming port to the container's targetPort. 
+- By default the targetPort is set to the same value as the incoming port field.
+- The Service maps the incoming port to the container's targetPort.
+Use Cases
+Inter service communication within the cluster. For example, communication between the front-end and back-end components of your app.
+
+
+
+
+helloworld-service-nodeport.yaml,
+...........<NodeIP>:<30000–32767>.......................<NodeIP>:<NodePort>....
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld
+  labels:
+    app: helloworld
+spec:
+  ports:
+  - port: 8080
+    nodePort: 30000 #30000-32767, Optional field
+    targetPort: http-server
+  selector:
+    app: helloworld
+  type: NodePort
+- You can now connect to the service from outside the cluster 
+  via the public IP address of any worker node in the cluster and traffic will be forwarded to the service. 
+- Service discovery with the selector and labels is used to deliver the request to one of the pod's IP addresses.   
+- To connect to the service, we need the Public IP address of one of the worker nodes and the NodePort of the Service. 
+
+
+Remark: Services and pods are "connected" through selectors and labels 
+
+ports:
+  - port: 80
+    targetPort: 8080
+    nodePort: 30036
+    protocol: TCP
+port: the new service port that will be created to connect to the application.
+targetPort: application port that we want to target with the services requests.
+nodePort: this is a port in the range of 30000-32767 that will be open in each node. If left empty, Kubernetes selects a free one in that range.
+protocol: TCP is the default one, but you can use others like SCTP or UDP.
