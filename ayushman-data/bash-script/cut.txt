@@ -1,0 +1,42 @@
+To extract a selection of fields, list them as a comma-separated list. This command will extract fields one to three, five, and six.
+-d (delimiter) option to tell cut to use “:” as the delimiter. 
+$ cut -d':' -f1-3,5,6 /etc/passwd | tail -n 5
+
+-f extract field with in a range 1 to 6
+$ grep "/bin/bash" /etc/passwd | cut -d':' -f1-6
+
+
+-s (only delimited) option tells cut to suppress results that don’t have the delimiter in them at all.
+$ grep "/bin/bash" /etc/passwd | cut -d':' -s -f5 | cut -d',' -s -f1
+
+
+--output-delimiter we can tell cut what character—or in fact, character sequence—to use instead of the actual delimiter.
+$ cut -d ',' -f 2,3 small.csv --output-delimiter=' '           ###cut to replace the commas with spaces
+
+
+Note : Since the tab character is the default delimiter for the cut command
+Note : To specify a different delimiter, you could add the -d option 
+
+cut to print all fields from field two to the end of the record, and to use a newline character as the output delimiter.
+$ grep 'renwick' small.csv | cut -d ',' -f2- --output-delimiter=$''
+
+cut +sed command example with a tab delimiter
+replace all colon(:) with \t or tab character.
+$ sed 's/:/\t/g' list-of-smartphones-2011.txt | cut -f 1
+
+
+-f (--fields=LIST) - Select by specifying a field, a set of fields, or a range of fields. This is the most commonly used option.
+-b (--bytes=LIST) - Select by specifying a byte, a set of bytes, or a range of bytes.
+-c (--characters=LIST) - Select by specifying a character, a set of characters, or a range of characters.
+
+-d (--delimiter) - Specify a delimiter that will be used instead of the default “TAB” delimiter.
+--complement - Complement the selection. When using this option cut displays all bytes, characters, or fields except the selected.
+-s (--only-delimited) - By default cut prints the lines that contain no delimiter character. When this option is used, cut doesn’t print lines not containing delimiters.
+--output-delimiter - The default behavior of cut is to use the input delimiter as the output delimiter. This option allows you to specify a different output delimiter string.
+
+
+N      the Nth field, byte or character, starting from 1.
+N-     from the Nth field, byte or character, to the end of the line.
+N-M    from the Nth to the Mth field, byte, or character.
+-M     from the first to the Mth field, byte, or character.
+

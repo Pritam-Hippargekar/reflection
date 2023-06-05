@@ -983,27 +983,7 @@ Hikari Connection Pooling with master(read and write) and slave(read only) mysql
 
 
 
-fundTransfer2R(
-dataPowerUtil.postJsonWithDataPower(
 
-
-
-
-
-
-
-Payment Disbursement    VA_FUND_TRANSFER
-Payment Disbursement    VA_FUND_TRANSFER_TO_BENE
-Payment Disbursement    FUND_TRANSFER_STATUS   not required.
-Client Program        CLIENT_LIMIT_TRANSFER_TO_SOURCE
-
-
-
-Client Program        CLIENT_FUND_TRANSFER_STATUS  not required.
-DC Aggregator         DCA_FUND_TRANSFER_TO_BENE
-DC Aggregator         DCA_FUND_TRANSFER
-Payment Aggregator    pARealTimeSettlementDetailsTrigger
-Payment Aggregator    partnerMerchantAccountSettlementTrigger
 
 
 

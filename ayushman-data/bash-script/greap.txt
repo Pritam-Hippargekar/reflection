@@ -1,0 +1,16 @@
+1) Display the Number of Lines Before or After the Search String....
+Another couple of options are the –A and –B switches, which display the matched line and number of lines either that come before or after the search string.
+While the man page gives a more detailed explanation, I find it easiest to remember the options as –A = after, and –B = before:
+
+SYntax: grep [OPTIONS] pattern [FILE(S)]
+# ifconfig | grep -A 4 inet
+# ifconfig | grep -B 2 UP
+
+
+2) Exclude Files while using grep
+You can use the --exclude option to exclude directories, specific files or files with specific extensions.
+$ grep -r string --exclude=filename --exclude=*.png --exclude=folder/* folder-name
+
+3) Include Files while using grep
+You can use the --include option to include only the specific directories, specific files or files with specific extensions.
+$ grep -r string --include=filename --include=*.php --include=folder/* folder-name

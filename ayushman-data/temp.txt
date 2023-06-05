@@ -33,8 +33,7 @@ admin
 pritam.h@sodelsolutions.com
 admin
 
-partnerDASetup       bbps_recharge_config
-partnerDaApiAccess   bbps_api_access
+
 
 
 
