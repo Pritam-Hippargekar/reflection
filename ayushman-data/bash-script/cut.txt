@@ -20,7 +20,7 @@ Note : To specify a different delimiter, you could add the -d option
 cut to print all fields from field two to the end of the record, and to use a newline character as the output delimiter.
 $ grep 'renwick' small.csv | cut -d ',' -f2- --output-delimiter=$''
 
-cut +sed command example with a tab delimiter
+cut + sed command example with a tab delimiter
 replace all colon(:) with \t or tab character.
 $ sed 's/:/\t/g' list-of-smartphones-2011.txt | cut -f 1
 
@@ -39,4 +39,10 @@ N      the Nth field, byte or character, starting from 1.
 N-     from the Nth field, byte or character, to the end of the line.
 N-M    from the Nth to the Mth field, byte, or character.
 -M     from the first to the Mth field, byte, or character.
+
+
+
+Script default arguments
+............................
+arg1=${$1:-replacementValue}
 

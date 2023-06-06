@@ -1,0 +1,23 @@
+A) Discretionary access control or DAC : 
+- sets access permissions to files, based on their UID - User ID - or GID - Group ID -. read/write/execute
+B) Capabilities : 
+- uses "capabilities" to give granular rights, for example the "CHOWN" capability allows us to change the GID/UID of a file.
+
+In The pod's Yaml file, we could use the securityContext parameter in the pod's section 
+                        or in a specific container in the container's section. 
+
+Example:
+
+All containers within the pod run under user "1001" specified in the "runAsUser" parameter.
+securityContext:
+  runAsUser: 1001
+To prevent files from using extra capabilities, we also set the "allowPrivilegeEscalation" parameter to false.   
+securityContext:
+  allowPrivilegeEscalation: false                     
+
+Then we check if the containers run under the specified identifier as mentioned in the "runAsUser" parameter by running the "id" command inside the containers.
+$ kubectl exec -it <pod-name> --container=<container-name> --id    
+
+
+Services : like a loadBalancer or a layer "4" TCP/UDP nodePort service.
+Ingress : for example an application layer "7" HTTP loadBalancer.

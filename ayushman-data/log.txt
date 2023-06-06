@@ -2359,13 +2359,13 @@ private final String[] csvHeaders = new String[] {"ID","Channel","Partner Refere
 "Expiry","Bill Transaction Id","Voucher Brand Catalogue Id","Brand Category Id","Created Date","Last Modified Date"};
 ====BrandVoucherDetails====
 channel(VoucherChannelEnum) YPLITE,YPNEXT,YPHUB,YPLITE_WEB
-partnerReferenceNumber(String)                 
-voucherGuid(String)
-voucherNumber(Integer)
-voucherCode(String)
-voucherPin(String)
-voucherValue(String)
-expiry(Instant)
+partnerReferenceNumber(String)       ..          
+voucherGuid(String)                  ..
+voucherNumber(Integer)               ..
+voucherCode(String)                  ..
+voucherPin(String)                   ..
+voucherValue(String)                 ..
+expiry(Instant)                      ..    
 
 billTransactionId(M2O) –  ID of BillTransaction table
 voucherBrandCatalogueId(M2O) – ID of BrandVoucherCatalogue table
@@ -2375,30 +2375,7 @@ brandCategoryId(M2O) – Id of BrandVoucherCategories table
 
 
 
-   Optional<BrandVoucherCategories> brandVoucherCategories = brandVoucherCategoriesRepository.findById(brandVoucherCategoriesDto.getId());
-        if (!brandVoucherCategories.isPresent()) {
-            throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
-        }
-        BrandVoucherCategories brandVoucherCategory = brandVoucherCategories.get();
-        List<ApprovalRequestDifference> diff = approvalRequestService.difference(new BrandVoucherCategoriesDTO(brandVoucherCategory),brandVoucherCategoriesDto);
-        if (diff.isEmpty()) {
-            return ResponseEntity.ok(new ApprovalRequest());
-        }
-        ApprovalRequest result;
-        try{
-            diff.add(0, new ApprovalRequestDifference("Id", brandVoucherCategory.getId(), brandVoucherCategoriesDto.getId()));
-            ObjectMapper om = new ObjectMapper();
-            om.registerModule(new JavaTimeModule());
-            List<ApprovalRequestMethodArg> args = new ArrayList<>();
-            args.add(new ApprovalRequestMethodArg(BrandVoucherCategoriesDTO.class.getName(), om.writeValueAsString(brandVoucherCategoriesDto)));
-            result = approvalRequestService.createRequest(BrandVoucherCategoriesService.class.getName(), "save", brandVoucherCategoriesDto.getId(), ENTITY_NAME,
-                ApprovalRequestEvent.UPDATE, args, diff);
-        } catch (JsonProcessingException ex) {
-            throw new BadRequestAlertException("Error in creating request", ENTITY_NAME, "createException");
-        }
-        return ResponseEntity.created(new URI("/api/approval-requests/" + result.getId()))
-        .headers(HeaderUtil.createAlert(applicationName, "Approval request generated with id - " + result.getId().toString(), result.getId().toString()))
-        .body(result);
+   
 
 
 

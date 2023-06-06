@@ -1,0 +1,2 @@
+Can we serialize static variables in java ?
+- The reason being static variable are class level variables, not object level variables since serialization saves only object state not the class state.
